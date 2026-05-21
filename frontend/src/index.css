@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* ── 배경 계열 ── */
+    --bg-primary:   #f0f4f9;   /* 전체 배경: 아주 연한 블루그레이 */
+    --bg-secondary: #ffffff;   /* 사이드바, 패널 배경 */
+    --bg-card:      #ffffff;   /* 카드 배경 */
+    --bg-hover:     #eef2f8;   /* 호버 배경 */
+    --bg-selected:  #e6eef9;   /* 선택된 항목 배경 */
+
+    /* ── 테두리 ── */
+    --border:       #e2e8f2;   /* 일반 구분선 */
+    --border-light: #edf1f8;   /* 연한 구분선 */
+
+    /* ── 텍스트 ── */
+    --text-primary:   #1a2b4b; /* 제목, 주요 텍스트 */
+    --text-secondary: #4a6080; /* 보조 텍스트 */
+    --text-muted:     #94a3b8; /* 힌트, 비활성 */
+
+    /* ── 포인트 컬러 (파스텔 블루) ── */
+    --accent:       #4b8ef1;              /* 기본 포인트 */
+    --accent-light: #6aa3f5;             /* 밝은 포인트 */
+    --accent-dark:  #3575d4;             /* 진한 포인트 */
+    --accent-glow:  rgba(75, 142, 241, 0.12); /* 포인트 배경 */
+    --accent-soft:  #dbeafe;             /* 부드러운 포인트 배경 */
+
+    /* ── 시맨틱 컬러 ── */
+    --green:        #34c785;
+    --green-soft:   #dcfce7;
+    --yellow:       #f59e0b;
+    --yellow-soft:  #fef3c7;
+    --red:          #f26868;
+    --red-soft:     #fee2e2;
+    --orange:       #fb923c;
+    --orange-soft:  #ffedd5;
+
+    /* ── 그림자 ── */
+    --shadow-sm:  0 1px 3px rgba(66, 96, 140, 0.08), 0 1px 2px rgba(66, 96, 140, 0.05);
+    --shadow-md:  0 4px 12px rgba(66, 96, 140, 0.10), 0 2px 4px rgba(66, 96, 140, 0.06);
+    --shadow-lg:  0 12px 32px rgba(66, 96, 140, 0.14), 0 4px 8px rgba(66, 96, 140, 0.08);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #d1daea;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #b0bdd4;
+  }
+}

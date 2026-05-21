@@ -1,0 +1,39 @@
+{
+  "name": "counselinglog-electron",
+  "version": "0.1.0",
+  "description": "상담일지 Electron 앱",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "cross-env NODE_ENV=development electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^36.3.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.counselinglog.app",
+    "productName": "상담일지",
+    "directories": {
+      "output": "../dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "../frontend/dist/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "../assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

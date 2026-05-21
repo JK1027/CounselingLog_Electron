@@ -134,7 +134,7 @@ Python FastAPI (uvicorn :8765)
 
 # 5. 4단계 개발 계획
 
-## ✅ 현재 단계: 1단계 진행 전
+## ✅ 현재 단계: 3단계 진행 전
 
 ---
 
@@ -142,14 +142,14 @@ Python FastAPI (uvicorn :8765)
 **목표**: Mock 데이터로 화면 구조 완성 (저장 없음)
 
 ### 작업 목록
-- [ ] Electron + React + Vite 프로젝트 초기화
-- [ ] Tailwind CSS + shadcn/ui 설정
-- [ ] 메인 레이아웃 (3분할: Sidebar | Timeline | QuickEditor)
-- [ ] Sidebar 컴포넌트 (학생 목록)
-- [ ] Timeline 컴포넌트 (상담 이력 카드)
-- [ ] QuickEditor 컴포넌트 (입력 패널)
-- [ ] Dashboard (오늘 상담 요약)
-- [ ] 다크모드
+- [x] Electron + React + Vite 프로젝트 초기화
+- [x] Tailwind CSS + shadcn/ui 설정
+- [x] 메인 레이아웃 (3분할: Sidebar | Timeline | QuickEditor)
+- [x] Sidebar 컴포넌트 (학생 목록)
+- [x] Timeline 컴포넌트 (상담 이력 카드)
+- [x] QuickEditor 컴포넌트 (입력 패널)
+- [x] Dashboard (오늘 상담 요약)
+- [x] 다크모드
 
 ### 완료 기준
 - Mock 데이터로 앱이 실행되고 모든 화면 전환 동작
@@ -160,12 +160,12 @@ Python FastAPI (uvicorn :8765)
 **목표**: 실제 사용 흐름처럼 느껴지게
 
 ### 작업 목록
-- [ ] Command Palette (Ctrl+K) — 학생 검색
-- [ ] Timeline 카드 상세 보기
-- [ ] QuickEditor 키보드 UX (Ctrl+S 저장, Enter 이동)
-- [ ] 자동완성 (학생 이름/학번)
-- [ ] 최근 상담 이어쓰기 흐름
-- [ ] Toast 알림
+- [x] Command Palette (Ctrl+K) — 학생 검색
+- [x] Timeline 카드 상세 보기
+- [x] QuickEditor 키보드 UX (Ctrl+S 저장, Enter 이동)
+- [x] 자동완성 (학생 이름/학번)
+- [x] 최근 상담 이어쓰기 흐름
+- [x] Toast 알림
 
 ### 완료 기준
 - Mock 데이터 기준으로 전체 상담 입력 → 조회 흐름이 끊김 없이 동작
@@ -288,7 +288,7 @@ data/logs/           → .gitignore 필수
 |------|------|
 | 프로젝트 폴더 생성 | ✅ 완료 |
 | AGENTS.md 작성 | ✅ 완료 |
-| 1단계: React UI 기반 구축 | ⬜ 미시작 |
-| 2단계: UX 핵심 기능 | ⬜ 미시작 |
+| 1단계: React UI 기반 구축 | ✅ 완료 |
+| 2단계: UX 핵심 기능 | ✅ 완료 |
 | 3단계: Python Engine 연결 | ⬜ 미시작 |
 | 4단계: 배포 패키징 | ⬜ 미시작 |
