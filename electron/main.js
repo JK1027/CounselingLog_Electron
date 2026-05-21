@@ -7,18 +7,33 @@ const isDev = process.env.NODE_ENV !== 'production'
 let mainWindow = null
 let pythonProcess = null
 
-// ─── Python FastAPI 백엔드 시작 (3단계에서 활성화) ─────────────────────────
-function startPythonBackend() {
-  if (isDev) return // 3단계 전까지는 스킵
+const fs = require('fs')
 
+// ─── Python FastAPI 백엔드 시작 ─────────────────────────────────────────────
+function startPythonBackend() {
   const backendPath = path.join(__dirname, '../backend')
-  pythonProcess = spawn('python', ['-m', 'uvicorn', 'main:app', '--port', '8765'], {
-    cwd: backendPath,
+  const rootPath = path.join(__dirname, '..')
+  
+  // 가상환경 Python 경로 탐색
+  const venvPythonPathWin = path.join(backendPath, 'venv/Scripts/python.exe')
+  const venvPythonPathUnix = path.join(backendPath, 'venv/bin/python')
+  let pythonBin = 'python'
+
+  if (fs.existsSync(venvPythonPathWin)) {
+    pythonBin = venvPythonPathWin
+  } else if (fs.existsSync(venvPythonPathUnix)) {
+    pythonBin = venvPythonPathUnix
+  }
+
+  console.log(`[Electron] Starting Python backend with ${pythonBin} at ${rootPath}...`)
+
+  pythonProcess = spawn(pythonBin, ['-m', 'uvicorn', 'backend.main:app', '--port', '8765'], {
+    cwd: rootPath,
     stdio: 'pipe',
   })
 
-  pythonProcess.stdout.on('data', (data) => console.log('[Python]', data.toString()))
-  pythonProcess.stderr.on('data', (data) => console.error('[Python ERR]', data.toString()))
+  pythonProcess.stdout.on('data', (data) => console.log('[Python]', data.toString().trim()))
+  pythonProcess.stderr.on('data', (data) => console.error('[Python ERR]', data.toString().trim()))
   pythonProcess.on('close', (code) => console.log('[Python] 종료, exit code:', code))
 }
 
@@ -69,12 +84,18 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    // Python 프로세스 정리
     if (pythonProcess) {
       pythonProcess.kill()
       pythonProcess = null
     }
     app.quit()
+  }
+})
+
+app.on('quit', () => {
+  if (pythonProcess) {
+    pythonProcess.kill()
+    pythonProcess = null
   }
 })
 

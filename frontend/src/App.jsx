@@ -6,10 +6,15 @@ import QuickEditor from '@/components/QuickEditor/QuickEditor'
 import CommandPalette from '@/components/Search/CommandPalette'
 import Dashboard from '@/components/Dashboard/Dashboard'
 import ToastContainer from '@/components/ui/ToastContainer'
+import { useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 
 export default function App() {
-  const { selectedStudent, editorOpen } = useAppStore()
+  const { selectedStudent, editorOpen, initialize } = useAppStore()
+
+  useEffect(() => {
+    initialize()
+  }, [])
 
   return (
     <div className="flex h-screen w-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>

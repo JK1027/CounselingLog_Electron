@@ -127,3 +127,49 @@
 
 ### 2단계 완료 기준 달성
 > Mock 데이터 기준으로 전체 상담 입력 → 조회 흐름이 끊김 없이 동작 ✅
+
+---
+
+## [2026-05-21] 3단계 — Python Engine 연결 완료
+
+### 완료 작업
+- [x] **FastAPI 백엔드 개발 환경 및 API 구현**:
+  - `backend/main.py`에 REST API 구현: `GET /students`, `GET /sessions/{name}`, `POST /sessions`, `PUT /sessions/{id}`, `GET /stats/today`, `POST /backup`, `GET /health` 추가.
+  - 기존 엑셀 처리 엔진 `ExcelRepository` 이식 완료.
+  - `backend/core/constants.py`에 상용 엑셀 컬럼 스키마 및 시트 정의 포팅.
+  - `backend/utils/` (`path_helper.py`, `security.py`, `logger.py`, `validator.py`) 포팅.
+  - 저장 실패 시 자동으로 롤백하고 이전 자동 백업본을 복원하는 Safe Save & Rollback 로직 탑재.
+- [x] **Electron 백엔드 프로세스 제어**:
+  - `electron/main.js`에서 Electron 기동 시 가상환경의 python (`backend/venv/Scripts/python.exe`)을 사용하여 uvicorn 백엔드 자동 spawn 구현.
+  - `cwd`를 프로젝트 루트로 지정하여 uvicorn 모듈 임포트 에러 방지.
+  - Electron 종료 시 (`window-all-closed`, `quit`) Python 프로세스를 강제 종료(`kill`)하도록 클린업 처리.
+- [x] **Frontend Zustand 스토어 및 API 연동**:
+  - `useAppStore.js`를 Mock 데이터 구조에서 실제 FastAPI 서버 통신 구조(`fetch`)로 100% 전환.
+  - 앱 로드 시 `App.jsx`에서 `initialize()`를 통해 학생 목록 및 통계 데이터를 동기적으로 호출.
+  - 세션 저장(`addSession`) 및 수정(`updateSession`) 완료 시 자동으로 전체 학생 목록 및 대시보드 통계 리로드 및 화면 동기화 구현.
+- [x] **신규 학생 등록 UX 고도화**:
+  - `CommandPalette.jsx`에서 검색 결과 미존재 또는 상단 버튼 클릭 시 신규 학생 등록 모달 폼 표출.
+  - 검색어 자동 분석 기능: 숫자인 경우 학번으로 입력 및 학년(앞자리) 자동 유추, 문자열인 경우 이름으로 자동 입력.
+  - 학번 5자리 유효성 검사 적용 및 등록 성공 시 즉시 해당 학생을 선택하고 QuickEditor 작성 폼 자동 기동.
+- [x] **엑셀 파일 잠금(PermissionError) 복구/알림 예외 처리**:
+  - 엑셀 파일이 다른 프로그램(예: Microsoft Excel)에 의해 사용 중(잠금 상태)일 때 발생하는 `PermissionError`를 백엔드에서 포착하여 HTTP 500과 함께 안내 메시지 반환.
+  - 프론트엔드 Zustand에서 에러 발생 시 Toast 컴포넌트를 통해 한국어 설명 메시지 알림 처리 완료.
+- [x] **자동 테스트 및 검증 환경 구축**:
+  - `scratch/test_crud_api.py`를 활용하여 Health check, Student List, Session CRUD, stats 변경 검증, openpyxl 엑셀 파일 임시 잠금 시뮬레이션 및 데이터 원복을 포함한 자동화 API 테스터 구동 완료.
+
+### 테스트 결과
+- `test_crud_api.py` 테스트 실행 결과: **모든 테스트 케이스 통과! (Success)**
+  - 신규 학생 등록 및 상담 기록 저장 후 엑셀 시트에 기록 확인 ✅
+  - 상담 기록 수정 및 엑셀 반영 확인 ✅
+  - 파일 잠금 시 `PermissionError` 감지 및 한글 예외 메시지 반환 확인 ✅
+  - 테스트 종료 후 테스트 데이터의 엑셀 자동 삭제 확인 ✅
+- Electron 및 React dev 기동 상태에서 UI 정상 연동 동작 완료 확인.
+
+### 3단계 완료 기준 달성
+> 실제 상담일지.xlsx 파일로 CRUD 전체 동작 및 파일 잠금 예외 대응 완료 ✅
+
+### 다음 단계 (4단계)
+- Python 백엔드 PyInstaller 빌드
+- Electron Builder 설정 및 exe 단일 패키징 파일 생성
+- 아이콘 리소스 등록 및 인스톨러 컴파일
+- 배포 패키지 기동 실사용 테스트

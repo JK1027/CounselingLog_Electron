@@ -1,10 +1,9 @@
 import { BarChart2, Clock, AlertTriangle, BookOpen, Archive } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
-import { MOCK_TODAY_STATS } from '@/data/mockData'
 import { Avatar, formatDate } from '@/components/ui/shared'
 
 export default function Dashboard() {
-  const { students, setSelectedStudent, setEditorOpen, setEditorMode } = useAppStore()
+  const { students, todayStats, setSelectedStudent, setEditorOpen, setEditorMode } = useAppStore()
 
   const recentStudents = [...students]
     .sort((a, b) => b.lastDate.localeCompare(a.lastDate))
@@ -26,10 +25,10 @@ export default function Dashboard() {
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <StatCard icon={<BookOpen size={18} />} label="오늘 상담" value={MOCK_TODAY_STATS.total} unit="건" color="var(--accent)" />
-        <StatCard icon={<Clock size={18} />} label="미작성" value={MOCK_TODAY_STATS.pending} unit="건" color="var(--yellow)" />
-        <StatCard icon={<BarChart2 size={18} />} label="보호자 상담" value={MOCK_TODAY_STATS.guardian} unit="건" color="var(--green)" />
-        <StatCard icon={<Archive size={18} />} label="의뢰" value={MOCK_TODAY_STATS.referral} unit="건" color="var(--orange)" />
+        <StatCard icon={<BookOpen size={18} />} label="오늘 상담" value={todayStats.total} unit="건" color="var(--accent)" />
+        <StatCard icon={<Clock size={18} />} label="미작성" value={todayStats.pending} unit="건" color="var(--yellow)" />
+        <StatCard icon={<BarChart2 size={18} />} label="보호자 상담" value={todayStats.guardian} unit="건" color="var(--green)" />
+        <StatCard icon={<Archive size={18} />} label="의뢰" value={todayStats.referral} unit="건" color="var(--orange)" />
       </div>
 
       {/* 주의 학생 */}

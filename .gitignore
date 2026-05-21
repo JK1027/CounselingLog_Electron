@@ -5,6 +5,8 @@
 *.tmp
 
 # Logs
+/logs/
+/backup/
 /data/logs/
 /data/backup/
 
