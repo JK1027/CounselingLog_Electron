@@ -1,0 +1,36 @@
+# Sensitive Data & Runtime Files
+/data/
+*.xlsx
+*.xls
+*.tmp
+
+# Logs
+/data/logs/
+/data/backup/
+
+# Python
+/backend/venv/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node / Frontend
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.vite/
+
+# Electron
+/electron/node_modules/
+/electron/dist/
+
+# Build Output
+/dist/
+/build/
+*.exe
+*.dmg
+*.AppImage
+
+# OS
+.DS_Store
+Thumbs.db
