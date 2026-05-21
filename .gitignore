@@ -36,3 +36,11 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# Project-specific Build & Log Ignores
+/backend/build/
+/electron/resources/backend/
+/electron/logs/
+/err.log
+/out.log
+

@@ -168,8 +168,31 @@
 ### 3단계 완료 기준 달성
 > 실제 상담일지.xlsx 파일로 CRUD 전체 동작 및 파일 잠금 예외 대응 완료 ✅
 
-### 다음 단계 (4단계)
-- Python 백엔드 PyInstaller 빌드
-- Electron Builder 설정 및 exe 단일 패키징 파일 생성
-- 아이콘 리소스 등록 및 인스톨러 컴파일
-- 배포 패키지 기동 실사용 테스트
+## [2026-05-21] 4단계 — 배포 패키징 완료
+
+### 완료 작업
+- [x] **Python 백엔드 단독 빌드 및 최적화**:
+  - `backend/build_backend.py` 제작 및 빌드 파이프라인 연동.
+  - 가상환경 의존성(pyinstaller, pillow)을 자동 설치하고 `requirements.txt`에 기록.
+  - Pillow를 활용해 `assets/icon.png` 이미지를 규격별 `.ico` 포맷으로 자동 변환하여 사용.
+  - uvicorn 및 pandas 연동 모듈을 hidden import로 보강하고 PyInstaller `--onedir` 기반 컴파일을 통해 `electron/resources/backend`에 바이너리를 성공적으로 빌드.
+- [x] **경로 안정화 및 샌드박스 쓰기 로직 구현**:
+  - `backend/utils/path_helper.py` 내 `sys.frozen` 상태 분기를 개선하여 설치 루트 폴더에 쓰기 가능하도록 조정.
+  - 엑셀 템플릿 복제와 로그 출력을 프로그램 구동 루트의 `data/` 및 `logs/` 디렉토리에 정확하게 쓰도록 고도화.
+- [x] **Electron 패키징 및 NSIS 마법사 설정**:
+  - `electron/package.json` 내 `build` 설정을 확장하여 React build output(`frontend/dist`) 및 Python 바이너리(`resources/backend`) 리소스가 app.asar 컨테이너 및 resources 경로에 누락 없이 복사되도록 조율.
+  - NSIS 설정을 세팅하여 사용자 설치 경로 선택 기능을 지원하고 바탕화면 구동 바로가기 연동 완료.
+- [x] **최종 단일 인스톨러 생성 및 가상 검증**:
+  - React 빌드 (`npm run build` in frontend) 및 Electron Builder 패키징 (`npm run build` in electron) 연동 실행.
+  - 배포 마법사 `dist/상담일지 Setup 0.1.0.exe` (119MB) 생성 완료.
+  - 무음 설치 및 설치된 바이너리 구동 검증을 통해 `backend.exe` 자동 spawn과 데이터베이스/로그 자동 초기화 및 포트 바인딩 안정성을 100% 검증.
+
+### 테스트 결과
+- `dist/상담일지 Setup 0.1.0.exe` 패키지 설치 완료 후 바탕화면 혹은 설치 폴더에서 실행 시 정상 구동 확인 ✅
+- 실행 시 백그라운드 uvicorn 포트 `8765` 점유 및 React UI 렌더링 확인 ✅
+- `data/상담일지.xlsx` 및 `logs/app.log`가 설치 폴더 하위 디렉토리에 정상 자동 복원/기록됨을 검증 ✅
+- 프로그램 종료 시 Python 백엔드가 좀비 프로세스로 남지 않고 클린업 킬(Kill) 됨을 확인 ✅
+
+### 4단계 완료 기준 달성
+> 단일 exe 실행 및 설치 인스톨러를 통한 앱 전체 정상 동작 및 엑셀 데이터 동기화 완료 ✅
+

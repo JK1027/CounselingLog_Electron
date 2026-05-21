@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
 
-const isDev = process.env.NODE_ENV !== 'production'
+const isDev = !app.isPackaged
 
 let mainWindow = null
 let pythonProcess = null
@@ -11,25 +11,46 @@ const fs = require('fs')
 
 // ─── Python FastAPI 백엔드 시작 ─────────────────────────────────────────────
 function startPythonBackend() {
-  const backendPath = path.join(__dirname, '../backend')
-  const rootPath = path.join(__dirname, '..')
-  
-  // 가상환경 Python 경로 탐색
-  const venvPythonPathWin = path.join(backendPath, 'venv/Scripts/python.exe')
-  const venvPythonPathUnix = path.join(backendPath, 'venv/bin/python')
-  let pythonBin = 'python'
+  let pythonBin = ''
+  let args = []
+  let cwd = ''
 
-  if (fs.existsSync(venvPythonPathWin)) {
-    pythonBin = venvPythonPathWin
-  } else if (fs.existsSync(venvPythonPathUnix)) {
-    pythonBin = venvPythonPathUnix
+  if (isDev) {
+    const backendPath = path.join(__dirname, '../backend')
+    cwd = path.join(__dirname, '..')
+    
+    // 가상환경 Python 경로 탐색
+    const venvPythonPathWin = path.join(backendPath, 'venv/Scripts/python.exe')
+    const venvPythonPathUnix = path.join(backendPath, 'venv/bin/python')
+    pythonBin = 'python'
+
+    if (fs.existsSync(venvPythonPathWin)) {
+      pythonBin = venvPythonPathWin
+    } else if (fs.existsSync(venvPythonPathUnix)) {
+      pythonBin = venvPythonPathUnix
+    }
+
+    args = ['-m', 'uvicorn', 'backend.main:app', '--port', '8765']
+  } else {
+    // 프로덕션 패키징 환경
+    pythonBin = path.join(process.resourcesPath, 'backend', 'backend.exe')
+    cwd = path.dirname(pythonBin)
+    args = []
   }
 
-  console.log(`[Electron] Starting Python backend with ${pythonBin} at ${rootPath}...`)
+  console.log(`[Electron] Starting Python backend from ${pythonBin}... (cwd: ${cwd})`)
 
-  pythonProcess = spawn(pythonBin, ['-m', 'uvicorn', 'backend.main:app', '--port', '8765'], {
-    cwd: rootPath,
+  pythonProcess = spawn(pythonBin, args, {
+    cwd: cwd,
     stdio: 'pipe',
+  })
+
+  pythonProcess.on('error', (err) => {
+    try {
+      fs.writeFileSync(path.join(app.getPath('userData'), 'spawn_error.txt'), `Spawn error: ${err.message}\nStack: ${err.stack}\nbin: ${pythonBin}\ncwd: ${cwd}`);
+    } catch (e) {
+      // ignore
+    }
   })
 
   pythonProcess.stdout.on('data', (data) => console.log('[Python]', data.toString().trim()))
@@ -59,7 +80,7 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173')
     mainWindow.webContents.openDevTools()
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../frontend/dist/index.html'))
+    mainWindow.loadFile(path.join(__dirname, 'frontend/dist/index.html'))
   }
 
   // 준비되면 부드럽게 표시

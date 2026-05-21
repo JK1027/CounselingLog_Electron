@@ -415,3 +415,11 @@ def trigger_backup():
         "filename": file_name,
         "directory": backup_dir
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    import multiprocessing
+    # PyInstaller multiprocessing support
+    multiprocessing.freeze_support()
+    # Run uvicorn server directly with single worker
+    uvicorn.run(app, host="127.0.0.1", port=8765, reload=False)

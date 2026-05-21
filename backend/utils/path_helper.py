@@ -20,7 +20,13 @@ def get_writable_path(relative_path):
     Used for reading/writing dynamic data files, backups, and logs.
     """
     if getattr(sys, 'frozen', False):
-        base_dir = os.path.dirname(sys.executable)
+        exe_dir = os.path.dirname(sys.executable)
+        # 패키징된 Electron 앱 내부의 resources/backend/에서 실행되는 경우
+        if "resources" in exe_dir.lower():
+            # resources 상위 폴더(설치 폴더 루트)로 이동
+            base_dir = os.path.abspath(os.path.join(exe_dir, "..", ".."))
+        else:
+            base_dir = exe_dir
     else:
         # Under development, workspace root (parent of 'backend')
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

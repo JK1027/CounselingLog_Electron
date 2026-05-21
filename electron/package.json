@@ -25,7 +25,16 @@
     "files": [
       "main.js",
       "preload.js",
-      "../frontend/dist/**"
+      {
+        "from": "../frontend/dist",
+        "to": "frontend/dist"
+      }
+    ],
+    "extraResources": [
+      {
+        "from": "resources/backend",
+        "to": "backend"
+      }
     ],
     "win": {
       "target": "nsis",

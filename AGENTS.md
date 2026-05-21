@@ -176,16 +176,16 @@ Python FastAPI (uvicorn :8765)
 **목표**: 실제 엑셀 데이터로 구동
 
 ### 작업 목록
-- [ ] FastAPI 프로젝트 초기화
-- [ ] ExcelRepository 이식 (기존 `Counseling_Log/app/repositories/` 참조)
-- [ ] API 엔드포인트 구현
+- [x] FastAPI 프로젝트 초기화
+- [x] ExcelRepository 이식 (기존 `Counseling_Log/app/repositories/` 참조)
+- [x] API 엔드포인트 구현
   - GET /students — 학생 목록
   - GET /sessions/{student_name} — 상담 이력
   - POST /sessions — 새 상담 저장
   - PUT /sessions/{id} — 수정
   - POST /backup — 백업
-- [ ] Electron에서 Python 프로세스 시작 연동
-- [ ] Safe Save / Backup 연결
+- [x] Electron에서 Python 프로세스 시작 연동
+- [x] Safe Save / Backup 연결
 
 ### 완료 기준
 - 실제 상담일지.xlsx 파일로 CRUD 전체 동작
@@ -196,12 +196,12 @@ Python FastAPI (uvicorn :8765)
 **목표**: 학교 배포용 exe 완성
 
 ### 작업 목록
-- [ ] Python 백엔드 PyInstaller 빌드
-- [ ] Electron Builder 설정
-- [ ] exe 단일 파일 빌드
-- [ ] 아이콘 적용
-- [ ] 인스톨러 제작
-- [ ] 실사용 테스트
+- [x] Python 백엔드 PyInstaller 빌드
+- [x] Electron Builder 설정
+- [x] exe 단일 파일 빌드
+- [x] 아이콘 적용
+- [x] 인스톨러 제작
+- [x] 실사용 테스트
 
 ### 완료 기준
 - 단일 exe 실행으로 앱 전체 동작
@@ -290,5 +290,5 @@ data/logs/           → .gitignore 필수
 | AGENTS.md 작성 | ✅ 완료 |
 | 1단계: React UI 기반 구축 | ✅ 완료 |
 | 2단계: UX 핵심 기능 | ✅ 완료 |
-| 3단계: Python Engine 연결 | ⬜ 미시작 |
-| 4단계: 배포 패키징 | ⬜ 미시작 |
+| 3단계: Python Engine 연결 | ✅ 완료 |
+| 4단계: 배포 패키징 | ✅ 완료 |
