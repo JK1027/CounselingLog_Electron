@@ -125,4 +125,11 @@ def main():
     print(f"결과물 위치: {os.path.join(dist_dir, 'backend')}")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        print("\n!!! FATAL EXCEPTION IN BUILD BACKEND !!!")
+        print(f"Error: {e}")
+        traceback.print_exc(file=sys.stdout)
+        sys.exit(2)
