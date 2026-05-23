@@ -22,6 +22,9 @@ export default function Dashboard({ onOpenPrintModal }) {
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
             {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
           </p>
+          <p className="text-xs mt-1.5 font-semibold" style={{ color: 'var(--accent)' }}>
+            오늘도 학생들과 함께 따뜻한 하루를 시작해 보세요! 🌸
+          </p>
         </div>
         <div className="flex items-center gap-4 print-exclude">
           <SaveStateIndicator />
