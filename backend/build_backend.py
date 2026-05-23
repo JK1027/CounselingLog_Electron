@@ -7,7 +7,7 @@ BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BACKEND_DIR)
 
 def main():
-    print(f"=== [PyInstaller] 빌드 시작 (CWD: {BACKEND_DIR}) ===")
+    print(f"=== [PyInstaller] Build Start (CWD: {BACKEND_DIR}) ===")
     
     # 1. PyInstaller 실행 (backend.spec 기반으로 backend/dist/backend 폴더 빌드)
     pyinstaller_cmd = [
@@ -25,7 +25,7 @@ def main():
         cwd=BACKEND_DIR,
         check=True
     )
-    print("=== [PyInstaller] 컴파일 성공 ===")
+    print("=== [PyInstaller] Compilation Successful ===")
     
     # 2. 빌드 산출물을 electron/resources/backend 디렉토리로 안전하게 복사
     target_resource_dir = os.path.join(ROOT_DIR, "electron", "resources", "backend")
@@ -39,7 +39,7 @@ def main():
         
     os.makedirs(os.path.dirname(target_resource_dir), exist_ok=True)
     shutil.copytree(source_dist_dir, target_resource_dir)
-    print("=== [PyInstaller] 리소스 복사 및 패키징 완료! ===")
+    print("=== [PyInstaller] Resource copy and packaging completed! ===")
 
 if __name__ == "__main__":
     main()
