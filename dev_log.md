@@ -523,6 +523,20 @@
 - 파이썬 백엔드 코드 컴파일 검증 정상 완료 ✅
 - 프론트엔드 리액트 빌드 (`npm run build`) 오류 및 경고 없이 성공 빌드 확인 ✅
 
+---
+
+## [2026-05-23] 배포 패키징 완료 (v0.1.7)
+
+### 완료 작업
+- [x] **v0.1.7 버전 배포 빌드**:
+  - `electron/package.json` 파일의 버전을 `0.1.7`로 업데이트 완료.
+  - 최신 프론트엔드 리액트 프로덕션 빌드 완료 (`npm run build` in `frontend`).
+  - PyInstaller를 이용해 `backend.spec` 기반 파이썬 uvicorn 백엔드를 `resources/backend` 디렉토리에 성공적으로 재컴파일 및 갱신 빌드 (`build_backend.py` 실행).
+  - `electron-builder`를 사용하여 바탕화면 단일 인스톨러 `dist/상담일지 Setup 0.1.7.exe` 패키징 빌드 완료.
+
+### 테스트 결과
+- `dist/상담일지 Setup 0.1.7.exe` 인스톨러 패키지가 성공적으로 생성되었으며, 컴파일 및 빌드 과정 중 오류 없음 검증 완료 ✅
+
 
 
 
