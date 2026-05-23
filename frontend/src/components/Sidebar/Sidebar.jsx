@@ -335,13 +335,19 @@ export default function Sidebar({ width }) {
           )}
 
           {updateStatus === 'available' && (
-            <div className="flex justify-between items-center">
-              <span className="text-accent-dark font-semibold">새 버전 발견! ({newVersionInfo?.version})</span>
+            <div className="flex flex-col gap-1.5 p-2 rounded-xl mt-1" style={{ background: 'var(--accent-soft)', border: '1px solid var(--border)' }}>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--accent)' }} />
+                <span className="font-bold text-[11px]" style={{ color: 'var(--accent-dark)' }}>
+                  새 버전 발견! (v{newVersionInfo?.version})
+                </span>
+              </div>
               <button
                 onClick={handleDownload}
-                className="text-[10px] font-bold px-2 py-0.5 rounded bg-accent text-white hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                className="w-full text-center text-[10px] font-bold py-1.5 rounded-lg bg-accent text-white hover:opacity-95 active:scale-[0.98] transition-all cursor-pointer"
+                style={{ boxShadow: '0 2px 6px rgba(75,142,241,0.2)' }}
               >
-                다운로드
+                업데이트 다운로드
               </button>
             </div>
           )}
