@@ -213,6 +213,14 @@ function killPythonProcess() {
   }
 }
 
+app.on('before-quit', () => {
+  killPythonProcess()
+})
+
+app.on('will-quit', () => {
+  killPythonProcess()
+})
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     killPythonProcess()

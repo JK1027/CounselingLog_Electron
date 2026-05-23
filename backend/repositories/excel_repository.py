@@ -4,6 +4,7 @@ import datetime
 import uuid
 import tempfile
 import threading
+import time
 import pandas as pd
 import openpyxl
 from openpyxl.styles import Alignment, Border, Side
@@ -17,6 +18,7 @@ from backend.core.constants import (
     RECORD_ID_COL, 
     SHEET_SCHEMAS
 )
+from backend.utils.excel_helpers import find_real_max_row, find_empty_row_by_key, apply_excel_formatting
 
 class ExcelRepository:
     """엑셀 파일 데이터를 로드, 수정, 저장 및 백업을 담당하는 리포지토리 클래스"""
@@ -25,6 +27,9 @@ class ExcelRepository:
         self.data_frames = {sheet: pd.DataFrame() for sheet in SHEET_NAMES}
         self.lock = threading.RLock()
         self._last_loaded_time = 0.0
+        self._last_checked_time = 0.0
+        self.throttle_interval = 2.0
+        self.dirty_uuid = False
         
         # Validation options loading from CONFIG
         from backend.core.constants import CONFIG
@@ -33,33 +38,6 @@ class ExcelRepository:
     def sanitize_value(self, value):
         """Excel Formula Injection 방어를 위해 security 모듈의 sanitize_value를 호출합니다."""
         return sanitize_value(value)
-
-    def find_real_max_row(self, worksheet):
-        """openpyxl의 max_row 오류를 방지하기 위해 실제 값이 있는 마지막 행 번호를 찾습니다."""
-        for row in range(worksheet.max_row, 0, -1):
-            if any(worksheet.cell(row=row, column=col).value is not None for col in range(1, worksheet.max_column + 1)):
-                return row
-        return 0
-
-    def find_empty_row_by_key(self, worksheet, seq_col_idx, key_col_idx, sheet_name):
-        """순번은 지정되었으나 이름/학번(Key)이 비어있는 빈 행의 번호를 반환합니다."""
-        real_max = self.find_real_max_row(worksheet)
-        valid_rows = []
-        for r in range(2, real_max + 1):
-            seq_val = worksheet.cell(row=r, column=seq_col_idx).value
-            try:
-                valid_rows.append({'row_num': r, 'seq': int(seq_val)})
-            except (ValueError, TypeError):
-                continue
-        
-        valid_rows.sort(key=lambda x: x['seq'])
-
-        for row_data in valid_rows:
-            r_idx = row_data['row_num']
-            key_val = worksheet.cell(row=r_idx, column=key_col_idx).value
-            if key_val is None or str(key_val).strip() == "":
-                return r_idx
-        return None
 
     def load_data(self, file_path):
         """지정된 경로의 엑셀 파일을 로드하고, UUID가 누락된 경우 자동 생성하여 저장합니다."""
@@ -94,13 +72,14 @@ class ExcelRepository:
 
             if os.path.exists(file_path):
                 self._last_loaded_time = os.path.getmtime(file_path)
+                self._last_checked_time = time.time()
 
             logger.info(f"데이터 로드 완료: {file_path}")
             
-            # 만약 신규 생성된 UUID가 있다면 즉시 파일에 동기화 저장
+            # 만약 신규 생성된 UUID가 있다면 dirty_uuid 플래그 마킹 (Startup 지연 방지)
             if uuid_updated:
-                logger.info("누락된 UUID 식별키를 발견하여 자동 부여 후 저장을 시작합니다.")
-                self.save_all_data_to_excel()
+                self.dirty_uuid = True
+                logger.info("누락된 UUID 식별키를 발견하여 자동 보정했습니다. (디스크 저장 지연 적용)")
                 
             return True
 
@@ -109,25 +88,24 @@ class ExcelRepository:
         if not self.main_file_path or not os.path.exists(self.main_file_path):
             return
         with self.lock:
-            current_mtime = os.path.getmtime(self.main_file_path)
-            if current_mtime != self._last_loaded_time:
-                logger.info("Excel 파일 외부 변경 또는 최초 로드 감지: 메모리 캐시를 리로드합니다.")
-                self.load_data(self.main_file_path)
+            now = time.time()
+            if now - self._last_checked_time < self.throttle_interval:
+                return  # 스로틀링: 2초 내에는 디스크 I/O 생략
+            
+            try:
+                current_mtime = os.path.getmtime(self.main_file_path)
+                self._last_checked_time = now
+                if current_mtime != self._last_loaded_time:
+                    logger.info("Excel 파일 외부 변경 감지: 메모리 캐시를 리로드합니다.")
+                    self.load_data(self.main_file_path)
+            except Exception as e:
+                logger.error(f"check_and_reload 도중 예외 발생: {e}")
+                # Fallback: 이미 메모리에 정상적으로 데이터가 로드된 상태라면 에러를 상위로 던지지 않고 서빙을 유지함.
+                if any(not df.empty for df in self.data_frames.values()):
+                    logger.warning("리로드 오류로 인해 이전 메모리 캐시 데이터를 유지하여 서빙합니다.")
+                else:
+                    raise e
 
-    def _apply_excel_formatting(self, worksheet):
-        """주어진 워크시트에 표준 서식을 적용합니다."""
-        thin_border = Border(left=Side(style='thin'), 
-                             right=Side(style='thin'), 
-                             top=Side(style='thin'), 
-                             bottom=Side(style='thin'))
-        center_alignment_with_wrap = Alignment(horizontal='center', 
-                                               vertical='center', 
-                                               wrap_text=True)
-        
-        for row in worksheet.iter_rows():
-            for cell in row:
-                cell.alignment = center_alignment_with_wrap
-                cell.border = thin_border
 
     def swap_temp_and_original(self, temp_file_path, file_path):
         """
@@ -196,7 +174,7 @@ class ExcelRepository:
         수정 전 메모리 행 데이터(original_data)와 일치하는 행 번호를 3단계 Fallback 구조로 추적합니다.
         """
         headers = {cell.value: cell.column for cell in worksheet[1] if cell.value is not None}
-        real_max = self.find_real_max_row(worksheet)
+        real_max = find_real_max_row(worksheet)
         
         # --- 1순위: UUID (_record_id) 매칭 ---
         if RECORD_ID_COL in headers:
@@ -283,12 +261,14 @@ class ExcelRepository:
                     for sheet_name, df in self.data_frames.items():
                         df.to_excel(writer, sheet_name=sheet_name, index=False)
                         worksheet = writer.sheets[sheet_name]
-                        self._apply_excel_formatting(worksheet)
+                        apply_excel_formatting(worksheet)
                 
                 success, err = self.swap_temp_and_original(temp_file_path, self.main_file_path)
                 if success:
                     if os.path.exists(self.main_file_path):
                         self._last_loaded_time = os.path.getmtime(self.main_file_path)
+                        self._last_checked_time = time.time()
+                    self.dirty_uuid = False
                     logger.info("모든 데이터프레임이 엑셀에 안전하게 저장되었습니다.")
                     return True, None
                 return False, err
@@ -359,6 +339,7 @@ class ExcelRepository:
                 
                 if os.path.exists(self.main_file_path):
                     self._last_loaded_time = os.path.getmtime(self.main_file_path)
+                    self._last_checked_time = time.time()
                     
                 logger.info(f"Memory Sync 완료: [{sheet_name}] row={excel_row_num} (df_index={df_index}) 수정")
                 return True, None
@@ -421,7 +402,7 @@ class ExcelRepository:
                     if key_col_name in headers:
                         key_col_idx = headers[key_col_name]
                         seq_counter = 1
-                        real_max = self.find_real_max_row(worksheet)
+                        real_max = find_real_max_row(worksheet)
                         for r in range(2, real_max + 1):
                             seq_cell = worksheet.cell(row=r, column=seq_col_idx)
                             key_val = worksheet.cell(row=r, column=key_col_idx).value
@@ -458,6 +439,7 @@ class ExcelRepository:
                 
                 if os.path.exists(self.main_file_path):
                     self._last_loaded_time = os.path.getmtime(self.main_file_path)
+                    self._last_checked_time = time.time()
                     
                 logger.info(f"Memory Sync 완료: [{sheet_name}] row={excel_row_num} (df_index={df_index}) 삭제 및 순번 재정렬")
                 return True, None
@@ -491,7 +473,7 @@ class ExcelRepository:
 
     def _sync_headers(self, worksheet, df_to_append, border, alignment):
         """데이터프레임의 열 목록과 엑셀 시트의 헤더를 동기화하고 스타일을 입힙니다."""
-        real_max = self.find_real_max_row(worksheet)
+        real_max = find_real_max_row(worksheet)
         if real_max == 0:
             worksheet.delete_rows(1, worksheet.max_row)
             headers_list = list(df_to_append.columns)
@@ -565,7 +547,7 @@ class ExcelRepository:
                 if '순번' in headers and key_column_for_check in headers:
                     seq_col_idx = headers['순번']
                     key_col_idx = headers[key_column_for_check]
-                    target_row_idx = self.find_empty_row_by_key(worksheet, seq_col_idx, key_col_idx, sheet_name)
+                    target_row_idx = find_empty_row_by_key(worksheet, seq_col_idx, key_col_idx, sheet_name)
                 
                 is_new_row = False
                 if target_row_idx is None:
@@ -618,6 +600,7 @@ class ExcelRepository:
                 
                 if os.path.exists(self.main_file_path):
                     self._last_loaded_time = os.path.getmtime(self.main_file_path)
+                    self._last_checked_time = time.time()
                     
                 logger.info(f"Memory Sync 완료: [{sheet_name}] row={target_row_idx} 추가/작성")
 

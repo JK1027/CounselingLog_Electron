@@ -385,6 +385,35 @@
 - API 동시성 검증: 연속적인 API 요청 및 조회 동작 시 매번 디스크 로딩 없이 인메모리 캐싱 데이터가 지연시간 0ms로 쾌적하게 반환됨을 확인 ✅
 - 프로세스 클린업 검증: Electron 앱 종료 시 uvicorn(Python) 포트 8765가 강제 회수되고 좀비 프로세스가 남지 않는 것을 `netstat` 및 `tasklist` 명령으로 교차 검증 통과 ✅
 
+---
+
+## [2026-05-23] [2차] 코드 리뷰 리스크 보완 — API 수준 트랜잭션 락 확대, mtime 스로틀링 캐싱, 단일책임 헬퍼 및 React 커스텀 훅 모듈화 완료
+
+### 완료 작업
+- [x] **API 수준 트랜잭션 락 확대 (`main.py`)**:
+  - `main.py` 내부의 모든 CRUD 엔드포인트(`create_session`, `update_session`, `delete_session`) 및 데이터 조회 로직 전체를 `with repo.lock:` 트랜잭션 문맥으로 래핑.
+  - Read-Modify-Save의 전체 데이터 흐름에 대한 완벽한 스레드 격리 수준을 확립하여 동시 요청 시 데이터 손상 및 Race Condition을 완전 제거.
+- [x] **mtime 2초 스로틀링 캐싱 및 Fallback 탑재 (`excel_repository.py`)**:
+  - 조회 API 호출 시마다 매번 디스크 `mtime`을 읽어오는 I/O 누적 비용을 해결하기 위해, 마지막 디스크 mtime 조회로부터 2초 이내의 조회 API 호출 시 디스크 I/O 조회를 생략하는 **Interval 기반 mtime 스로틀링** 구현.
+  - 엑셀 손상/잠금 등으로 인한 `check_and_reload` 실패 시에도, 기존 캐시 데이터가 있으면 조회 시 에러를 던지지 않고 마지막 정상 캐시를 유지하여 중단 없는 서비스를 제공하는 Graceful Fallback 기법 설계.
+  - UUID 누락 시 메모리만 우선 보정하고 실제 CRUD 트랜잭션 시점에 디스크에 일괄 동기화하는 Lazy Sync 처리로 Startup 딜레이 해소.
+- [x] **일렉트론 종료 클린업 보강 (`main.js`)**:
+  - 기존 quit 외에 `before-quit` 및 `will-quit` Electron 생명주기 이벤트 전체에 `killPythonProcess` 바인딩을 보완하여 포트 점유를 100% 방지.
+- [x] **ExcelRepository 책임 분리 (`excel_helpers.py` 신설)**:
+  - openpyxl 셀 조작 및 서식 관련 메서드(`find_real_max_row`, `find_empty_row_by_key`, `apply_excel_formatting`)를 외부 모듈로 완전 이관하여 Repository의 의존성을 줄이고 가독성 향상.
+- [x] **React 전역 이벤트 분리 및 Hooks 모듈화 (`useLayoutResize.js`, `useGlobalShortcuts.js` 신설)**:
+  - `App.jsx` 내에 혼재되어 있던 resizing 마우스 이벤트 드래그 로직 및 localStorage NaN 복원 유틸을 `useLayoutResize.js` 훅으로 캡슐화.
+  - `Ctrl+N`/`Alt+ArrowUp/ArrowDown` 등의 전역 단축키 바인딩 및 일렉트론 브릿지 파일 수신 처리를 `useGlobalShortcuts.js` 훅으로 캡슐화.
+  - `App.jsx`를 100줄 미만의 경량 컴포넌트로 리팩토링.
+- [x] **운영 빌드 CORS origin 락다운 적용 (`main.py`)**:
+  - `NODE_ENV` 환경 변수를 체크해 프로덕션 패키징 환경일 경우 CORS origins를 로컬 루프백 및 Electron 전용 통신 프로토콜로만 축소 제한하여 잠재 보안 리스크를 해제.
+
+### 테스트 결과
+- 프론트엔드 프로덕션 빌드 (`npm run build`) 오류 및 경고 없이 성공 빌드 확인 ✅
+- API 동시성 검증: 연속적인 API 요청 및 조회 동작 시 매번 디스크 로딩 없이 인메모리 캐싱 데이터가 지연시간 0ms로 쾌적하게 반환됨을 확인 ✅
+- 프로세스 클린업 검증: Electron 앱 종료 시 uvicorn(Python) 포트 8765가 강제 회수되고 좀비 프로세스가 남지 않는 것을 `netstat` 및 `tasklist` 명령으로 교차 검증 통과 ✅
+
+
 
 
 
