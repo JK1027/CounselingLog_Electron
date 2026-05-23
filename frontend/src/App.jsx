@@ -15,8 +15,17 @@ import { useLayoutResize } from '@/hooks/useLayoutResize'
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
 
 export default function App() {
-  const { selectedStudent, editorOpen, openFileByPath, addToast } = useAppStore()
-  const [isDragging, setIsDragging] = useState(false)
+  const { 
+    selectedStudent, 
+    editorOpen, 
+    openFileByPath, 
+    addToast,
+    initializeUpdater,
+    updateStatus,
+    downloadPercent
+  } = useAppStore()
+
+  const [dragCounter, setDragCounter] = useState(0)
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false)
   const [printSetupData, setPrintSetupData] = useState(null)
   
@@ -24,20 +33,47 @@ export default function App() {
   const { sidebarWidth, editorWidth, resizing, setResizing } = useLayoutResize()
   useGlobalShortcuts()
 
-  // 윈도우 레벨에서 파일 드래그가 감입될 때만 오버레이 활성화
+  // 1. 업데이트 이벤트 구독 초기화
+  useEffect(() => {
+    const unsub = initializeUpdater()
+    return () => {
+      if (typeof unsub === 'function') unsub()
+    }
+  }, [initializeUpdater])
+
+  // 2. 윈도우 레벨에서 파일 드래그가 감입될 때만 오버레이 활성화 (Drag Counter 방식)
   useEffect(() => {
     const handleWindowDragEnter = (e) => {
       e.preventDefault()
       e.stopPropagation()
       if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
-        setIsDragging(true)
+        setDragCounter(prev => prev + 1)
       }
     }
+
+    const handleWindowDragLeave = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+        setDragCounter(prev => Math.max(0, prev - 1))
+      }
+    }
+
+    const handleWindowDrop = () => {
+      setDragCounter(0)
+    }
+
     window.addEventListener('dragenter', handleWindowDragEnter)
+    window.addEventListener('dragleave', handleWindowDragLeave)
+    window.addEventListener('drop', handleWindowDrop)
     return () => {
       window.removeEventListener('dragenter', handleWindowDragEnter)
+      window.removeEventListener('dragleave', handleWindowDragLeave)
+      window.removeEventListener('drop', handleWindowDrop)
     }
   }, [])
+
+  const isDragging = dragCounter > 0
 
   // 드래그 앤 드롭 오버레이 내부 이벤트 핸들러
   const handleDragOver = (e) => {
@@ -48,13 +84,12 @@ export default function App() {
   const handleDragLeave = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    setIsDragging(false)
   }
 
   const handleDrop = async (e) => {
     e.preventDefault()
     e.stopPropagation()
-    setIsDragging(false)
+    setDragCounter(0) // 강제 리셋
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0]
@@ -75,8 +110,27 @@ export default function App() {
   return (
     <div 
       className={`flex h-screen w-screen overflow-hidden relative ${resizing ? 'select-none cursor-col-resize' : ''}`} 
-      style={{ background: 'var(--bg-primary)' }}
+      style={{ background: 'var(--bg-primary)', paddingTop: updateStatus === 'downloaded' ? '36px' : '0px', transition: 'padding-top 0.2s ease' }}
     >
+      {/* 최상단 업데이트 알림 배너 */}
+      {updateStatus === 'downloaded' && (
+        <div className="absolute top-0 left-0 right-0 h-[36px] z-50 flex items-center justify-between px-5 bg-blue-600 text-white text-[11px] font-medium shadow-sm animate-pulse print-exclude" style={{ backgroundColor: 'var(--accent)' }}>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+            <span>상담일지의 새로운 업데이트 설치 준비가 완료되었습니다. 변경 사항을 적용하려면 앱을 다시 시작해 주세요.</span>
+          </div>
+          <button 
+            onClick={() => {
+              if (window.updaterAPI) window.updaterAPI.quitAndInstall()
+            }}
+            className="px-3 py-1 bg-white text-blue-600 rounded-lg text-[10px] font-bold hover:bg-neutral-100 transition-all cursor-pointer"
+            style={{ color: 'var(--accent)' }}
+          >
+            재시작 및 설치
+          </button>
+        </div>
+      )}
+
       {/* 사이드바: 학생 목록 */}
       <Sidebar width={sidebarWidth} />
 

@@ -33,13 +33,48 @@ def main():
     
     print(f"Moving build artifacts to Electron resource directory: {target_resource_dir}")
     
-    if os.path.exists(target_resource_dir):
-        print(f"Cleaning existing resource directory: {target_resource_dir}")
-        shutil.rmtree(target_resource_dir)
+    import time
+    
+    def safe_copy_dir(src, dst):
+        # 1. 청소 retry
+        if os.path.exists(dst):
+            print(f"Cleaning existing resource directory with retry guard: {dst}")
+            for attempt in range(5):
+                try:
+                    shutil.rmtree(dst)
+                    break
+                except Exception as e:
+                    print(f"[Warning] Failed to remove {dst} (Attempt {attempt + 1}/5): {e}. Retrying in 1s...")
+                    time.sleep(1)
+            else:
+                print(f"[Error] Absolutely failed to clean {dst} after 5 attempts due to lock/permissions.")
+                raise IOError(f"Directory lock/permission error on target path: {dst}")
         
-    os.makedirs(os.path.dirname(target_resource_dir), exist_ok=True)
-    shutil.copytree(source_dist_dir, target_resource_dir)
-    print("=== [PyInstaller] Resource copy and packaging completed! ===")
+        # 2. 복사 retry
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        for attempt in range(5):
+            try:
+                shutil.copytree(src, dst)
+                print(f"Successfully copied build artifacts to {dst}")
+                return
+            except Exception as e:
+                print(f"[Warning] Copying to {dst} failed (Attempt {attempt + 1}/5): {e}. Cleaning and retrying in 1s...")
+                if os.path.exists(dst):
+                    try:
+                        shutil.rmtree(dst)
+                    except Exception:
+                        pass
+                time.sleep(1)
+        else:
+            print(f"[Error] Absolutely failed to copy to {dst} after 5 attempts.")
+            raise IOError(f"Failed to copy build artifacts to target path: {dst}")
+
+    try:
+        safe_copy_dir(source_dist_dir, target_resource_dir)
+        print("=== [PyInstaller] Resource copy and packaging completed! ===")
+    except Exception as e:
+        print(f"[Fatal Error] Failed packaging step: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

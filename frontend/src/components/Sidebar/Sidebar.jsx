@@ -14,54 +14,15 @@ export default function Sidebar({ width }) {
     isCompactMode, toggleCompactMode,
     setRegisterOpen,
     searchQuery,
+    
+    // 글로벌 업데이트 상태들
+    appVersion,
+    updateStatus,
+    downloadPercent,
+    newVersionInfo,
+    updateErrorMessage,
+    setUpdateStatus
   } = useAppStore()
-
-  // 자동 업데이트를 위한 상태 머신
-  const [appVersion, setAppVersion] = useState('v0.1.0')
-  const [updateStatus, setUpdateStatus] = useState('idle') // 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
-  const [downloadPercent, setDownloadPercent] = useState(0)
-  const [newVersionInfo, setNewVersionInfo] = useState(null)
-  const [errorMessage, setErrorMessage] = useState('')
-
-  useEffect(() => {
-    // 1. 현재 앱 버전 조회
-    if (window.electronAPI && window.electronAPI.getVersion) {
-      window.electronAPI.getVersion().then(v => setAppVersion(`v${v}`))
-    }
-
-    // 2. 일렉트론 메인 프로세스 업데이트 이벤트 구독
-    if (window.updaterAPI) {
-      const unsubAvailable = window.updaterAPI.onUpdateAvailable((info) => {
-        setNewVersionInfo(info)
-        setUpdateStatus('available')
-      })
-      const unsubNotAvailable = window.updaterAPI.onUpdateNotAvailable(() => {
-        setUpdateStatus('not-available')
-        setTimeout(() => setUpdateStatus('idle'), 3000)
-      })
-      const unsubProgress = window.updaterAPI.onDownloadProgress((percent) => {
-        setDownloadPercent(Math.round(percent))
-        setUpdateStatus('downloading')
-      })
-      const unsubDownloaded = window.updaterAPI.onUpdateDownloaded(() => {
-        setUpdateStatus('downloaded')
-      })
-      const unsubError = window.updaterAPI.onUpdateError((err) => {
-        console.error('Update error:', err)
-        setErrorMessage(err || '업데이트 오류')
-        setUpdateStatus('error')
-        setTimeout(() => setUpdateStatus('idle'), 5000)
-      })
-
-      return () => {
-        unsubAvailable()
-        unsubNotAvailable()
-        unsubProgress()
-        unsubDownloaded()
-        unsubError()
-      }
-    }
-  }, [])
 
   const handleCheckUpdate = () => {
     if (window.updaterAPI) {
@@ -380,8 +341,8 @@ export default function Sidebar({ width }) {
           )}
 
           {updateStatus === 'error' && (
-            <div className="text-red-500 font-semibold text-center truncate" title={errorMessage}>
-              오류: {errorMessage}
+            <div className="text-red-500 font-semibold text-center truncate" title={updateErrorMessage}>
+              오류: {updateErrorMessage}
             </div>
           )}
         </div>

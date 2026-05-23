@@ -50,9 +50,8 @@ export function SaveStateIndicator() {
   if (saveState === 'saving') {
     return (
       <div className="flex items-center gap-1.5 text-xs text-blue-500 font-semibold select-none">
-        <div className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+        <div className="flex h-2 w-2">
+          <span className="animate-pulse inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
         </div>
         <span>저장 중...</span>
       </div>

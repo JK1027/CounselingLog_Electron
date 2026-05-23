@@ -413,6 +413,35 @@
 - API 동시성 검증: 연속적인 API 요청 및 조회 동작 시 매번 디스크 로딩 없이 인메모리 캐싱 데이터가 지연시간 0ms로 쾌적하게 반환됨을 확인 ✅
 - 프로세스 클린업 검증: Electron 앱 종료 시 uvicorn(Python) 포트 8765가 강제 회수되고 좀비 프로세스가 남지 않는 것을 `netstat` 및 `tasklist` 명령으로 교차 검증 통과 ✅
 
+---
+
+## [2026-05-23] [3차] 코드 리뷰 피드백 반영 — 운영, 업데이트 및 빌드 안정성 고도화 완료
+
+### 완료 작업
+- [x] **autoUpdater 이벤트 바인딩 격리 및 중복 방지 (`main.js`, `setupAutoUpdater`)**:
+  - `main.js`의 autoUpdater 리스너들을 `setupAutoUpdater` 단일 함수로 격리.
+  - `app.whenReady()` 생명주기 내 1회만 호출하여 중복 바인딩을 원천 차단하고 `mainWindow?.webContents`가 존재할 때만 메시지를 포워딩하도록 널 가드 보강.
+- [x] **백엔드 시작(spawn) 실패 가드 및 복구 다이얼로그 추가 (`main.js`)**:
+  - uvicorn 백엔드 실행 직후 `http://localhost:8765/health` 핑을 500ms 간격 최대 10회 (5초) 확인하는 헬스체크 프로세스 도입.
+  - 5초 내 정상 응답이 오면 `createWindow()`를 띄우고, 실패 시 백신 차단 안내 등을 명시한 복구용 에러 다이얼로그(`dialog.showErrorBox`)를 노출한 뒤 즉각 `app.quit()`으로 자진 강제 종료.
+- [x] **Zustand 전역 자동 업데이트 상태 관리 (`useAppStore.js`, `Sidebar.jsx`, `App.jsx`)**:
+  - `Sidebar.jsx`에 개별적으로 있던 업데이트 상태 머신 변수들(`updateStatus`, `downloadPercent` 등)을 `useAppStore` 전역 스토어로 승격하고 `initializeUpdater` 헬퍼 생성.
+  - 업데이트 다운로드 완료 시(`downloaded`), 프런트엔드 화면 최상단에 재시작 설치를 안내하는 persistent 탑 바 배너를 노출하여 사용자 복구/업데이트 인지율 개선.
+- [x] **API 타임아웃 튜닝 및 분리 (`useAppStore.js`)**:
+  - 대용량 엑셀 및 백신 간섭에 대응하기 위해 쓰기성/백업(POST, PUT, DELETE, `/backup`) 요청은 타임아웃을 20초로 상향 튜닝.
+  - 일반 조회성(GET) 요청은 8초 타임아웃을 기본값으로 유지하여 상황별 타임아웃 최적화.
+- [x] **드롭존 플리커링 완전 치료 (`App.jsx`)**:
+  - dragenter / dragleave 자식 요소 이동 시 drag overlay가 깜빡이던 문제를 해결하기 위해 숫자형 `dragCounter`를 기반으로 한 드래그 카운터 기법 탑재.
+- [x] **저장 상태 인디케이터 시각적 피로도 경감 (`shared.jsx`)**:
+  - `SaveStateIndicator` 내부의 크기가 크게 팽창하는 `animate-ping` 애니메이션을 은은한 투명도 깜빡임인 `animate-pulse`로 교체하여 오랜 시간 반복 입력하는 업무 피로도를 경감.
+- [x] **백엔드 컴파일 복사 실패 예외 가드 및 백오프 retry 구현 (`build_backend.py`)**:
+  - `shutil.rmtree` 및 `shutil.copytree` 시 백신이나 파일 락 충돌로 일시적 `PermissionError`가 자주 발생하는 문제를 방지하기 위해 최대 5회, 1초 간격의 retry 백오프 복구 함수 `safe_copy_dir` 구현.
+
+### 테스트 결과
+- 프론트엔드 프로덕션 빌드 (`npm run build`) 오류 및 경고 없이 성공 빌드 확인 ✅
+- 가상환경 백엔드 컴파일 빌드 (`build_backend.py`) 시 retry 복사 예외 가드 포함 성공 완료 ✅
+- 드래그앤드롭 오버레이 플리커 방지 및 저장 인디케이터 pulse 완화 동작 검증 통과 ✅
+
 
 
 

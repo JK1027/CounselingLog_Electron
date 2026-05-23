@@ -6,7 +6,16 @@ const API_BASE = 'http://localhost:8765'
 async function apiFetch(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 8000)
+  
+  // 쓰기 작업(POST, PUT, DELETE) 및 백업(/backup) 등의 요청은 20초(20000ms), 일반 조회 등은 8초(8000ms) 적용
+  const isWriteOrBackup = 
+    options.method === 'POST' || 
+    options.method === 'PUT' || 
+    options.method === 'DELETE' || 
+    endpoint.includes('/backup')
+
+  const timeoutMs = isWriteOrBackup ? 20000 : 8000
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
     const response = await fetch(url, {
@@ -39,6 +48,19 @@ async function apiFetch(endpoint, options = {}) {
 }
 
 export const useAppStore = create((set, get) => ({
+  // 자동 업데이트 관련 상태
+  appVersion: 'v0.1.0',
+  updateStatus: 'idle', // 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
+  downloadPercent: 0,
+  newVersionInfo: null,
+  updateErrorMessage: '',
+
+  setAppVersion: (ver) => set({ appVersion: ver }),
+  setUpdateStatus: (status) => set({ updateStatus: status }),
+  setDownloadPercent: (percent) => set({ downloadPercent: percent }),
+  setNewVersionInfo: (info) => set({ newVersionInfo: info }),
+  setUpdateErrorMessage: (msg) => set({ updateErrorMessage: msg }),
+
   // 현재 활성화된 엑셀 파일 경로
   currentFilePath: '',
 
@@ -388,5 +410,46 @@ export const useAppStore = create((set, get) => ({
     }
 
     return result
+  },
+
+  // ─── 자동 업데이트 이벤트 초기 바인딩 및 관리 ──────────────────────────
+  initializeUpdater: () => {
+    // 1. 현재 앱 버전 조회
+    if (window.electronAPI && window.electronAPI.getVersion) {
+      window.electronAPI.getVersion().then(v => set({ appVersion: `v${v}` }))
+    }
+
+    // 2. 일렉트론 메인 프로세스 업데이트 이벤트 구독
+    if (window.updaterAPI) {
+      const unsubAvailable = window.updaterAPI.onUpdateAvailable((info) => {
+        set({ newVersionInfo: info, updateStatus: 'available' })
+      })
+      const unsubNotAvailable = window.updaterAPI.onUpdateNotAvailable(() => {
+        set({ updateStatus: 'not-available' })
+        setTimeout(() => set({ updateStatus: 'idle' }), 3000)
+      })
+      const unsubProgress = window.updaterAPI.onDownloadProgress((percent) => {
+        set({ downloadPercent: Math.round(percent), updateStatus: 'downloading' })
+      })
+      const unsubDownloaded = window.updaterAPI.onUpdateDownloaded(() => {
+        set({ updateStatus: 'downloaded' })
+      })
+      const unsubError = (err) => {
+        console.error('Update error:', err)
+        set({ updateErrorMessage: err || '업데이트 오류', updateStatus: 'error' })
+        setTimeout(() => set({ updateStatus: 'idle' }), 5000)
+      }
+      const unsubErrorFn = window.updaterAPI.onUpdateError(unsubError)
+
+      // 구독 해제용 헬퍼 반환
+      return () => {
+        unsubAvailable()
+        unsubNotAvailable()
+        unsubProgress()
+        unsubDownloaded()
+        unsubErrorFn()
+      }
+    }
+    return () => {}
   },
 }))
