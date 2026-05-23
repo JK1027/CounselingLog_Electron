@@ -30,7 +30,7 @@ def run_command(args, cwd=None, ignore_error=False):
     return True
 
 def main():
-    python_bin = shutil.which("python") or "python"
+    python_bin = sys.executable
     
     print("=== [1] 패키징 라이브러리 설치 ===")
     # 글로벌 환경이거나 경로가 절대경로가 아닌 경우 python -m pip 형식을 사용
