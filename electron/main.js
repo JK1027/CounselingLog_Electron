@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
+const { autoUpdater } = require('electron-updater')
 
 const isDev = !app.isPackaged
 
@@ -196,6 +197,16 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+  // 앱 실행 10초 뒤 백그라운드에서 조용히 업데이트 체크 (시작 성능 방해 차단)
+  setTimeout(() => {
+    if (app.isPackaged) {
+      console.log('[Electron] Starting initial silent update check...')
+      autoUpdater.checkForUpdates().catch(err => {
+        console.error('[Updater] Startup check failed:', err)
+      })
+    }
+  }, 10000)
 })
 
 function killPythonProcess() {
@@ -238,3 +249,56 @@ ipcMain.handle('app:platform', () => process.platform)
 ipcMain.handle('dialog:openFile', async () => {
   return await handleFileOpen(mainWindow)
 })
+
+// ─── 자동 업데이트 설정 및 IPC 바인딩 ─────────────────────────────────────────
+autoUpdater.autoDownload = false // 자동 다운로드 비활성화 (사용자 명시적 다운로드)
+
+ipcMain.on('updater:check', () => {
+  console.log('[Updater] Manual update check initiated...')
+  autoUpdater.checkForUpdates().catch(err => {
+    console.error('[Updater Check Error]', err)
+    mainWindow?.webContents.send('update:error', err.message)
+  })
+})
+
+ipcMain.on('updater:download', () => {
+  console.log('[Updater] Downloading update package...')
+  autoUpdater.downloadUpdate().catch(err => {
+    console.error('[Updater Download Error]', err)
+    mainWindow?.webContents.send('update:error', err.message)
+  })
+})
+
+ipcMain.on('updater:install', () => {
+  console.log('[Updater] Quitting and installing update (cleaning up python process first)...')
+  // 매우 중요: 인스톨러 구동 시 파일이 lock 되는 것을 방지하기 위해 Python 백엔드 트리를 강제 강탈 후 설치
+  killPythonProcess()
+  autoUpdater.quitAndInstall()
+})
+
+// autoUpdater 이벤트 수신 및 Renderer 전송
+autoUpdater.on('update-available', (info) => {
+  console.log('[Updater] Update available:', info.version)
+  mainWindow?.webContents.send('update:available', info)
+})
+
+autoUpdater.on('update-not-available', (info) => {
+  console.log('[Updater] Already up to date.')
+  mainWindow?.webContents.send('update:not-available')
+})
+
+autoUpdater.on('download-progress', (progressObj) => {
+  console.log('[Updater] Download progress percent:', progressObj.percent)
+  mainWindow?.webContents.send('update:progress', progressObj.percent)
+})
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('[Updater] Update downloaded successfully.')
+  mainWindow?.webContents.send('update:downloaded')
+})
+
+autoUpdater.on('error', (err) => {
+  console.error('[Updater Error Event]', err)
+  mainWindow?.webContents.send('update:error', err ? err.message : '알 수 없는 업데이트 오류')
+})
+

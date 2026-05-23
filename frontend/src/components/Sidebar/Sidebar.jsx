@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Search, Users, ChevronRight, AlertCircle, BookOpen, FolderOpen, Maximize2, Minimize2, UserPlus, Home } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { Avatar, TagBadge } from '@/components/ui/shared'
@@ -15,6 +15,72 @@ export default function Sidebar({ width }) {
     setRegisterOpen,
     searchQuery,
   } = useAppStore()
+
+  // 자동 업데이트를 위한 상태 머신
+  const [appVersion, setAppVersion] = useState('v0.1.0')
+  const [updateStatus, setUpdateStatus] = useState('idle') // 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
+  const [downloadPercent, setDownloadPercent] = useState(0)
+  const [newVersionInfo, setNewVersionInfo] = useState(null)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    // 1. 현재 앱 버전 조회
+    if (window.electronAPI && window.electronAPI.getVersion) {
+      window.electronAPI.getVersion().then(v => setAppVersion(`v${v}`))
+    }
+
+    // 2. 일렉트론 메인 프로세스 업데이트 이벤트 구독
+    if (window.updaterAPI) {
+      const unsubAvailable = window.updaterAPI.onUpdateAvailable((info) => {
+        setNewVersionInfo(info)
+        setUpdateStatus('available')
+      })
+      const unsubNotAvailable = window.updaterAPI.onUpdateNotAvailable(() => {
+        setUpdateStatus('not-available')
+        setTimeout(() => setUpdateStatus('idle'), 3000)
+      })
+      const unsubProgress = window.updaterAPI.onDownloadProgress((percent) => {
+        setDownloadPercent(Math.round(percent))
+        setUpdateStatus('downloading')
+      })
+      const unsubDownloaded = window.updaterAPI.onUpdateDownloaded(() => {
+        setUpdateStatus('downloaded')
+      })
+      const unsubError = window.updaterAPI.onUpdateError((err) => {
+        console.error('Update error:', err)
+        setErrorMessage(err || '업데이트 오류')
+        setUpdateStatus('error')
+        setTimeout(() => setUpdateStatus('idle'), 5000)
+      })
+
+      return () => {
+        unsubAvailable()
+        unsubNotAvailable()
+        unsubProgress()
+        unsubDownloaded()
+        unsubError()
+      }
+    }
+  }, [])
+
+  const handleCheckUpdate = () => {
+    if (window.updaterAPI) {
+      setUpdateStatus('checking')
+      window.updaterAPI.checkForUpdates()
+    }
+  }
+
+  const handleDownload = () => {
+    if (window.updaterAPI) {
+      window.updaterAPI.downloadUpdate()
+    }
+  }
+
+  const handleRestart = () => {
+    if (window.updaterAPI) {
+      window.updaterAPI.quitAndInstall()
+    }
+  }
 
   const handleOpenFile = async () => {
     if (window.electronAPI && window.electronAPI.openFileDialog) {
@@ -230,13 +296,87 @@ export default function Sidebar({ width }) {
         </div>
       </nav>
 
-      {/* 하단 통계 */}
-      <div className={`px-4 ${isCompactMode ? 'py-2' : 'py-3'}`} style={{ borderTop: '1px solid var(--border)' }}>
+      {/* 하단 통계 및 업데이트 */}
+      <div className={`px-4 ${isCompactMode ? 'py-2 space-y-1' : 'py-3 space-y-2'}`} style={{ borderTop: '1px solid var(--border)' }}>
         <div className="flex justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
           <span>
             {students.length === allStudents.length ? `총 ${allStudents.length}명` : `필터 ${students.length}명 / 총 ${allStudents.length}명`}
           </span>
           <span>오늘 상담 {useAppStore.getState().todayStats?.total || 0}건</span>
+        </div>
+
+        {/* 자동 업데이트 UI */}
+        <div className="text-[11px] pt-1.5 border-t border-dashed select-none print-exclude" style={{ borderColor: 'var(--border)' }}>
+          {updateStatus === 'idle' && (
+            <div className="flex justify-between items-center" style={{ color: 'var(--text-muted)' }}>
+              <span>버전: {appVersion}</span>
+              {window.updaterAPI && (
+                <button
+                  onClick={handleCheckUpdate}
+                  className="text-[10px] font-bold text-accent hover:text-accent-dark transition-colors cursor-pointer"
+                >
+                  업데이트 확인
+                </button>
+              )}
+            </div>
+          )}
+
+          {updateStatus === 'checking' && (
+            <div className="text-neutral-400 animate-pulse text-center">
+              업데이트 확인 중...
+            </div>
+          )}
+
+          {updateStatus === 'not-available' && (
+            <div className="text-green-600 font-semibold text-center">
+              최신 버전을 사용 중입니다.
+            </div>
+          )}
+
+          {updateStatus === 'available' && (
+            <div className="flex justify-between items-center">
+              <span className="text-accent-dark font-semibold">새 버전 발견! ({newVersionInfo?.version})</span>
+              <button
+                onClick={handleDownload}
+                className="text-[10px] font-bold px-2 py-0.5 rounded bg-accent text-white hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+              >
+                다운로드
+              </button>
+            </div>
+          )}
+
+          {updateStatus === 'downloading' && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-blue-500 font-medium">
+                <span>새 업데이트 다운로드 중...</span>
+                <span>{downloadPercent}%</span>
+              </div>
+              <div className="w-full h-1 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-500 transition-all duration-300" 
+                  style={{ width: `${downloadPercent}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {updateStatus === 'downloaded' && (
+            <div className="flex justify-between items-center">
+              <span className="text-green-600 font-semibold animate-pulse">다운로드 완료!</span>
+              <button
+                onClick={handleRestart}
+                className="text-[10px] font-bold px-2 py-0.5 rounded bg-green-500 text-white hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+              >
+                지금 재시작
+              </button>
+            </div>
+          )}
+
+          {updateStatus === 'error' && (
+            <div className="text-red-500 font-semibold text-center truncate" title={errorMessage}>
+              오류: {errorMessage}
+            </div>
+          )}
         </div>
       </div>
     </aside>
@@ -296,4 +436,5 @@ function StudentItem({ student, selected, onClick, urgent, compact }) {
     </button>
   )
 }
+
 
