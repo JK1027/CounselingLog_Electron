@@ -8,7 +8,7 @@ import time
 import pandas as pd
 import openpyxl
 from openpyxl.styles import Alignment, Border, Side
-from backend.utils.path_helper import get_resource_path, get_writable_path, ensure_directory_exists
+from backend.utils.path_helper import get_resource_path, get_writable_path, ensure_directory_exists, get_user_backup_path
 from backend.utils.security import sanitize_value
 from backend.utils.logger import logger
 from backend.core.constants import (
@@ -728,13 +728,13 @@ class ExcelRepository:
                         pass
 
     def save_backup_excel(self):
-        """메인 파일을 backup 폴더에 날짜 포함 파일명으로 복사하여 저장합니다."""
+        """메인 파일을 사용자의 '내 문서/상담일지 백업 파일' 폴더에 날짜 포함 파일명으로 복사하여 저장합니다."""
         with self.lock:
             if not self.main_file_path or not os.path.exists(self.main_file_path):
                 return False, "저장된 원본 파일이 없어 백업할 수 없습니다."
     
             try:
-                backup_dir = get_writable_path("backup")
+                backup_dir = get_user_backup_path()
                 ensure_directory_exists(backup_dir)
     
                 backup_date = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
@@ -742,7 +742,7 @@ class ExcelRepository:
                 destination_path = os.path.join(backup_dir, file_name)
     
                 shutil.copy2(self.main_file_path, destination_path)
-                logger.info(f"백업 생성 완료: {destination_path}")
+                logger.info(f"수동 백업 생성 완료: {destination_path}")
                 return True, (file_name, backup_dir)
             except Exception as e:
                 logger.error(f"save_backup_excel 에러: {e}")

@@ -35,3 +35,45 @@ def ensure_directory_exists(dir_path):
     """Helper to ensure a directory exists."""
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
+
+def get_user_documents_path():
+    """
+    Get the standard Windows 'My Documents' folder path using Win32 API via ctypes.
+    Fallback to standard home directory if Windows API is not available or fails.
+    """
+    if sys.platform == 'win32':
+        try:
+            import ctypes
+            from ctypes import wintypes
+            CSIDL_PERSONAL = 5  # My Documents
+            SHGFP_TYPE_CURRENT = 0
+            
+            buf = ctypes.create_unicode_buffer(wintypes.MAX_PATH)
+            # SHGetFolderPathW is highly compatible and returns redirected folders (e.g. OneDrive/Documents)
+            res = ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_PERSONAL, None, SHGFP_TYPE_CURRENT, buf)
+            if res == 0:
+                return buf.value
+        except Exception:
+            pass
+            
+    # Fallback for non-Windows or if API fails
+    home = os.path.expanduser('~')
+    docs_path = os.path.join(home, 'Documents')
+    if os.path.exists(docs_path):
+        return docs_path
+    
+    # 한글 윈도우/특이 케이스 대응용
+    docs_ko = os.path.join(home, '문서')
+    if os.path.exists(docs_ko):
+        return docs_ko
+        
+    return home
+
+def get_user_backup_path():
+    """
+    Get the writable path for user's manual backup.
+    This points to 'My Documents/상담일지 백업 파일'.
+    """
+    doc_dir = get_user_documents_path()
+    backup_dir = os.path.join(doc_dir, '상담일지 백업 파일')
+    return os.path.normpath(backup_dir)
