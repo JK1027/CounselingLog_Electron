@@ -23,7 +23,7 @@ export default function Dashboard({ onOpenPrintModal }) {
             {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
           </p>
           <p className="text-xs mt-1.5 font-semibold" style={{ color: 'var(--accent)' }}>
-            오늘도 학생들과 함께 따뜻한 하루를 시작해 보세요! 🌸
+            학생들의 마음을 따뜻하게 감싸주는 오늘도 응원합니다! 🌟
           </p>
         </div>
         <div className="flex items-center gap-4 print-exclude">
