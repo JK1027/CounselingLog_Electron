@@ -176,9 +176,10 @@ export default function Sidebar({ width }) {
                 <button
                   onClick={() => setSelectedStudent(null)}
                   title="홈 화면(대시보드)으로 이동"
-                  className="p-0.5 rounded hover:bg-hover transition-colors inline-flex items-center justify-center cursor-pointer ml-1"
+                  className="p-1 rounded hover:bg-hover transition-colors inline-flex items-center justify-center cursor-pointer ml-1.5"
+                  style={{ border: '1px solid var(--border)', background: 'var(--bg-primary)' }}
                 >
-                  <Home size={11} style={{ color: 'var(--accent)' }} />
+                  <Home size={13} style={{ color: 'var(--accent)' }} />
                 </button>
               </div>
             </div>
