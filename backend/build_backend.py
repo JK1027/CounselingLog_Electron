@@ -7,8 +7,14 @@ import shutil
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BACKEND_DIR)
 ASSETS_DIR = os.path.join(ROOT_DIR, "assets")
-VENV_PIP = os.path.join(BACKEND_DIR, "venv", "Scripts", "pip.exe")
-VENV_PYINSTALLER = os.path.join(BACKEND_DIR, "venv", "Scripts", "pyinstaller.exe")
+VENV_DIR = os.path.join(BACKEND_DIR, "venv")
+if os.path.exists(VENV_DIR):
+    PIP_BIN = os.path.join(VENV_DIR, "Scripts", "pip.exe")
+    PYINSTALLER_BIN = os.path.join(VENV_DIR, "Scripts", "pyinstaller.exe")
+else:
+    PIP_BIN = "pip"
+    PYINSTALLER_BIN = "pyinstaller"
+
 GENERATED_ICON_PNG = r"C:\Users\user\.gemini\antigravity-ide\brain\42038f0d-d29a-4004-8910-bf887cb25f3d\counseling_app_icon_1779371372161.png"
 
 def run_command(args, cwd=None):
@@ -20,7 +26,7 @@ def run_command(args, cwd=None):
 
 def main():
     print("=== [1] 패키징 라이브러리 설치 ===")
-    run_command([VENV_PIP, "install", "pyinstaller", "pillow"])
+    run_command([PIP_BIN, "install", "pyinstaller", "pillow"])
 
     # Update requirements.txt to include new deps
     req_file = os.path.join(BACKEND_DIR, "requirements.txt")
@@ -56,15 +62,18 @@ def main():
             print(f"아이콘 ICO 변환 중 에러 발생: {e}")
             sys.exit(1)
     else:
-        print(f"에러: 생성된 아이콘 파일을 찾을 수 없습니다: {GENERATED_ICON_PNG}")
-        sys.exit(1)
+        if os.path.exists(target_png) and os.path.exists(target_ico):
+            print("로컬 절대 경로에 원본 아이콘은 없지만, assets 디렉토리에 이미 아이콘 파일들이 존재하므로 변환 과정을 스킵합니다.")
+        else:
+            print(f"에러: 아이콘 파일을 찾을 수 없고 assets 디렉토리에도 존재하지 않습니다. (검색 경로: {GENERATED_ICON_PNG})")
+            sys.exit(1)
 
     print("\n=== [3] PyInstaller 백엔드 빌드 실행 ===")
     dist_dir = os.path.join(ROOT_DIR, "electron", "resources")
     
     # PyInstaller execution command
     pyinstaller_args = [
-        VENV_PYINSTALLER,
+        PYINSTALLER_BIN,
         "--onedir",
         "--clean",
         "--noconfirm",
