@@ -86,161 +86,167 @@ export default function Dashboard({ onOpenPrintModal }) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6" style={{ background: 'var(--bg-primary)' }}>
-      {/* 페이지 헤더 */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>오늘의 상담</h2>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
-          </p>
-          <p className="text-xs mt-1.5 font-semibold" style={{ color: 'var(--accent)' }}>
-            학생들의 마음을 따뜻하게 감싸주는 오늘도 응원합니다! 🌟
-          </p>
-        </div>
-        <div className="flex items-center gap-4 print-exclude">
-          <SaveStateIndicator />
-          <button
-            onClick={onOpenPrintModal}
-            className="flex items-center gap-1.5 rounded-xl text-xs font-semibold border px-3 py-1.5 transition-all duration-150 hover:bg-hover active:scale-95 cursor-pointer"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-primary)' }}
-          >
-            <Printer size={13} />
-            상담일지 출력
-          </button>
-        </div>
-      </div>
-
-      {/* 통계 카드 */}
-      <div className="mb-4">
-        <StatCard icon={<BookOpen size={20} />} label="오늘 진행된 상담" value={todayStats.total} unit="건" color="var(--accent)" />
-      </div>
-
-      {/* 상담 유형 퀵 필터 버튼 그룹 */}
-      <div className="mb-6">
-        <SectionTitle icon={<BarChart2 size={14} style={{ color: 'var(--text-muted)' }} />} label="상담 유형별 모아보기" />
-        <div className="grid grid-cols-5 gap-3 mt-2">
-          {FILTER_TYPES.map(type => {
-            const Icon = type.icon
-            const isSelected = selectedTypeFilter === type.id
-            return (
-              <button
-                key={type.id}
-                onClick={() => setSelectedTypeFilter(isSelected ? null : type.id)}
-                className="rounded-2xl p-4 flex flex-col items-center justify-center gap-2.5 transition-all text-center cursor-pointer border select-none active:scale-95"
-                style={{
-                  background: isSelected ? `linear-gradient(135deg, ${type.bg}, var(--bg-card))` : 'var(--bg-card)',
-                  borderColor: isSelected ? type.color : 'var(--border)',
-                  boxShadow: isSelected ? `0 4px 12px ${type.glow}` : 'var(--shadow-sm)',
-                }}
-                onMouseEnter={e => {
-                  if (!isSelected) {
-                    e.currentTarget.style.borderColor = type.color
-                    e.currentTarget.style.boxShadow = `0 4px 10px ${type.glow}`
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!isSelected) {
-                    e.currentTarget.style.borderColor = 'var(--border)'
-                    e.currentTarget.style.boxShadow = 'var(--shadow-sm)'
-                  }
-                }}
-              >
-                <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200"
-                  style={{ background: type.bg, color: type.color }}
-                >
-                  <Icon size={20} />
-                </div>
-                <span className="text-xs font-bold" style={{ color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                  {type.label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* 하단 뷰 분기 */}
-      {selectedTypeFilter ? (
-        /* 1. 상담 유형 필터링 모아보기 뷰 */
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <SectionTitle 
-              icon={<Clock size={14} style={{ color: 'var(--accent)' }} />} 
-              label={`최근 ${selectedTypeFilter} 기록 (${typeSessions.length}건)`} 
-            />
+    <div className="flex flex-col h-full overflow-hidden p-6" style={{ background: 'var(--bg-primary)' }}>
+      {/* 고정 상단 영역 wrapper */}
+      <div className="shrink-0">
+        {/* 페이지 헤더 */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>오늘의 상담</h2>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+            </p>
+            <p className="text-xs mt-1.5 font-semibold" style={{ color: 'var(--accent)' }}>
+              학생들의 마음을 따뜻하게 감싸주는 오늘도 응원합니다! 🌟
+            </p>
+          </div>
+          <div className="flex items-center gap-4 print-exclude">
+            <SaveStateIndicator />
             <button
-              onClick={() => setSelectedTypeFilter(null)}
-              className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all hover:bg-hover cursor-pointer"
+              onClick={onOpenPrintModal}
+              className="flex items-center gap-1.5 rounded-xl text-xs font-semibold border px-3 py-1.5 transition-all duration-150 hover:bg-hover active:scale-95 cursor-pointer"
               style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-primary)' }}
             >
-              <X size={12} />
-              필터 해제
+              <Printer size={13} />
+              상담일지 출력
             </button>
           </div>
-
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <Loader className="animate-spin" size={24} style={{ color: 'var(--accent)' }} />
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>상담 기록을 조회하는 중입니다...</p>
-            </div>
-          ) : typeSessions.length > 0 ? (
-            <div className="space-y-3">
-              {typeSessions.map(session => (
-                <DashboardSessionRow 
-                  key={session.id}
-                  session={session}
-                  onGoToStudent={() => handleGoToStudent(session)}
-                  onEdit={() => handleEditSession(session)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 border border-dashed rounded-2xl" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
-                등록된 {selectedTypeFilter} 기록이 없습니다.
-              </p>
-            </div>
-          )}
         </div>
-      ) : (
-        /* 2. 기존 기본 대시보드 뷰 (주의 학생 & 최근 상담) */
-        <>
-          {/* 주의 학생 */}
-          {urgentStudents.length > 0 && (
-            <div className="mb-6">
-              <SectionTitle icon={<AlertTriangle size={14} style={{ color: 'var(--red)' }} />} label="주의 필요 학생" />
+
+        {/* 통계 카드 */}
+        <div className="mb-4">
+          <StatCard icon={<BookOpen size={20} />} label="오늘 진행된 상담" value={todayStats.total} unit="건" color="var(--accent)" />
+        </div>
+
+        {/* 상담 유형 퀵 필터 버튼 그룹 */}
+        <div className="mb-6">
+          <SectionTitle icon={<BarChart2 size={14} style={{ color: 'var(--text-muted)' }} />} label="상담 유형별 모아보기" />
+          <div className="grid grid-cols-5 gap-3 mt-2">
+            {FILTER_TYPES.map(type => {
+              const Icon = type.icon
+              const isSelected = selectedTypeFilter === type.id
+              return (
+                <button
+                  key={type.id}
+                  onClick={() => setSelectedTypeFilter(isSelected ? null : type.id)}
+                  className="rounded-2xl p-4 flex flex-col items-center justify-center gap-2.5 transition-all text-center cursor-pointer border select-none active:scale-95"
+                  style={{
+                    background: isSelected ? `linear-gradient(135deg, ${type.bg}, var(--bg-card))` : 'var(--bg-card)',
+                    borderColor: isSelected ? type.color : 'var(--border)',
+                    boxShadow: isSelected ? `0 4px 12px ${type.glow}` : 'var(--shadow-sm)',
+                  }}
+                  onMouseEnter={e => {
+                    if (!isSelected) {
+                      e.currentTarget.style.borderColor = type.color
+                      e.currentTarget.style.boxShadow = `0 4px 10px ${type.glow}`
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isSelected) {
+                      e.currentTarget.style.borderColor = 'var(--border)'
+                      e.currentTarget.style.boxShadow = 'var(--shadow-sm)'
+                    }
+                  }}
+                >
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200"
+                    style={{ background: type.bg, color: type.color }}
+                  >
+                    <Icon size={20} />
+                  </div>
+                  <span className="text-xs font-bold" style={{ color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                    {type.label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* 스크롤 가능한 하단 컨텐츠 영역 */}
+      <div className="flex-1 overflow-y-auto pr-1 -mr-1">
+        {/* 하단 뷰 분기 */}
+        {selectedTypeFilter ? (
+          /* 1. 상담 유형 필터링 모아보기 뷰 */
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <SectionTitle 
+                icon={<Clock size={14} style={{ color: 'var(--accent)' }} />} 
+                label={`최근 ${selectedTypeFilter} 기록 (${typeSessions.length}건)`} 
+              />
+              <button
+                onClick={() => setSelectedTypeFilter(null)}
+                className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all hover:bg-hover cursor-pointer"
+                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-primary)' }}
+              >
+                <X size={12} />
+                필터 해제
+              </button>
+            </div>
+
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <Loader className="animate-spin" size={24} style={{ color: 'var(--accent)' }} />
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>상담 기록을 조회하는 중입니다...</p>
+              </div>
+            ) : typeSessions.length > 0 ? (
+              <div className="space-y-3">
+                {typeSessions.map(session => (
+                  <DashboardSessionRow 
+                    key={session.id}
+                    session={session}
+                    onGoToStudent={() => handleGoToStudent(session)}
+                    onEdit={() => handleEditSession(session)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 border border-dashed rounded-2xl" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
+                  등록된 {selectedTypeFilter} 기록이 없습니다.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* 2. 기존 기본 대시보드 뷰 (주의 학생 & 최근 상담) */
+          <>
+            {/* 주의 학생 */}
+            {urgentStudents.length > 0 && (
+              <div className="mb-6">
+                <SectionTitle icon={<AlertTriangle size={14} style={{ color: 'var(--red)' }} />} label="주의 필요 학생" />
+                <div className="space-y-2">
+                  {urgentStudents.map(s => (
+                    <StudentRow 
+                      key={s.id} 
+                      student={s} 
+                      onClick={() => setSelectedStudent(s)} 
+                      onWrite={() => { setSelectedStudent(s); setEditorMode('new'); setEditorOpen(true); }}
+                      urgent 
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 최근 상담 학생 */}
+            <div>
+              <SectionTitle icon={<Clock size={14} style={{ color: 'var(--text-muted)' }} />} label="최근 상담" />
               <div className="space-y-2">
-                {urgentStudents.map(s => (
+                {recentStudents.map(s => (
                   <StudentRow 
                     key={s.id} 
                     student={s} 
                     onClick={() => setSelectedStudent(s)} 
                     onWrite={() => { setSelectedStudent(s); setEditorMode('new'); setEditorOpen(true); }}
-                    urgent 
                   />
                 ))}
               </div>
             </div>
-          )}
-
-          {/* 최근 상담 학생 */}
-          <div>
-            <SectionTitle icon={<Clock size={14} style={{ color: 'var(--text-muted)' }} />} label="최근 상담" />
-            <div className="space-y-2">
-              {recentStudents.map(s => (
-                <StudentRow 
-                  key={s.id} 
-                  student={s} 
-                  onClick={() => setSelectedStudent(s)} 
-                  onWrite={() => { setSelectedStudent(s); setEditorMode('new'); setEditorOpen(true); }}
-                />
-              ))}
-            </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
