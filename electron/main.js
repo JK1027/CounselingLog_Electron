@@ -198,21 +198,30 @@ app.whenReady().then(() => {
   })
 })
 
+function killPythonProcess() {
+  if (pythonProcess) {
+    console.log(`[Electron] Killing Python process tree (pid: ${pythonProcess.pid})...`)
+    if (process.platform === 'win32') {
+      const { exec } = require('child_process')
+      exec(`taskkill /pid ${pythonProcess.pid} /T /F`, (err) => {
+        if (err) console.error('[Electron] taskkill 실패:', err)
+      })
+    } else {
+      pythonProcess.kill()
+    }
+    pythonProcess = null
+  }
+}
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    if (pythonProcess) {
-      pythonProcess.kill()
-      pythonProcess = null
-    }
+    killPythonProcess()
     app.quit()
   }
 })
 
 app.on('quit', () => {
-  if (pythonProcess) {
-    pythonProcess.kill()
-    pythonProcess = null
-  }
+  killPythonProcess()
 })
 
 // ─── IPC 핸들러 (3단계에서 확장) ──────────────────────────────────────────

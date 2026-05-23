@@ -19,11 +19,23 @@ export default function App() {
   const [printSetupData, setPrintSetupData] = useState(null)
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem('counseling_sidebar_width')
-    return saved ? parseInt(saved, 10) : 260
+    if (saved) {
+      const parsed = parseInt(saved, 10)
+      if (Number.isFinite(parsed) && parsed >= 200 && parsed <= 400) {
+        return parsed
+      }
+    }
+    return 260
   })
   const [editorWidth, setEditorWidth] = useState(() => {
     const saved = localStorage.getItem('counseling_editor_width')
-    return saved ? parseInt(saved, 10) : 320
+    if (saved) {
+      const parsed = parseInt(saved, 10)
+      if (Number.isFinite(parsed) && parsed >= 280 && parsed <= 500) {
+        return parsed
+      }
+    }
+    return 320
   })
   const [resizing, setResizing] = useState(null) // 'sidebar' | 'editor' | null
 

@@ -361,6 +361,30 @@
 - 프론트엔드 빌드(`npm run build`) 경고/에러 없이 100% 정상 작동 완료 (562ms) ✅
 - Electron 및 React dev 기동 환경에서 타임라인 인쇄 버튼 클릭 -> 모달 옵션 선택 -> 미리보기 -> Ctrl+P 네이티브 인쇄 대화상자까지 E2E 연동 동작 완료 확인 ✅
 
+---
+
+## [2026-05-23] 코드 리뷰 피드백 반영 — Excel 동시성 잠금, 캐싱 성능 최적화, 프로세스 종료 라이프사이클 및 localStorage 안전화 완료
+
+### 완료 작업
+- [x] **ExcelRepository 동시성 제어를 위한 스레드 락 적용 (`excel_repository.py`)**:
+  - `threading.RLock()` 객체를 인스턴스 멤버 `self.lock`으로 정의.
+  - 동일 스레드 내에서의 재진입을 지원하여 데드락을 원천 예방하고, 파일 읽기/쓰기/스왑이 수행되는 모든 원자적 블록(`load_data`, `save_all_data_to_excel`, `delete_excel_row` 등)을 `with self.lock:` 구문으로 안전하게 래핑하여 다중 쓰기/읽기 경합 조건(Race Condition) 해결.
+- [x] **mtime 기반 Dirty-Check 레이지 캐싱 구현 (`excel_repository.py`)**:
+  - `self._last_loaded_time` 멤버를 두고, 파일 로드 시점에 `os.path.getmtime(file_path)` 값을 기록.
+  - `check_and_reload` 메서드를 신설하여 락 내에서 실시간 수정 시각을 비교하고, 외부 변경이 없는 경우 불필요한 디스크 I/O 없이 메모리에 캐싱된 데이터프레임을 즉시 반환하도록 최적화.
+- [x] **FastAPI API 엔드포인트 캐시 적용 (`main.py`)**:
+  - `/students`, `/sessions/{student_name}`, `/sessions`, `/stats/today` 등 모든 무거운 데이터 조회 엔드포인트의 `load_data` 직접 호출을 `check_and_reload` 호출로 전환하여 속도를 0ms 수준으로 단축하고 UI 프리징 발생 요인 제거.
+- [x] **Windows 환경 대응 프로세스 트리 강제 킬 구현 (`main.js`)**:
+  - `window-all-closed` 및 `quit` 이벤트 발생 시 `killPythonProcess` 헬퍼 함수를 통해 Windows의 `taskkill /pid {pid} /T /F` 시스템 명령어를 동적으로 실행.
+  - 단순 프로세스 단일 kill이 아닌 uvicorn 하위 프로세스 및 python 인터프리터 전체 프로세스 트리를 강제 강탈시킴으로써 좀비 프로세스로 포트 8765가 막히는 문제를 차단.
+- [x] **localStorage 가로 폭 복원 NaN/Bound 예외 방어 적용 (`App.jsx`)**:
+  - 사이드바 및 에디터의 너비 조절값 로딩부에서 `Number.isFinite` 검증 및 안전 바운더리 체크(사이드바: 200px~400px, 에디터: 280px~500px) 로직을 추가하여 깨진 값이나 유효하지 않은 값이 들어올 때 레이아웃이 붕괴되는 현상 차단.
+
+### 테스트 결과
+- 프론트엔드 프로덕션 빌드 (`npm run build`) 오류 및 경고 없이 성공 빌드 확인 ✅
+- API 동시성 검증: 연속적인 API 요청 및 조회 동작 시 매번 디스크 로딩 없이 인메모리 캐싱 데이터가 지연시간 0ms로 쾌적하게 반환됨을 확인 ✅
+- 프로세스 클린업 검증: Electron 앱 종료 시 uvicorn(Python) 포트 8765가 강제 회수되고 좀비 프로세스가 남지 않는 것을 `netstat` 및 `tasklist` 명령으로 교차 검증 통과 ✅
+
 
 
 

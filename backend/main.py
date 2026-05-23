@@ -86,7 +86,7 @@ def get_students():
     """
     try:
         # 엑셀 최신 데이터 보장
-        repo.load_data(CURRENT_EXCEL_PATH)
+        repo.check_and_reload()
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 
@@ -168,7 +168,7 @@ def get_sessions(student_name: str, student_id: str = Query("")):
     학번이 일치하는 집단상담 내역도 조회하여 병합 반환합니다.
     """
     try:
-        repo.load_data(CURRENT_EXCEL_PATH)
+        repo.check_and_reload()
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 
@@ -246,7 +246,7 @@ def get_all_sessions(sheet_type: str = Query(None)):
     인쇄/조회용으로 전체 상담 내역 또는 특정 시트의 상담 내역을 조회합니다.
     """
     try:
-        repo.load_data(CURRENT_EXCEL_PATH)
+        repo.check_and_reload()
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 
@@ -323,7 +323,7 @@ def create_session(data: SessionCreate):
         raise HTTPException(status_code=400, detail=f"알 수 없는 시트 타입입니다: {data.sheetType}")
 
     try:
-        repo.load_data(CURRENT_EXCEL_PATH)
+        repo.check_and_reload()
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 
@@ -404,7 +404,7 @@ def update_session(session_id: str, data: SessionUpdate):
     기존 상담 기록을 수정하고 엑셀 시트에 안전하게 반영합니다.
     """
     try:
-        repo.load_data(CURRENT_EXCEL_PATH)
+        repo.check_and_reload()
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 
@@ -448,7 +448,7 @@ def delete_session(session_id: str):
     기존 상담 기록을 삭제하고 엑셀 시트에 안전하게 반영합니다.
     """
     try:
-        repo.load_data(CURRENT_EXCEL_PATH)
+        repo.check_and_reload()
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 
@@ -482,7 +482,7 @@ def get_today_stats():
     오늘 진행된 상담 건수를 집계합니다.
     """
     try:
-        repo.load_data(CURRENT_EXCEL_PATH)
+        repo.check_and_reload()
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 

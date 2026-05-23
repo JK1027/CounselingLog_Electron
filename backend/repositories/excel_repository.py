@@ -3,6 +3,7 @@ import shutil
 import datetime
 import uuid
 import tempfile
+import threading
 import pandas as pd
 import openpyxl
 from openpyxl.styles import Alignment, Border, Side
@@ -22,6 +23,8 @@ class ExcelRepository:
     def __init__(self, main_file_path=None):
         self.main_file_path = main_file_path
         self.data_frames = {sheet: pd.DataFrame() for sheet in SHEET_NAMES}
+        self.lock = threading.RLock()
+        self._last_loaded_time = 0.0
         
         # Validation options loading from CONFIG
         from backend.core.constants import CONFIG
@@ -60,42 +63,56 @@ class ExcelRepository:
 
     def load_data(self, file_path):
         """지정된 경로의 엑셀 파일을 로드하고, UUID가 누락된 경우 자동 생성하여 저장합니다."""
-        self.main_file_path = file_path
-        uuid_updated = False
+        with self.lock:
+            self.main_file_path = file_path
+            uuid_updated = False
 
-        with pd.ExcelFile(file_path) as xls:
-            excel_sheets_in_file = xls.sheet_names
-            
-            for sheet_name in SHEET_NAMES:
-                if sheet_name in excel_sheets_in_file:
-                    df = pd.read_excel(xls, sheet_name=sheet_name, dtype=str).fillna('')
-                    if '학번' in df.columns:
-                        df['학번'] = df['학번'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
-                    
-                    # UUID 컬럼이 존재하지 않는 경우 추가
-                    if RECORD_ID_COL not in df.columns:
-                        df[RECORD_ID_COL] = ""
+            with pd.ExcelFile(file_path) as xls:
+                excel_sheets_in_file = xls.sheet_names
+                
+                for sheet_name in SHEET_NAMES:
+                    if sheet_name in excel_sheets_in_file:
+                        df = pd.read_excel(xls, sheet_name=sheet_name, dtype=str).fillna('')
+                        if '학번' in df.columns:
+                            df['학번'] = df['학번'].astype(str).str.replace(r'\.0$', '', regex=True).str.strip()
                         
-                    # 비어있는 UUID 값을 채움
-                    for idx, row in df.iterrows():
-                        if not str(row[RECORD_ID_COL]).strip():
-                            df.at[idx, RECORD_ID_COL] = uuid.uuid4().hex
-                            uuid_updated = True
+                        # UUID 컬럼이 존재하지 않는 경우 추가
+                        if RECORD_ID_COL not in df.columns:
+                            df[RECORD_ID_COL] = ""
                             
-                    self.data_frames[sheet_name] = df
-                else:
-                    # 새로운 시트의 빈 DataFrame 생성 시 기본 스키마 반영
-                    schema = SHEET_SCHEMAS.get(sheet_name, [])
-                    self.data_frames[sheet_name] = pd.DataFrame(columns=schema)
+                        # 비어있는 UUID 값을 채움
+                        for idx, row in df.iterrows():
+                            if not str(row[RECORD_ID_COL]).strip():
+                                df.at[idx, RECORD_ID_COL] = uuid.uuid4().hex
+                                uuid_updated = True
+                                
+                        self.data_frames[sheet_name] = df
+                    else:
+                        # 새로운 시트의 빈 DataFrame 생성 시 기본 스키마 반영
+                        schema = SHEET_SCHEMAS.get(sheet_name, [])
+                        self.data_frames[sheet_name] = pd.DataFrame(columns=schema)
 
-        logger.info(f"데이터 로드 완료: {file_path}")
-        
-        # 만약 신규 생성된 UUID가 있다면 즉시 파일에 동기화 저장
-        if uuid_updated:
-            logger.info("누락된 UUID 식별키를 발견하여 자동 부여 후 저장을 시작합니다.")
-            self.save_all_data_to_excel()
+            if os.path.exists(file_path):
+                self._last_loaded_time = os.path.getmtime(file_path)
+
+            logger.info(f"데이터 로드 완료: {file_path}")
             
-        return True
+            # 만약 신규 생성된 UUID가 있다면 즉시 파일에 동기화 저장
+            if uuid_updated:
+                logger.info("누락된 UUID 식별키를 발견하여 자동 부여 후 저장을 시작합니다.")
+                self.save_all_data_to_excel()
+                
+            return True
+
+    def check_and_reload(self):
+        """파일이 외부에서 수정되었거나 최초 로드 시에만 메모리 캐시를 리로드합니다."""
+        if not self.main_file_path or not os.path.exists(self.main_file_path):
+            return
+        with self.lock:
+            current_mtime = os.path.getmtime(self.main_file_path)
+            if current_mtime != self._last_loaded_time:
+                logger.info("Excel 파일 외부 변경 또는 최초 로드 감지: 메모리 캐시를 리로드합니다.")
+                self.load_data(self.main_file_path)
 
     def _apply_excel_formatting(self, worksheet):
         """주어진 워크시트에 표준 서식을 적용합니다."""
@@ -249,206 +266,219 @@ class ExcelRepository:
 
     def save_all_data_to_excel(self):
         """메모리에 있는 모든 데이터프레임을 엑셀 파일에 안전하게 덮어씁니다 (Safe Save & NamedTemporaryFile 적용)."""
-        if not self.main_file_path:
-            return False, "저장할 파일 경로가 지정되지 않았습니다."
-        
-        ext = os.path.splitext(self.main_file_path)[1]
-        target_dir = os.path.dirname(self.main_file_path) or "."
-        
-        # 동일 드라이브/볼륨 상에 안전한 임시 파일 생성
-        temp_file = tempfile.NamedTemporaryFile(dir=target_dir, delete=False, suffix=ext)
-        temp_file_path = temp_file.name
-        temp_file.close() # openpyxl에서 쓰기 위해 일단 닫음
-        
-        try:
-            with pd.ExcelWriter(temp_file_path, engine='openpyxl') as writer:
-                for sheet_name, df in self.data_frames.items():
-                    df.to_excel(writer, sheet_name=sheet_name, index=False)
-                    worksheet = writer.sheets[sheet_name]
-                    self._apply_excel_formatting(worksheet)
+        with self.lock:
+            if not self.main_file_path:
+                return False, "저장할 파일 경로가 지정되지 않았습니다."
             
-            success, err = self.swap_temp_and_original(temp_file_path, self.main_file_path)
-            if success:
-                logger.info("모든 데이터프레임이 엑셀에 안전하게 저장되었습니다.")
-                return True, None
-            return False, err
-        except PermissionError:
-            return False, f"'{os.path.basename(self.main_file_path)}' 파일이 다른 프로그램에서 열려있어 저장할 수 없습니다.\n파일을 닫고 다시 시도해주세요."
-        except Exception as e:
-            logger.error(f"save_all_data_to_excel 에러: {e}")
-            return False, str(e)
-        finally:
-            if os.path.exists(temp_file_path):
-                try:
-                    os.remove(temp_file_path)
-                except Exception:
-                    pass
+            ext = os.path.splitext(self.main_file_path)[1]
+            target_dir = os.path.dirname(self.main_file_path) or "."
+            
+            # 동일 드라이브/볼륨 상에 안전한 임시 파일 생성
+            temp_file = tempfile.NamedTemporaryFile(dir=target_dir, delete=False, suffix=ext)
+            temp_file_path = temp_file.name
+            temp_file.close() # openpyxl에서 쓰기 위해 일단 닫음
+            
+            try:
+                with pd.ExcelWriter(temp_file_path, engine='openpyxl') as writer:
+                    for sheet_name, df in self.data_frames.items():
+                        df.to_excel(writer, sheet_name=sheet_name, index=False)
+                        worksheet = writer.sheets[sheet_name]
+                        self._apply_excel_formatting(worksheet)
+                
+                success, err = self.swap_temp_and_original(temp_file_path, self.main_file_path)
+                if success:
+                    if os.path.exists(self.main_file_path):
+                        self._last_loaded_time = os.path.getmtime(self.main_file_path)
+                    logger.info("모든 데이터프레임이 엑셀에 안전하게 저장되었습니다.")
+                    return True, None
+                return False, err
+            except PermissionError:
+                return False, f"'{os.path.basename(self.main_file_path)}' 파일이 다른 프로그램에서 열려있어 저장할 수 없습니다.\n파일을 닫고 다시 시도해주세요."
+            except Exception as e:
+                logger.error(f"save_all_data_to_excel 에러: {e}")
+                return False, str(e)
+            finally:
+                if os.path.exists(temp_file_path):
+                    try:
+                        os.remove(temp_file_path)
+                    except Exception:
+                        pass
 
     def update_excel_row(self, sheet_name, df_index, updated_data):
         """지정된 행의 데이터를 openpyxl을 사용하여 엑셀 파일에서 직접 수정하고, 메모리 데이터프레임도 즉시 동기화합니다."""
-        if not self.main_file_path:
-            return False, "엑셀 파일 경로를 찾을 수 없습니다."
-        
-        df = self.data_frames.get(sheet_name)
-        if df is None or df_index >= len(df):
-            return False, f"메모리 데이터프레임에서 인덱스 {df_index}를 찾을 수 없습니다."
-        original_data = df.iloc[df_index].to_dict()
-        
-        ext = os.path.splitext(self.main_file_path)[1]
-        target_dir = os.path.dirname(self.main_file_path) or "."
-        temp_file = tempfile.NamedTemporaryFile(dir=target_dir, delete=False, suffix=ext)
-        temp_file_path = temp_file.name
-        temp_file.close()
+        with self.lock:
+            if not self.main_file_path:
+                return False, "엑셀 파일 경로를 찾을 수 없습니다."
+            
+            df = self.data_frames.get(sheet_name)
+            if df is None or df_index >= len(df):
+                return False, f"메모리 데이터프레임에서 인덱스 {df_index}를 찾을 수 없습니다."
+            original_data = df.iloc[df_index].to_dict()
+            
+            ext = os.path.splitext(self.main_file_path)[1]
+            target_dir = os.path.dirname(self.main_file_path) or "."
+            temp_file = tempfile.NamedTemporaryFile(dir=target_dir, delete=False, suffix=ext)
+            temp_file_path = temp_file.name
+            temp_file.close()
 
-        workbook = None
-        try:
-            shutil.copy2(self.main_file_path, temp_file_path)
-            workbook = openpyxl.load_workbook(temp_file_path)
-            worksheet = workbook[sheet_name]
-            
-            try:
-                excel_row_num = self._find_matching_excel_row(worksheet, sheet_name, original_data)
-            except ValueError as ve:
-                return False, str(ve)
-            
-            headers = {cell.value: cell.column for cell in worksheet[1] if cell.value is not None}
-            
-            sanitized_updates = {}
-            for col_name, value in updated_data.items():
-                if col_name in headers:
-                    col_idx = headers[col_name]
-                    sanitized_val = self.sanitize_value(value)
-                    worksheet.cell(row=excel_row_num, column=col_idx).value = sanitized_val
-                    sanitized_updates[col_name] = sanitized_val
-            
-            workbook.save(temp_file_path)
-            workbook.close()
             workbook = None
- 
-            success, err = self.swap_temp_and_original(temp_file_path, self.main_file_path)
-            if not success:
-                # 덮어쓰기 등 스왑 도중 실패 시 자동 롤백 적용
-                self.restore_latest_backup()
-                return False, err
-
-            # Sync in-memory DataFrame
-            for col, val in sanitized_updates.items():
-                df.at[df_index, col] = val
-            self.data_frames[sheet_name] = df
-            logger.info(f"Memory Sync 완료: [{sheet_name}] row={excel_row_num} (df_index={df_index}) 수정")
-            return True, None
-
-        except PermissionError:
-            return False, f"'{os.path.basename(self.main_file_path)}' 파일이 다른 프로그램에서 열려있어 수정할 수 없습니다.\n파일을 닫고 다시 시도해주세요."
-        except Exception as e:
-            logger.error(f"update_excel_row 에러: {e}")
-            self.restore_latest_backup()  # 장애 발생 시 백업 롤백
-            return False, str(e)
-        finally:
-            if workbook is not None:
+            try:
+                shutil.copy2(self.main_file_path, temp_file_path)
+                workbook = openpyxl.load_workbook(temp_file_path)
+                worksheet = workbook[sheet_name]
+                
                 try:
-                    workbook.close()
-                except Exception:
-                    pass
-            if os.path.exists(temp_file_path):
-                try:
-                    os.remove(temp_file_path)
-                except Exception:
-                    pass
+                    excel_row_num = self._find_matching_excel_row(worksheet, sheet_name, original_data)
+                except ValueError as ve:
+                    return False, str(ve)
+                
+                headers = {cell.value: cell.column for cell in worksheet[1] if cell.value is not None}
+                
+                sanitized_updates = {}
+                for col_name, value in updated_data.items():
+                    if col_name in headers:
+                        col_idx = headers[col_name]
+                        sanitized_val = self.sanitize_value(value)
+                        worksheet.cell(row=excel_row_num, column=col_idx).value = sanitized_val
+                        sanitized_updates[col_name] = sanitized_val
+                
+                workbook.save(temp_file_path)
+                workbook.close()
+                workbook = None
+    
+                success, err = self.swap_temp_and_original(temp_file_path, self.main_file_path)
+                if not success:
+                    # 덮어쓰기 등 스왑 도중 실패 시 자동 롤백 적용
+                    self.restore_latest_backup()
+                    return False, err
+
+                # Sync in-memory DataFrame
+                for col, val in sanitized_updates.items():
+                    df.at[df_index, col] = val
+                self.data_frames[sheet_name] = df
+                
+                if os.path.exists(self.main_file_path):
+                    self._last_loaded_time = os.path.getmtime(self.main_file_path)
+                    
+                logger.info(f"Memory Sync 완료: [{sheet_name}] row={excel_row_num} (df_index={df_index}) 수정")
+                return True, None
+
+            except PermissionError:
+                return False, f"'{os.path.basename(self.main_file_path)}' 파일이 다른 프로그램에서 열려있어 수정할 수 없습니다.\n파일을 닫고 다시 시도해주세요."
+            except Exception as e:
+                logger.error(f"update_excel_row 에러: {e}")
+                self.restore_latest_backup()  # 장애 발생 시 백업 롤백
+                return False, str(e)
+            finally:
+                if workbook is not None:
+                    try:
+                        workbook.close()
+                    except Exception:
+                        pass
+                if os.path.exists(temp_file_path):
+                    try:
+                        os.remove(temp_file_path)
+                    except Exception:
+                        pass
 
     def delete_excel_row(self, sheet_name, df_index):
         """지정된 행을 엑셀 파일에서 삭제하고 메모리 데이터프레임에서도 동기화합니다. 순번이 존재하는 경우 순번을 재정렬합니다."""
-        if not self.main_file_path:
-            return False, "엑셀 파일 경로를 찾을 수 없습니다."
-        
-        df = self.data_frames.get(sheet_name)
-        if df is None or df_index >= len(df):
-            return False, f"메모리 데이터프레임에서 인덱스 {df_index}를 찾을 수 없습니다."
+        with self.lock:
+            if not self.main_file_path:
+                return False, "엑셀 파일 경로를 찾을 수 없습니다."
             
-        original_data = df.iloc[df_index].to_dict()
-        
-        ext = os.path.splitext(self.main_file_path)[1]
-        target_dir = os.path.dirname(self.main_file_path) or "."
-        temp_file = tempfile.NamedTemporaryFile(dir=target_dir, delete=False, suffix=ext)
-        temp_file_path = temp_file.name
-        temp_file.close()
+            df = self.data_frames.get(sheet_name)
+            if df is None or df_index >= len(df):
+                return False, f"메모리 데이터프레임에서 인덱스 {df_index}를 찾을 수 없습니다."
+                
+            original_data = df.iloc[df_index].to_dict()
+            
+            ext = os.path.splitext(self.main_file_path)[1]
+            target_dir = os.path.dirname(self.main_file_path) or "."
+            temp_file = tempfile.NamedTemporaryFile(dir=target_dir, delete=False, suffix=ext)
+            temp_file_path = temp_file.name
+            temp_file.close()
 
-        workbook = None
-        try:
-            shutil.copy2(self.main_file_path, temp_file_path)
-            workbook = openpyxl.load_workbook(temp_file_path)
-            worksheet = workbook[sheet_name]
-            
-            try:
-                excel_row_num = self._find_matching_excel_row(worksheet, sheet_name, original_data)
-            except ValueError as ve:
-                return False, str(ve)
-            
-            # 행 삭제
-            worksheet.delete_rows(excel_row_num, 1)
-            
-            # 순번 재정렬
-            headers = {cell.value: cell.column for cell in worksheet[1] if cell.value is not None}
-            if "순번" in headers:
-                seq_col_idx = headers["순번"]
-                key_col_name = "학번" if sheet_name == GROUP_COUNSELING_SHEET else "이름"
-                if key_col_name in headers:
-                    key_col_idx = headers[key_col_name]
-                    seq_counter = 1
-                    real_max = self.find_real_max_row(worksheet)
-                    for r in range(2, real_max + 1):
-                        seq_cell = worksheet.cell(row=r, column=seq_col_idx)
-                        key_val = worksheet.cell(row=r, column=key_col_idx).value
-                        
-                        if str(seq_cell.value).strip() == "예시":
-                            continue
-                            
-                        if key_val is not None and str(key_val).strip() != "":
-                            seq_cell.value = str(seq_counter)
-                            seq_counter += 1
-
-            workbook.save(temp_file_path)
-            workbook.close()
             workbook = None
- 
-            success, err = self.swap_temp_and_original(temp_file_path, self.main_file_path)
-            if not success:
+            try:
+                shutil.copy2(self.main_file_path, temp_file_path)
+                workbook = openpyxl.load_workbook(temp_file_path)
+                worksheet = workbook[sheet_name]
+                
+                try:
+                    excel_row_num = self._find_matching_excel_row(worksheet, sheet_name, original_data)
+                except ValueError as ve:
+                    return False, str(ve)
+                
+                # 행 삭제
+                worksheet.delete_rows(excel_row_num, 1)
+                
+                # 순번 재정렬
+                headers = {cell.value: cell.column for cell in worksheet[1] if cell.value is not None}
+                if "순번" in headers:
+                    seq_col_idx = headers["순번"]
+                    key_col_name = "학번" if sheet_name == GROUP_COUNSELING_SHEET else "이름"
+                    if key_col_name in headers:
+                        key_col_idx = headers[key_col_name]
+                        seq_counter = 1
+                        real_max = self.find_real_max_row(worksheet)
+                        for r in range(2, real_max + 1):
+                            seq_cell = worksheet.cell(row=r, column=seq_col_idx)
+                            key_val = worksheet.cell(row=r, column=key_col_idx).value
+                            
+                            if str(seq_cell.value).strip() == "예시":
+                                continue
+                                
+                            if key_val is not None and str(key_val).strip() != "":
+                                seq_cell.value = str(seq_counter)
+                                seq_counter += 1
+
+                workbook.save(temp_file_path)
+                workbook.close()
+                workbook = None
+     
+                success, err = self.swap_temp_and_original(temp_file_path, self.main_file_path)
+                if not success:
+                    self.restore_latest_backup()
+                    return False, err
+
+                # 메모리 데이터프레임 동기화
+                df = df.drop(df.index[df_index]).reset_index(drop=True)
+                if "순번" in df.columns:
+                    key_col_name = "학번" if sheet_name == GROUP_COUNSELING_SHEET else "이름"
+                    seq_counter = 1
+                    for idx, row in df.iterrows():
+                        if str(row["순번"]).strip() == "예시":
+                            continue
+                        if str(row.get(key_col_name, "")).strip():
+                            df.at[idx, "순번"] = str(seq_counter)
+                            seq_counter += 1
+                
+                self.data_frames[sheet_name] = df
+                
+                if os.path.exists(self.main_file_path):
+                    self._last_loaded_time = os.path.getmtime(self.main_file_path)
+                    
+                logger.info(f"Memory Sync 완료: [{sheet_name}] row={excel_row_num} (df_index={df_index}) 삭제 및 순번 재정렬")
+                return True, None
+
+            except PermissionError:
+                return False, f"'{os.path.basename(self.main_file_path)}' 파일이 다른 프로그램에서 열려있어 삭제할 수 없습니다.\n파일을 닫고 다시 시도해주세요."
+            except Exception as e:
+                logger.error(f"delete_excel_row 에러: {e}")
                 self.restore_latest_backup()
-                return False, err
-
-            # 메모리 데이터프레임 동기화
-            df = df.drop(df.index[df_index]).reset_index(drop=True)
-            if "순번" in df.columns:
-                key_col_name = "학번" if sheet_name == GROUP_COUNSELING_SHEET else "이름"
-                seq_counter = 1
-                for idx, row in df.iterrows():
-                    if str(row["순번"]).strip() == "예시":
-                        continue
-                    if str(row.get(key_col_name, "")).strip():
-                        df.at[idx, "순번"] = str(seq_counter)
-                        seq_counter += 1
-            
-            self.data_frames[sheet_name] = df
-            logger.info(f"Memory Sync 완료: [{sheet_name}] row={excel_row_num} (df_index={df_index}) 삭제 및 순번 재정렬")
-            return True, None
-
-        except PermissionError:
-            return False, f"'{os.path.basename(self.main_file_path)}' 파일이 다른 프로그램에서 열려있어 삭제할 수 없습니다.\n파일을 닫고 다시 시도해주세요."
-        except Exception as e:
-            logger.error(f"delete_excel_row 에러: {e}")
-            self.restore_latest_backup()
-            return False, str(e)
-        finally:
-            if workbook is not None:
-                try:
-                    workbook.close()
-                except Exception:
-                    pass
-            if os.path.exists(temp_file_path):
-                try:
-                    os.remove(temp_file_path)
-                except Exception:
-                    pass
+                return False, str(e)
+            finally:
+                if workbook is not None:
+                    try:
+                        workbook.close()
+                    except Exception:
+                        pass
+                if os.path.exists(temp_file_path):
+                    try:
+                        os.remove(temp_file_path)
+                    except Exception:
+                        pass
 
     def _ensure_template_initialized(self):
         """기본 템플릿 파일이 없으면 생성합니다."""
@@ -494,134 +524,140 @@ class ExcelRepository:
 
     def append_new_row_to_excel(self, sheet_name, df_to_append):
         """지정된 데이터프레임의 행을 순번에 맞춰 엑셀 파일에 추가하고, 메모리 데이터프레임도 동기화합니다."""
-        if not self.main_file_path:
-            return False, "저장할 파일 경로가 지정되지 않았습니다."
+        with self.lock:
+            if not self.main_file_path:
+                return False, "저장할 파일 경로가 지정되지 않았습니다."
 
-        # 신규 추가 시 UUID 컬럼 및 값 자동 세팅 보장
-        if RECORD_ID_COL not in df_to_append.columns:
-            df_to_append[RECORD_ID_COL] = ""
-        for idx, row in df_to_append.iterrows():
-            if not str(row[RECORD_ID_COL]).strip():
-                df_to_append.at[idx, RECORD_ID_COL] = uuid.uuid4().hex
+            # 신규 추가 시 UUID 컬럼 및 값 자동 세팅 보장
+            if RECORD_ID_COL not in df_to_append.columns:
+                df_to_append[RECORD_ID_COL] = ""
+            for idx, row in df_to_append.iterrows():
+                if not str(row[RECORD_ID_COL]).strip():
+                    df_to_append.at[idx, RECORD_ID_COL] = uuid.uuid4().hex
 
-        ext = os.path.splitext(self.main_file_path)[1]
-        target_dir = os.path.dirname(self.main_file_path) or "."
-        temp_file = tempfile.NamedTemporaryFile(dir=target_dir, delete=False, suffix=ext)
-        temp_file_path = temp_file.name
-        temp_file.close()
+            ext = os.path.splitext(self.main_file_path)[1]
+            target_dir = os.path.dirname(self.main_file_path) or "."
+            temp_file = tempfile.NamedTemporaryFile(dir=target_dir, delete=False, suffix=ext)
+            temp_file_path = temp_file.name
+            temp_file.close()
 
-        workbook = None
-        try:
-            thin_border = Border(left=Side(style='thin'), 
-                                 right=Side(style='thin'), 
-                                 top=Side(style='thin'), 
-                                 bottom=Side(style='thin'))
-            center_alignment_with_wrap = Alignment(horizontal='center', 
-                                                   vertical='center', 
-                                                   wrap_text=True)
+            workbook = None
+            try:
+                thin_border = Border(left=Side(style='thin'), 
+                                     right=Side(style='thin'), 
+                                     top=Side(style='thin'), 
+                                     bottom=Side(style='thin'))
+                center_alignment_with_wrap = Alignment(horizontal='center', 
+                                                       vertical='center', 
+                                                       wrap_text=True)
 
-            self._ensure_template_initialized()
+                self._ensure_template_initialized()
 
-            shutil.copy2(self.main_file_path, temp_file_path)
-            workbook = openpyxl.load_workbook(temp_file_path)
-            worksheet = workbook[sheet_name] if sheet_name in workbook.sheetnames else workbook.create_sheet(title=sheet_name)
+                shutil.copy2(self.main_file_path, temp_file_path)
+                workbook = openpyxl.load_workbook(temp_file_path)
+                worksheet = workbook[sheet_name] if sheet_name in workbook.sheetnames else workbook.create_sheet(title=sheet_name)
 
-            headers, real_max = self._sync_headers(worksheet, df_to_append, thin_border, center_alignment_with_wrap)
+                headers, real_max = self._sync_headers(worksheet, df_to_append, thin_border, center_alignment_with_wrap)
 
-            target_row_idx = None
-            key_column_for_check = '학번' if sheet_name == GROUP_COUNSELING_SHEET else '이름'
+                target_row_idx = None
+                key_column_for_check = '학번' if sheet_name == GROUP_COUNSELING_SHEET else '이름'
 
-            if '순번' in headers and key_column_for_check in headers:
-                seq_col_idx = headers['순번']
-                key_col_idx = headers[key_column_for_check]
-                target_row_idx = self.find_empty_row_by_key(worksheet, seq_col_idx, key_col_idx, sheet_name)
-            
-            is_new_row = False
-            if target_row_idx is None:
-                target_row_idx = real_max + 1
-                is_new_row = True
+                if '순번' in headers and key_column_for_check in headers:
+                    seq_col_idx = headers['순번']
+                    key_col_idx = headers[key_column_for_check]
+                    target_row_idx = self.find_empty_row_by_key(worksheet, seq_col_idx, key_col_idx, sheet_name)
+                
+                is_new_row = False
+                if target_row_idx is None:
+                    target_row_idx = real_max + 1
+                    is_new_row = True
 
-            row_data_dict = df_to_append.iloc[0].to_dict()
-            sanitized_row = {}
-            for col_name, value in row_data_dict.items():
-                if col_name in headers:
-                    col_idx = headers[col_name]
-                    cell = worksheet.cell(row=target_row_idx, column=col_idx)
-                    s_val = self.sanitize_value(value)
-                    
-                    if col_name == '순번' and cell.value is not None and str(cell.value).strip() != "" and (value is None or str(value).strip() == ""):
-                        s_val = str(cell.value).strip()
+                row_data_dict = df_to_append.iloc[0].to_dict()
+                sanitized_row = {}
+                for col_name, value in row_data_dict.items():
+                    if col_name in headers:
+                        col_idx = headers[col_name]
+                        cell = worksheet.cell(row=target_row_idx, column=col_idx)
+                        s_val = self.sanitize_value(value)
                         
-                    cell.value = s_val
+                        if col_name == '순번' and cell.value is not None and str(cell.value).strip() != "" and (value is None or str(value).strip() == ""):
+                            s_val = str(cell.value).strip()
+                            
+                        cell.value = s_val
+                        cell.alignment = center_alignment_with_wrap
+                        cell.border = thin_border
+                        sanitized_row[col_name] = s_val
+
+                if is_new_row and '순번' in headers and ('순번' not in sanitized_row or sanitized_row['순번'] == ''):
+                    new_seq = self._get_next_sequence_number(worksheet, headers['순번'], real_max)
+                    worksheet.cell(row=target_row_idx, column=headers['순번']).value = new_seq
+                    sanitized_row['순번'] = new_seq
+                    cell = worksheet.cell(row=target_row_idx, column=headers['순번'])
                     cell.alignment = center_alignment_with_wrap
                     cell.border = thin_border
-                    sanitized_row[col_name] = s_val
 
-            if is_new_row and '순번' in headers and ('순번' not in sanitized_row or sanitized_row['순번'] == ''):
-                new_seq = self._get_next_sequence_number(worksheet, headers['순번'], real_max)
-                worksheet.cell(row=target_row_idx, column=headers['순번']).value = new_seq
-                sanitized_row['순번'] = new_seq
-                cell = worksheet.cell(row=target_row_idx, column=headers['순번'])
-                cell.alignment = center_alignment_with_wrap
-                cell.border = thin_border
+                workbook.save(temp_file_path)
+                workbook.close()
+                workbook = None
 
-            workbook.save(temp_file_path)
-            workbook.close()
-            workbook = None
+                success, err = self.swap_temp_and_original(temp_file_path, self.main_file_path)
+                if not success:
+                    self.restore_latest_backup()
+                    return False, err
 
-            success, err = self.swap_temp_and_original(temp_file_path, self.main_file_path)
-            if not success:
+                df = self.data_frames[sheet_name]
+                df_idx = target_row_idx - 2
+                
+                while len(df) <= df_idx:
+                    empty_row = {col: "" for col in df.columns}
+                    df = pd.concat([df, pd.DataFrame([empty_row])], ignore_index=True)
+                
+                for col, val in sanitized_row.items():
+                    df.at[df_idx, col] = val
+                self.data_frames[sheet_name] = df
+                
+                if os.path.exists(self.main_file_path):
+                    self._last_loaded_time = os.path.getmtime(self.main_file_path)
+                    
+                logger.info(f"Memory Sync 완료: [{sheet_name}] row={target_row_idx} 추가/작성")
+
+                return True, None
+
+            except PermissionError:
+                return False, f"'{os.path.basename(self.main_file_path)}' 파일이 다른 프로그램에서 열려있어 저장할 수 없습니다.\n파일을 닫고 다시 시도해주세요."
+            except Exception as e:
+                logger.error(f"append_new_row_to_excel 에러: {e}")
                 self.restore_latest_backup()
-                return False, err
-
-            df = self.data_frames[sheet_name]
-            df_idx = target_row_idx - 2
-            
-            while len(df) <= df_idx:
-                empty_row = {col: "" for col in df.columns}
-                df = pd.concat([df, pd.DataFrame([empty_row])], ignore_index=True)
-            
-            for col, val in sanitized_row.items():
-                df.at[df_idx, col] = val
-            self.data_frames[sheet_name] = df
-            logger.info(f"Memory Sync 완료: [{sheet_name}] row={target_row_idx} 추가/작성")
-
-            return True, None
-
-        except PermissionError:
-            return False, f"'{os.path.basename(self.main_file_path)}' 파일이 다른 프로그램에서 열려있어 저장할 수 없습니다.\n파일을 닫고 다시 시도해주세요."
-        except Exception as e:
-            logger.error(f"append_new_row_to_excel 에러: {e}")
-            self.restore_latest_backup()
-            return False, str(e)
-        finally:
-            if workbook is not None:
-                try:
-                    workbook.close()
-                except Exception:
-                    pass
-            if os.path.exists(temp_file_path):
-                try:
-                    os.remove(temp_file_path)
-                except Exception:
-                    pass
+                return False, str(e)
+            finally:
+                if workbook is not None:
+                    try:
+                        workbook.close()
+                    except Exception:
+                        pass
+                if os.path.exists(temp_file_path):
+                    try:
+                        os.remove(temp_file_path)
+                    except Exception:
+                        pass
 
     def save_backup_excel(self):
         """메인 파일을 backup 폴더에 날짜 포함 파일명으로 복사하여 저장합니다."""
-        if not self.main_file_path or not os.path.exists(self.main_file_path):
-            return False, "저장된 원본 파일이 없어 백업할 수 없습니다."
-
-        try:
-            backup_dir = get_writable_path("backup")
-            ensure_directory_exists(backup_dir)
-
-            backup_date = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
-            file_name = f"상담일지({backup_date}).xlsx"
-            destination_path = os.path.join(backup_dir, file_name)
-
-            shutil.copy2(self.main_file_path, destination_path)
-            logger.info(f"백업 생성 완료: {destination_path}")
-            return True, (file_name, backup_dir)
-        except Exception as e:
-            logger.error(f"save_backup_excel 에러: {e}")
-            return False, str(e)
+        with self.lock:
+            if not self.main_file_path or not os.path.exists(self.main_file_path):
+                return False, "저장된 원본 파일이 없어 백업할 수 없습니다."
+    
+            try:
+                backup_dir = get_writable_path("backup")
+                ensure_directory_exists(backup_dir)
+    
+                backup_date = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+                file_name = f"상담일지({backup_date}).xlsx"
+                destination_path = os.path.join(backup_dir, file_name)
+    
+                shutil.copy2(self.main_file_path, destination_path)
+                logger.info(f"백업 생성 완료: {destination_path}")
+                return True, (file_name, backup_dir)
+            except Exception as e:
+                logger.error(f"save_backup_excel 에러: {e}")
+                return False, str(e)
