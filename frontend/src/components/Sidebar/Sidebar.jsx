@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Search, Users, ChevronRight, AlertCircle, BookOpen, FolderOpen, Maximize2, Minimize2, UserPlus, Home } from 'lucide-react'
+import { Search, Users, ChevronRight, AlertCircle, BookOpen, FolderOpen, Maximize2, Minimize2, UserPlus, Home, Sparkles, Download, RefreshCw } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { Avatar, TagBadge } from '@/components/ui/shared'
 
@@ -274,7 +274,8 @@ export default function Sidebar({ width }) {
               {window.updaterAPI && (
                 <button
                   onClick={handleCheckUpdate}
-                  className="text-[10px] font-bold text-accent hover:text-accent-dark transition-colors cursor-pointer"
+                  className="text-[9px] font-bold px-2 py-0.75 rounded-md border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-accent transition-all cursor-pointer"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   업데이트 확인
                 </button>
@@ -283,42 +284,53 @@ export default function Sidebar({ width }) {
           )}
 
           {updateStatus === 'checking' && (
-            <div className="text-neutral-400 animate-pulse text-center">
-              업데이트 확인 중...
+            <div className="flex items-center justify-center gap-1.5 text-neutral-400 animate-pulse text-center">
+              <RefreshCw className="animate-spin" size={11} />
+              <span>업데이트 확인 중...</span>
             </div>
           )}
 
           {updateStatus === 'not-available' && (
-            <div className="text-green-600 font-semibold text-center">
+            <div className="text-green-600 font-bold text-center">
               최신 버전을 사용 중입니다.
             </div>
           )}
 
           {updateStatus === 'available' && (
-            <div className="flex flex-col gap-1.5 p-2 rounded-xl mt-1" style={{ background: 'var(--accent-soft)', border: '1px solid var(--border)' }}>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--accent)' }} />
-                <span className="font-bold text-[11px]" style={{ color: 'var(--accent-dark)' }}>
-                  새 버전 발견! (v{newVersionInfo?.version})
+            <div className="flex flex-col gap-2 p-2.5 rounded-2xl mt-1 border" style={{ background: 'linear-gradient(135deg, var(--accent-soft), rgba(75,142,241,0.08))', borderColor: 'rgba(75,142,241,0.25)' }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-accent animate-bounce" style={{ color: 'var(--accent)' }} />
+                  <span className="font-bold text-[11px]" style={{ color: 'var(--accent-dark)' }}>
+                    새 버전 발견!
+                  </span>
+                </div>
+                <span className="text-[10px] font-extrabold px-1.5 py-0.25 rounded bg-accent text-white">
+                  v{newVersionInfo?.version}
                 </span>
               </div>
               <button
                 onClick={handleDownload}
-                className="w-full text-center text-[10px] font-bold py-1.5 rounded-lg bg-accent text-white hover:opacity-95 active:scale-[0.98] transition-all cursor-pointer"
-                style={{ boxShadow: '0 2px 6px rgba(75,142,241,0.2)' }}
+                className="w-full flex items-center justify-center gap-1.5 text-center text-xs font-extrabold py-2.5 rounded-xl bg-accent text-white hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                style={{ 
+                  backgroundColor: 'var(--accent)',
+                  boxShadow: '0 4px 14px rgba(75,142,241,0.45)',
+                  textShadow: '0 1px 1px rgba(0,0,0,0.1)'
+                }}
               >
+                <Download size={13} />
                 업데이트 다운로드
               </button>
             </div>
           )}
 
           {updateStatus === 'downloading' && (
-            <div className="space-y-1">
-              <div className="flex justify-between text-blue-500 font-medium">
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-blue-500 font-bold text-[10px]">
                 <span>새 업데이트 다운로드 중...</span>
                 <span>{downloadPercent}%</span>
               </div>
-              <div className="w-full h-1 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-blue-500 transition-all duration-300" 
                   style={{ width: `${downloadPercent}%` }}
@@ -328,11 +340,12 @@ export default function Sidebar({ width }) {
           )}
 
           {updateStatus === 'downloaded' && (
-            <div className="flex justify-between items-center">
-              <span className="text-green-600 font-semibold animate-pulse">다운로드 완료!</span>
+            <div className="flex justify-between items-center bg-green-50/50 dark:bg-green-950/20 p-1.5 rounded-xl border border-green-100 dark:border-green-900/30">
+              <span className="text-green-600 dark:text-green-400 font-bold animate-pulse text-[10px]">다운로드 완료!</span>
               <button
                 onClick={handleRestart}
-                className="text-[10px] font-bold px-2 py-0.5 rounded bg-green-500 text-white hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                className="text-[10px] font-bold px-2.5 py-1 rounded bg-green-500 text-white hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                style={{ boxShadow: '0 2px 6px rgba(34,197,94,0.3)' }}
               >
                 지금 재시작
               </button>
