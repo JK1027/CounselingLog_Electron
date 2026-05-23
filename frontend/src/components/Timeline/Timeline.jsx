@@ -1,10 +1,16 @@
-import { useState } from 'react'
-import { Plus, FileText, Calendar, Layers, Edit2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, FileText, Calendar, Layers, Edit2, Trash2, Printer } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { Avatar, TagBadge, formatDate } from '@/components/ui/shared'
 
-export default function Timeline() {
-  const { selectedStudent, sessions, selectedSession, setSelectedSession, setEditorOpen, setEditorMode } = useAppStore()
+export default function Timeline({ onOpenPrintModal }) {
+  const { selectedStudent, sessions, selectedSession, setSelectedSession, setEditorOpen, setEditorMode, isCompactMode, deleteSession } = useAppStore()
+  const [selectedSheetFilter, setSelectedSheetFilter] = useState('전체')
+
+  // 학생 변경 시 필터 '전체'로 초기화
+  useEffect(() => {
+    setSelectedSheetFilter('전체')
+  }, [selectedStudent?.id])
 
   if (!selectedStudent) {
     return <EmptyState />
@@ -15,6 +21,16 @@ export default function Timeline() {
     setEditorOpen(true)
   }
 
+  const getCountForFilter = (filter) => {
+    if (filter === '전체') return sessions?.length || 0
+    return sessions?.filter(s => s.sheetType === filter).length || 0
+  }
+
+  const filteredSessions = sessions ? sessions.filter(session => {
+    if (selectedSheetFilter === '전체') return true
+    return session.sheetType === selectedSheetFilter
+  }) : []
+
   return (
     <main
       className="flex flex-col h-full"
@@ -22,22 +38,24 @@ export default function Timeline() {
     >
       {/* 학생 헤더 */}
       <div
-        className="px-6 py-4 flex items-center justify-between shrink-0"
+        className={`flex items-center justify-between shrink-0 transition-all ${
+          isCompactMode ? 'px-4 py-2.5' : 'px-6 py-4'
+        }`}
         style={{
           borderBottom: '1px solid var(--border)',
           background: 'var(--bg-secondary)',
           boxShadow: 'var(--shadow-sm)',
         }}
       >
-        <div className="flex items-center gap-4">
-          <Avatar name={selectedStudent.name} size="lg" />
+        <div className={`flex items-center ${isCompactMode ? 'gap-3' : 'gap-4'}`}>
+          <Avatar name={selectedStudent.name} size={isCompactMode ? "md" : "lg"} />
           <div>
-            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+            <h2 className={`${isCompactMode ? 'text-base' : 'text-lg'} font-bold`} style={{ color: 'var(--text-primary)' }}>
               {selectedStudent.name}
             </h2>
             <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {selectedStudent.grade}학년 · {selectedStudent.studentId} · {selectedStudent.gender}
+              <span className={isCompactMode ? 'text-xs' : 'text-sm'} style={{ color: 'var(--text-secondary)' }}>
+                {selectedStudent.grade}학년 · {selectedStudent.studentId} · {selectedStudent.gender} {selectedStudent.ban && `· ${selectedStudent.ban}반`}
               </span>
               <span
                 className="text-xs px-2.5 py-0.5 rounded-full font-semibold"
@@ -49,40 +67,107 @@ export default function Timeline() {
           </div>
         </div>
 
-        <button
-          onClick={handleNewSession}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 hover:opacity-90 active:scale-95"
-          style={{ background: 'var(--accent)', color: 'white', boxShadow: '0 2px 8px rgba(75,142,241,0.35)' }}
-        >
-          <Plus size={15} />
-          새 상담 기록
-        </button>
+        <div className="flex items-center gap-2 print-exclude">
+          <button
+            onClick={onOpenPrintModal}
+            className={`flex items-center gap-1.5 rounded-xl text-sm font-semibold border transition-all duration-150 hover:bg-hover active:scale-95 cursor-pointer ${
+              isCompactMode ? 'px-3 py-1.5 text-xs' : 'px-4 py-2'
+            }`}
+            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-primary)' }}
+          >
+            <Printer size={isCompactMode ? 13 : 15} />
+            인쇄
+          </button>
+          <button
+            onClick={handleNewSession}
+            className={`flex items-center gap-2 rounded-xl text-sm font-semibold transition-all duration-150 hover:opacity-90 active:scale-95 cursor-pointer ${
+              isCompactMode ? 'px-3 py-1.5 text-xs' : 'px-4 py-2'
+            }`}
+            style={{ background: 'var(--accent)', color: 'white', boxShadow: '0 2px 8px rgba(75,142,241,0.35)' }}
+          >
+            <Plus size={isCompactMode ? 13 : 15} />
+            새 상담 기록
+          </button>
+        </div>
       </div>
 
       {/* 태그 */}
       {selectedStudent.tags?.length > 0 && (
-        <div className="px-6 py-2.5 flex items-center gap-2 shrink-0"
+        <div className={`flex items-center gap-2 shrink-0 ${isCompactMode ? 'px-4 py-1.5' : 'px-6 py-2.5'}`}
           style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
           <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>상담 유형:</span>
           {selectedStudent.tags.map(tag => <TagBadge key={tag} type={tag} />)}
         </div>
       )}
 
+      {/* 상담 시트 유형 필터 탭 바 */}
+      <div 
+        className={`flex items-center gap-1.5 shrink-0 overflow-x-auto select-none no-scrollbar ${isCompactMode ? 'px-4 py-2' : 'px-6 py-3'}`}
+        style={{ 
+          borderBottom: '1px solid var(--border)', 
+          background: 'var(--bg-secondary)'
+        }}
+      >
+        {['전체', '개인상담', '집단상담', '보호자상담', '교원자문', '의뢰'].map(filter => {
+          const count = getCountForFilter(filter)
+          const isActive = selectedSheetFilter === filter
+          return (
+            <button
+              key={filter}
+              onClick={() => setSelectedSheetFilter(filter)}
+              className={`flex items-center gap-1.5 rounded-full shrink-0 transition-all cursor-pointer font-bold ${
+                isCompactMode ? 'px-2.5 py-1 text-[11px]' : 'px-3.5 py-1.5 text-xs'
+              }`}
+              style={{
+                background: isActive ? 'var(--accent)' : 'var(--bg-primary)',
+                color: isActive ? 'white' : 'var(--text-secondary)',
+                border: '1px solid var(--border)',
+                boxShadow: isActive ? '0 2px 6px rgba(75,142,241,0.2)' : 'none'
+              }}
+            >
+              <span>{filter}</span>
+              <span 
+                className="rounded-full px-1.5 py-0.25 text-[10px] font-bold"
+                style={{ 
+                  background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-hover)',
+                  color: isActive ? 'white' : 'var(--text-muted)'
+                }}
+              >
+                {count}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
       {/* 타임라인 */}
-      <div className="flex-1 overflow-y-auto px-6 py-5">
+      <div className={`flex-1 overflow-y-auto ${isCompactMode ? 'px-4 py-3' : 'px-6 py-5'}`}>
         {sessions && sessions.length > 0 ? (
-          <div className="space-y-3">
-            {sessions.map((session, idx) => (
-              <SessionCard
-                key={session.id}
-                session={session}
-                sessionNumber={sessions.length - idx}
-                isSelected={selectedSession?.id === session.id}
-                onClick={() => setSelectedSession(session)}
-                onEdit={() => { setSelectedSession(session); setEditorMode('edit'); setEditorOpen(true) }}
-              />
-            ))}
-          </div>
+          filteredSessions.length > 0 ? (
+            <div className={isCompactMode ? 'space-y-1.5' : 'space-y-3'}>
+              {filteredSessions.map((session, idx) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  sessionNumber={filteredSessions.length - idx}
+                  isSelected={selectedSession?.id === session.id}
+                  onClick={() => setSelectedSession(session)}
+                  onEdit={() => { setSelectedSession(session); setEditorMode('edit'); setEditorOpen(true) }}
+                  onDelete={() => deleteSession(session.id)}
+                  isCompact={isCompactMode}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 gap-2 text-center">
+              <p style={{ color: 'var(--text-muted)' }} className="text-sm font-semibold">
+                선택한 유형('{selectedSheetFilter}')의 상담 기록이 없습니다.
+              </p>
+              <p style={{ color: 'var(--text-muted)' }} className="text-xs">
+                다른 필터 탭을 선택해 주십시오.
+              </p>
+            </div>
+          )
         ) : (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
@@ -104,79 +189,123 @@ export default function Timeline() {
   )
 }
 
-function SessionCard({ session, sessionNumber, isSelected, onClick, onEdit }) {
+function SessionCard({ session, sessionNumber, isSelected, onClick, onEdit, onDelete, isCompact }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const typeColors = {
-    '자해 및 자살':   { border: '#e05252', bg: '#fdf2f2' },
-    '학교폭력 피해':  { border: '#e05252', bg: '#fdf2f2' },
-    '학교폭력 가해':  { border: '#d97706', bg: '#fffbeb' },
-    '정신건강':       { border: '#ea580c', bg: '#fff7ed' },
-    '진로':           { border: '#2563eb', bg: '#eff6ff' },
-    '학업':           { border: '#7c3aed', bg: '#f5f3ff' },
-    '대인관계':       { border: '#059669', bg: '#ecfdf5' },
+    '자해 및 자살':   { border: '#ef4444', bg: '#fef2f2', text: '#ef4444' },
+    '학교폭력 피해':  { border: '#ef4444', bg: '#fef2f2', text: '#ef4444' },
+    '학교폭력 가해':  { border: '#f97316', bg: '#fff7ed', text: '#f97316' },
+    '정신건강':       { border: '#f97316', bg: '#fff7ed', text: '#f97316' },
+    '진로':           { border: '#3b82f6', bg: '#eff6ff', text: '#3b82f6' },
+    '학업':           { border: '#8b5cf6', bg: '#f5f3ff', text: '#8b5cf6' },
+    '대인관계':       { border: '#10b981', bg: '#ecfdf5', text: '#10b981' },
+    '일반상담':       { border: '#6b7280', bg: '#f3f4f6', text: '#6b7280' },
+    '기타':           { border: '#6b7280', bg: '#f3f4f6', text: '#6b7280' },
   }
-  const color = typeColors[session.type] || { border: '#64748b', bg: '#f8fafc' }
+  const color = typeColors[session.type] || { border: '#9ca3af', bg: '#f9fafb', text: '#4b5563' }
+
+  const sheetTypeColors = {
+    '개인상담': 'bg-blue-50/80 text-blue-700 border-blue-100/50',
+    '집단상담': 'bg-indigo-50/80 text-indigo-700 border-indigo-100/50',
+    '보호자상담': 'bg-emerald-50/80 text-emerald-700 border-emerald-100/50',
+    '교원자문': 'bg-purple-50/80 text-purple-700 border-purple-100/50',
+    '의뢰': 'bg-pink-50/80 text-pink-700 border-pink-100/50',
+  }
+  const sheetClass = sheetTypeColors[session.sheetType] || 'bg-gray-50 text-gray-700 border-gray-100'
 
   return (
     <div
       onClick={() => { onClick(); setIsExpanded(!isExpanded); }}
-      className="rounded-2xl p-4 cursor-pointer transition-all duration-200 group"
+      className={`cursor-pointer transition-all duration-200 group border-l-4 ${
+        isCompact ? 'rounded-xl p-2.5' : 'rounded-2xl p-4'
+      }`}
       style={{
         background: 'var(--bg-card)',
-        border: isSelected
-          ? `1.5px solid var(--accent)`
-          : '1.5px solid var(--border)',
+        borderTop: isSelected ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+        borderRight: isSelected ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+        borderBottom: isSelected ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+        borderLeftColor: color.border,
         boxShadow: isSelected ? 'var(--shadow-md)' : 'var(--shadow-sm)',
-        borderLeft: `4px solid ${color.border}`,
       }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
+      <div className={`flex items-start justify-between ${isCompact ? 'gap-2' : 'gap-3'}`}>
+        <div className={`flex items-start ${isCompact ? 'gap-2' : 'gap-3'} flex-1 min-w-0`}>
           {/* 회기 번호 */}
           <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0"
-            style={{ background: color.bg, color: color.border }}
+            className={`rounded-xl flex items-center justify-center font-bold shrink-0 ${
+              isCompact ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs'
+            }`}
+            style={{ background: color.bg, color: color.text }}
           >
             {sessionNumber}
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-lg"
-                style={{ background: color.bg, color: color.border }}>
+            <div className={`flex items-center gap-1.5 flex-wrap ${isCompact ? 'mb-1' : 'mb-1.5'}`}>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                style={{ background: color.bg, color: color.text }}>
                 {session.type}
               </span>
-              <span className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-                <Calendar size={10} />
-                {formatDate(session.date)}
-              </span>
-              <span className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-                <Layers size={10} />
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${sheetClass}`}>
                 {session.sheetType}
               </span>
+              <span className="text-[10px] flex items-center gap-0.5" style={{ color: 'var(--text-muted)' }}>
+                <Calendar size={9} />
+                {formatDate(session.date)}
+              </span>
+              {session.session && (
+                <span className="text-[10px] px-1 py-0.25 rounded bg-gray-100 text-gray-600 font-medium">
+                  {session.session}회기
+                </span>
+              )}
             </div>
-            <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+            <p className={`${isCompact ? 'text-xs' : 'text-sm'} font-semibold mb-0.5`} style={{ color: 'var(--text-primary)' }}>
               {session.summary}
             </p>
-            <p className={`text-xs leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}`} style={{ color: 'var(--text-secondary)' }}>
-              {session.detail}
-            </p>
-            {session.detail && session.detail.length > 80 && (
-              <span className="text-[10px] font-bold mt-1.5 inline-block" style={{ color: 'var(--accent)' }}>
+            {session.detail && (
+              <p className={`text-xs leading-relaxed ${
+                isCompact 
+                  ? (isExpanded ? 'block mt-1' : 'line-clamp-1 opacity-70 mt-0.5') 
+                  : (isExpanded ? 'block mt-1' : 'line-clamp-2 mt-1')
+              }`} style={{ color: 'var(--text-secondary)' }}>
+                {session.detail}
+              </p>
+            )}
+            {session.detail && session.detail.length > (isCompact ? 40 : 80) && (
+              <span className="text-[10px] font-bold mt-1 inline-block" style={{ color: 'var(--accent)' }}>
                 {isExpanded ? '접기 ▲' : '더보기 ▼'}
               </span>
             )}
           </div>
         </div>
 
-        <button
-          onClick={e => { e.stopPropagation(); onEdit() }}
-          className="shrink-0 text-xs px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1"
-          style={{ background: 'var(--accent-soft)', color: 'var(--accent-dark)' }}
-        >
-          <Edit2 size={11} />
-          수정
-        </button>
+        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-all">
+          <button
+            onClick={e => { e.stopPropagation(); onEdit() }}
+            className={`flex items-center gap-1 ${
+              isCompact ? 'text-[10px] px-2 py-1 rounded-md' : 'text-xs px-2.5 py-1.5 rounded-lg'
+            }`}
+            style={{ background: 'var(--accent-soft)', color: 'var(--accent-dark)' }}
+          >
+            <Edit2 size={isCompact ? 10 : 11} />
+            수정
+          </button>
+          <button
+            onClick={e => {
+              e.stopPropagation();
+              if (window.confirm("정말로 이 상담 기록을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.")) {
+                onDelete();
+              }
+            }}
+            className={`flex items-center gap-1 ${
+              isCompact ? 'text-[10px] px-2 py-1 rounded-md' : 'text-xs px-2.5 py-1.5 rounded-lg'
+            }`}
+            style={{ background: '#fef2f2', color: '#ef4444' }}
+          >
+            <Trash2 size={isCompact ? 10 : 11} />
+            삭제
+          </button>
+        </div>
       </div>
     </div>
   )

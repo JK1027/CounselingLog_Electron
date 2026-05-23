@@ -356,6 +356,100 @@ class ExcelRepository:
                 except Exception:
                     pass
 
+    def delete_excel_row(self, sheet_name, df_index):
+        """지정된 행을 엑셀 파일에서 삭제하고 메모리 데이터프레임에서도 동기화합니다. 순번이 존재하는 경우 순번을 재정렬합니다."""
+        if not self.main_file_path:
+            return False, "엑셀 파일 경로를 찾을 수 없습니다."
+        
+        df = self.data_frames.get(sheet_name)
+        if df is None or df_index >= len(df):
+            return False, f"메모리 데이터프레임에서 인덱스 {df_index}를 찾을 수 없습니다."
+            
+        original_data = df.iloc[df_index].to_dict()
+        
+        ext = os.path.splitext(self.main_file_path)[1]
+        target_dir = os.path.dirname(self.main_file_path) or "."
+        temp_file = tempfile.NamedTemporaryFile(dir=target_dir, delete=False, suffix=ext)
+        temp_file_path = temp_file.name
+        temp_file.close()
+
+        workbook = None
+        try:
+            shutil.copy2(self.main_file_path, temp_file_path)
+            workbook = openpyxl.load_workbook(temp_file_path)
+            worksheet = workbook[sheet_name]
+            
+            try:
+                excel_row_num = self._find_matching_excel_row(worksheet, sheet_name, original_data)
+            except ValueError as ve:
+                return False, str(ve)
+            
+            # 행 삭제
+            worksheet.delete_rows(excel_row_num, 1)
+            
+            # 순번 재정렬
+            headers = {cell.value: cell.column for cell in worksheet[1] if cell.value is not None}
+            if "순번" in headers:
+                seq_col_idx = headers["순번"]
+                key_col_name = "학번" if sheet_name == GROUP_COUNSELING_SHEET else "이름"
+                if key_col_name in headers:
+                    key_col_idx = headers[key_col_name]
+                    seq_counter = 1
+                    real_max = self.find_real_max_row(worksheet)
+                    for r in range(2, real_max + 1):
+                        seq_cell = worksheet.cell(row=r, column=seq_col_idx)
+                        key_val = worksheet.cell(row=r, column=key_col_idx).value
+                        
+                        if str(seq_cell.value).strip() == "예시":
+                            continue
+                            
+                        if key_val is not None and str(key_val).strip() != "":
+                            seq_cell.value = str(seq_counter)
+                            seq_counter += 1
+
+            workbook.save(temp_file_path)
+            workbook.close()
+            workbook = None
+ 
+            success, err = self.swap_temp_and_original(temp_file_path, self.main_file_path)
+            if not success:
+                self.restore_latest_backup()
+                return False, err
+
+            # 메모리 데이터프레임 동기화
+            df = df.drop(df.index[df_index]).reset_index(drop=True)
+            if "순번" in df.columns:
+                key_col_name = "학번" if sheet_name == GROUP_COUNSELING_SHEET else "이름"
+                seq_counter = 1
+                for idx, row in df.iterrows():
+                    if str(row["순번"]).strip() == "예시":
+                        continue
+                    if str(row.get(key_col_name, "")).strip():
+                        df.at[idx, "순번"] = str(seq_counter)
+                        seq_counter += 1
+            
+            self.data_frames[sheet_name] = df
+            logger.info(f"Memory Sync 완료: [{sheet_name}] row={excel_row_num} (df_index={df_index}) 삭제 및 순번 재정렬")
+            return True, None
+
+        except PermissionError:
+            return False, f"'{os.path.basename(self.main_file_path)}' 파일이 다른 프로그램에서 열려있어 삭제할 수 없습니다.\n파일을 닫고 다시 시도해주세요."
+        except Exception as e:
+            logger.error(f"delete_excel_row 에러: {e}")
+            self.restore_latest_backup()
+            return False, str(e)
+        finally:
+            if workbook is not None:
+                try:
+                    workbook.close()
+                except Exception:
+                    pass
+            if os.path.exists(temp_file_path):
+                try:
+                    os.remove(temp_file_path)
+                except Exception:
+                    pass
+
     def _ensure_template_initialized(self):
         """기본 템플릿 파일이 없으면 생성합니다."""
         if not os.path.exists(self.main_file_path):

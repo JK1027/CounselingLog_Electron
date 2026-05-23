@@ -15,7 +15,7 @@ export function formatDate(dateStr) {
 }
 
 export function Avatar({ name, size = 'md', selected = false }) {
-  const sizes = { sm: 'w-7 h-7 text-xs', md: 'w-9 h-9 text-sm', lg: 'w-12 h-12 text-base' }
+  const sizes = { xs: 'w-5 h-5 text-[9px]', sm: 'w-7 h-7 text-xs', md: 'w-9 h-9 text-sm', lg: 'w-12 h-12 text-base' }
   const colors = [
     'bg-violet-100 text-violet-600',
     'bg-blue-100 text-blue-600',

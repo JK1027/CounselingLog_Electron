@@ -1,8 +1,8 @@
-import { BarChart2, Clock, AlertTriangle, BookOpen, Archive } from 'lucide-react'
+import { BarChart2, Clock, AlertTriangle, BookOpen, Archive, Printer } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { Avatar, formatDate } from '@/components/ui/shared'
 
-export default function Dashboard() {
+export default function Dashboard({ onOpenPrintModal }) {
   const { students, todayStats, setSelectedStudent, setEditorOpen, setEditorMode } = useAppStore()
 
   const recentStudents = [...students]
@@ -16,19 +16,26 @@ export default function Dashboard() {
   return (
     <div className="flex-1 overflow-y-auto p-6" style={{ background: 'var(--bg-primary)' }}>
       {/* 페이지 헤더 */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>오늘의 상담</h2>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-          {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
-        </p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>오늘의 상담</h2>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+          </p>
+        </div>
+        <button
+          onClick={onOpenPrintModal}
+          className="flex items-center gap-1.5 rounded-xl text-xs font-semibold border px-3 py-1.5 transition-all duration-150 hover:bg-hover active:scale-95 cursor-pointer print-exclude"
+          style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-primary)' }}
+        >
+          <Printer size={13} />
+          상담일지 출력
+        </button>
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <StatCard icon={<BookOpen size={18} />} label="오늘 상담" value={todayStats.total} unit="건" color="var(--accent)" />
-        <StatCard icon={<Clock size={18} />} label="미작성" value={todayStats.pending} unit="건" color="var(--yellow)" />
-        <StatCard icon={<BarChart2 size={18} />} label="보호자 상담" value={todayStats.guardian} unit="건" color="var(--green)" />
-        <StatCard icon={<Archive size={18} />} label="의뢰" value={todayStats.referral} unit="건" color="var(--orange)" />
+      <div className="mb-6">
+        <StatCard icon={<BookOpen size={20} />} label="오늘 진행된 상담" value={todayStats.total} unit="건" color="var(--accent)" />
       </div>
 
       {/* 주의 학생 */}

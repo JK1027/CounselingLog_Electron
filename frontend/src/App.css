@@ -24,6 +24,77 @@ select:focus-visible {
   outline-offset: 2px;
 }
 
+/* 프린트 및 인쇄 전용 스타일 */
+@media print {
+  /* 인쇄 모드 시 화면의 기본 레이아웃 컴포넌트들을 감춤 */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* 미리보기 및 인쇄할 루트 엘리먼트와 그 자식들만 인쇄함 */
+  #print-preview-root,
+  #print-preview-root * {
+    visibility: visible;
+  }
+
+  /* 인쇄될 최상단 엘리먼트 위치 재조정 */
+  #print-preview-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* 화면 상에서 인쇄와 상관없는 제어 단추, 툴바 등 제거 */
+  .print-exclude {
+    display: none !important;
+  }
+
+  /* A4 낱장 페이지 설정 */
+  .print-page {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 10mm 15mm !important; /* 인쇄용 상하좌우 여백 */
+    background: white !important;
+    width: 100% !important;
+    min-height: auto !important;
+  }
+
+  /* 각 일지 카드 단위로 인쇄 페이지 줄바꿈 */
+  .page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  /* A4 용지 규격 설정 */
+  @page {
+    size: A4 portrait;
+    margin: 0; /* 브라우저 마진을 없애고 print-page의 padding으로 제어 */
+  }
+
+  /* 테이블 헤더 페이지마다 고정 */
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    page-break-inside: avoid;
+  }
+}
+
+/* 스크롤바 미표출용 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
 /* 선택 텍스트 색상 */
 ::selection {
   background: var(--accent-glow);

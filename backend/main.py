@@ -68,6 +68,16 @@ class SessionUpdate(BaseModel):
 class OpenFileRequest(BaseModel):
     path: str
 
+def extract_ban_from_student_id(student_id: str) -> str:
+    student_id = student_id.strip()
+    if not student_id.isdigit():
+        return ""
+    if len(student_id) == 4:
+        return str(int(student_id[1]))  # 1203 -> 2
+    elif len(student_id) == 5:
+        return str(int(student_id[1:3]))  # 10203 -> 2, 11203 -> 12
+    return ""
+
 @app.get("/students")
 def get_students():
     """
@@ -106,6 +116,7 @@ def get_students():
             if grade.endswith("학년"):
                 grade = grade.replace("학년", "").strip()
             
+            ban = extract_ban_from_student_id(student_id)
             gender = str(row.get("성별", "")).strip()
             date = str(row.get("*상담일자", "")).strip()
             tag = str(row.get("*상담구분", "")).strip()
@@ -117,6 +128,7 @@ def get_students():
                     "name": name,
                     "studentId": student_id,
                     "grade": grade,
+                    "ban": ban,
                     "gender": gender,
                     "sessionCount": 0,
                     "lastDate": "",
@@ -127,9 +139,11 @@ def get_students():
             student["sessionCount"] += 1
             if date and (not student["lastDate"] or date > student["lastDate"]):
                 student["lastDate"] = date
-                # 학년과 성별도 최신 상담 기록 기준으로 업데이트
+                # 학년, 반, 성별도 최신 상담 기록 기준으로 업데이트
                 if grade:
                     student["grade"] = grade
+                if ban:
+                    student["ban"] = ban
                 if gender:
                     student["gender"] = gender
             
@@ -223,6 +237,70 @@ def get_sessions(student_name: str, student_id: str = Query("")):
                     })
 
     # 날짜 역순으로 정렬
+    sessions.sort(key=lambda x: x["date"], reverse=True)
+    return sessions
+
+@app.get("/sessions")
+def get_all_sessions(sheet_type: str = Query(None)):
+    """
+    인쇄/조회용으로 전체 상담 내역 또는 특정 시트의 상담 내역을 조회합니다.
+    """
+    try:
+        repo.load_data(CURRENT_EXCEL_PATH)
+    except Exception as e:
+        logger.error(f"데이터 리로드 실패: {e}")
+
+    sessions = []
+    
+    if sheet_type:
+        sheet_mapping = {
+            "개인상담": ["개인상담"],
+            "집단상담": [GROUP_COUNSELING_SHEET],
+            "보호자상담": ["보호자상담"],
+            "교원자문": ["교원자문"],
+            "의뢰": [REQUEST_SHEET]
+        }
+        target_sheets = sheet_mapping.get(sheet_type, [])
+    else:
+        target_sheets = SHEET_NAMES
+        
+    for sheet in target_sheets:
+        df = repo.data_frames.get(sheet)
+        if df is None or df.empty:
+            continue
+            
+        sheet_type_short = sheet
+        if "의뢰" in sheet:
+            sheet_type_short = "의뢰"
+        elif sheet == GROUP_COUNSELING_SHEET:
+            sheet_type_short = "집단상담"
+            
+        for idx, row in df.iterrows():
+            if str(row.get("순번", "")).strip() == "예시":
+                continue
+                
+            name = str(row.get("이름", "")).strip() if "이름" in row else ""
+            student_id = str(row.get("학번", "")).strip().replace(".0", "")
+            
+            if not name and not student_id:
+                continue
+                
+            sessions.append({
+                "id": str(row.get(RECORD_ID_COL, "")),
+                "name": name,
+                "studentId": student_id,
+                "grade": str(row.get("학년", "")).strip().replace("학년", ""),
+                "gender": str(row.get("성별", "")).strip(),
+                "date": str(row.get("*상담일자", "")),
+                "session": str(row.get("상담회기", "")) if "상담회기" in row else "",
+                "type": str(row.get("*상담구분", "")),
+                "sheetType": sheet_type_short,
+                "summary": str(row.get("*상담제목", "")),
+                "detail": str(row.get("상담내용(상세)", "")),
+                "rawIndex": idx
+            })
+            
+    # 날짜 최신순 정렬
     sessions.sort(key=lambda x: x["date"], reverse=True)
     return sessions
 
@@ -359,6 +437,40 @@ def update_session(session_id: str, data: SessionUpdate):
     }
 
     success, err = repo.update_excel_row(target_sheet, target_idx, updates)
+    if not success:
+        raise HTTPException(status_code=500, detail=err)
+
+    return {"status": "success"}
+
+@app.delete("/sessions/{session_id}")
+def delete_session(session_id: str):
+    """
+    기존 상담 기록을 삭제하고 엑셀 시트에 안전하게 반영합니다.
+    """
+    try:
+        repo.load_data(CURRENT_EXCEL_PATH)
+    except Exception as e:
+        logger.error(f"데이터 리로드 실패: {e}")
+
+    # 모든 시트에서 UUID에 해당하는 행을 검색합니다.
+    target_sheet = None
+    target_idx = None
+
+    for sheet_name in SHEET_NAMES:
+        df = repo.data_frames.get(sheet_name)
+        if df is None or df.empty:
+            continue
+        
+        matches = df[df[RECORD_ID_COL] == session_id]
+        if not matches.empty:
+            target_sheet = sheet_name
+            target_idx = int(matches.index[0])
+            break
+
+    if target_sheet is None:
+        raise HTTPException(status_code=404, detail="해당 ID의 상담 기록을 찾을 수 없습니다.")
+
+    success, err = repo.delete_excel_row(target_sheet, target_idx)
     if not success:
         raise HTTPException(status_code=500, detail=err)
 

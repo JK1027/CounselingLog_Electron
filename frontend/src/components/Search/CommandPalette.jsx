@@ -7,6 +7,8 @@ export default function CommandPalette() {
   const { 
     commandOpen, 
     setCommandOpen, 
+    registerOpen,
+    setRegisterOpen,
     searchQuery, 
     setSearchQuery, 
     setSelectedStudent, 
@@ -38,10 +40,19 @@ export default function CommandPalette() {
         grade: '',
         gender: ''
       })
+    } else if (registerOpen) {
+      setSelectedIndex(0)
+      setShowRegisterForm(true)
+      setRegisterForm({
+        name: '',
+        studentId: '',
+        grade: '',
+        gender: '남'
+      })
     } else {
       setSearchQuery('')
     }
-  }, [commandOpen])
+  }, [commandOpen, registerOpen])
 
   useEffect(() => {
     setSelectedIndex(0)
@@ -53,20 +64,21 @@ export default function CommandPalette() {
         e.preventDefault()
         setCommandOpen(!commandOpen)
       }
-      if (e.key === 'Escape' && commandOpen) {
+      if (e.key === 'Escape' && (commandOpen || registerOpen)) {
         e.preventDefault()
-        if (showRegisterForm) {
+        if (showRegisterForm && commandOpen) {
           setShowRegisterForm(false)
         } else {
           setCommandOpen(false)
+          setRegisterOpen(false)
         }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [commandOpen, showRegisterForm])
+  }, [commandOpen, registerOpen, showRegisterForm])
 
-  if (!commandOpen) return null
+  if (!commandOpen && !registerOpen) return null
 
   const handleSelect = (student) => {
     setSelectedStudent(student)
@@ -143,7 +155,7 @@ export default function CommandPalette() {
       <div
         className="fixed inset-0 z-50 flex items-start justify-center pt-24"
         style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
-        onClick={() => setCommandOpen(false)}
+        onClick={() => { setCommandOpen(false); setRegisterOpen(false); }}
       >
         {/* 팔레트 */}
         <div
@@ -156,7 +168,13 @@ export default function CommandPalette() {
             <div className="p-6 flex flex-col gap-4">
               <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
                 <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>신규 학생 등록</h3>
-                <button onClick={() => setShowRegisterForm(false)} className="hover:opacity-70 transition-opacity">
+                <button onClick={() => {
+                  if (commandOpen) {
+                    setShowRegisterForm(false)
+                  } else {
+                    setRegisterOpen(false)
+                  }
+                }} className="hover:opacity-70 transition-opacity">
                   <X size={18} style={{ color: 'var(--text-muted)' }} />
                 </button>
               </div>
@@ -234,7 +252,13 @@ export default function CommandPalette() {
               <div className="flex justify-end gap-2 mt-4 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
                 <button
                   type="button"
-                  onClick={() => setShowRegisterForm(false)}
+                  onClick={() => {
+                    if (commandOpen) {
+                      setShowRegisterForm(false)
+                    } else {
+                      setRegisterOpen(false)
+                    }
+                  }}
                   className="px-4 py-2 text-xs font-semibold rounded-lg border transition-all hover:bg-neutral-50"
                   style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
                 >

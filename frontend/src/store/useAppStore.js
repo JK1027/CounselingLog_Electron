@@ -13,6 +13,27 @@ export const useAppStore = create((set, get) => ({
   // 오늘 대시보드 통계
   todayStats: { total: 0, pending: 0, guardian: 0, referral: 0 },
 
+  // 학급 필터 상태
+  selectedGradeFilter: '',
+  selectedBanFilter: '',
+  setGradeFilter: (grade) => set({ selectedGradeFilter: grade, selectedBanFilter: '' }),
+  setBanFilter: (ban) => set({ selectedBanFilter: ban }),
+
+  // 저장 안정성 UX 상태
+  saveState: 'idle', // 'idle' | 'saving' | 'saved' | 'error'
+
+  // 연속 입력 모드 상태
+  isContinuousEntry: false,
+  setContinuousEntry: (val) => set({ isContinuousEntry: val }),
+
+  // 컴팩트 모드 상태
+  isCompactMode: localStorage.getItem('counseling_compact_mode') === 'true',
+  toggleCompactMode: () => set(state => {
+    const next = !state.isCompactMode
+    localStorage.setItem('counseling_compact_mode', String(next))
+    return { isCompactMode: next }
+  }),
+
   // Toast 목록
   toasts: [],
   addToast: (message, type = 'success') => {
@@ -45,6 +66,8 @@ export const useAppStore = create((set, get) => ({
   // Command Palette 열림 여부
   commandOpen: false,
   setCommandOpen: (open) => set({ commandOpen: open }),
+  registerOpen: false,
+  setRegisterOpen: (open) => set({ registerOpen: open }),
 
   // Quick Editor 패널 열림 여부
   editorOpen: false,
@@ -120,6 +143,7 @@ export const useAppStore = create((set, get) => ({
       selectedStudent: newVirtualStudent,
       sessions: [],
       commandOpen: false,
+      registerOpen: false,
       editorOpen: true,
       editorMode: 'new'
     }))
@@ -132,6 +156,7 @@ export const useAppStore = create((set, get) => ({
     const { selectedStudent } = get()
     if (!selectedStudent) return
 
+    set({ saveState: 'saving' })
     try {
       const res = await fetch(`${API_BASE}/sessions`, {
         method: 'POST',
@@ -149,8 +174,29 @@ export const useAppStore = create((set, get) => ({
         throw new Error(errData.detail || '상담 저장 실패')
       }
       
+      set({ saveState: 'saved' })
+      setTimeout(() => set({ saveState: 'idle' }), 3000)
+
       // Reload students and todayStats
       await get().initialize()
+      
+      const { isContinuousEntry } = get()
+      if (isContinuousEntry) {
+        const filtered = get().getFilteredStudents()
+        const currentIndex = filtered.findIndex(
+          s => s.name === selectedStudent.name && s.studentId === selectedStudent.studentId
+        )
+        if (currentIndex >= 0 && currentIndex < filtered.length - 1) {
+          const nextStudent = filtered[currentIndex + 1]
+          set({ selectedStudent: nextStudent })
+          await get().loadSessions(nextStudent)
+          set({ editorOpen: true, editorMode: 'new' })
+          get().addToast(`${selectedStudent.name} 학생의 새 상담 기록이 저장되었습니다. 연속 입력 모드로 다음 학생(${nextStudent.name})으로 이동합니다.`, 'success')
+          return
+        } else {
+          get().addToast(`${selectedStudent.name} 학생의 새 상담 기록이 저장되었습니다. 마지막 학생입니다.`, 'success')
+        }
+      }
       
       // Find the saved student in the newly fetched list
       const newStudents = get().students
@@ -172,6 +218,7 @@ export const useAppStore = create((set, get) => ({
       set({ editorOpen: false })
       get().addToast(`${selectedStudent.name} 학생의 새 상담 기록이 저장되었습니다.`, 'success')
     } catch (e) {
+      set({ saveState: 'error' })
       get().addToast(e.message, 'error')
     }
   },
@@ -179,6 +226,7 @@ export const useAppStore = create((set, get) => ({
   // ─── 세션 수정 ─────────────────────────────────────────────────────────
   updateSession: async (sessionId, formData) => {
     const { selectedStudent } = get()
+    set({ saveState: 'saving' })
     try {
       const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
         method: 'PUT',
@@ -192,6 +240,9 @@ export const useAppStore = create((set, get) => ({
         throw new Error(errData.detail || '상담 수정 실패')
       }
       
+      set({ saveState: 'saved' })
+      setTimeout(() => set({ saveState: 'idle' }), 3000)
+
       // Reload stats and student lists
       await get().initialize()
       
@@ -210,6 +261,48 @@ export const useAppStore = create((set, get) => ({
       set({ selectedSession: null, editorOpen: false })
       get().addToast('상담 기록이 수정되었습니다.', 'success')
     } catch (e) {
+      set({ saveState: 'error' })
+      get().addToast(e.message, 'error')
+    }
+  },
+
+  // ─── 세션 삭제 ─────────────────────────────────────────────────────────
+  deleteSession: async (sessionId) => {
+    const { selectedStudent } = get()
+    set({ saveState: 'saving' })
+    try {
+      const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+        method: 'DELETE'
+      })
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.detail || '상담 삭제 실패')
+      }
+      
+      set({ saveState: 'saved' })
+      setTimeout(() => set({ saveState: 'idle' }), 3000)
+
+      // Reload stats and student lists
+      await get().initialize()
+      
+      // Re-load selected student to sync latest data
+      if (selectedStudent) {
+        const newStudents = get().students
+        const updatedStudent = newStudents.find(
+          s => s.name === selectedStudent.name && s.studentId === selectedStudent.studentId
+        )
+        if (updatedStudent) {
+          set({ selectedStudent: updatedStudent })
+          await get().loadSessions(updatedStudent)
+        } else {
+          // 상담 일지가 모두 삭제되어 학생 목록에서 사라진 경우
+          set({ selectedStudent: null, sessions: [] })
+        }
+      }
+      
+      get().addToast('상담 기록이 삭제되었습니다.', 'success')
+    } catch (e) {
+      set({ saveState: 'error' })
       get().addToast(e.message, 'error')
     }
   },
@@ -258,15 +351,31 @@ export const useAppStore = create((set, get) => ({
 
   // 필터된 학생 목록
   getFilteredStudents: () => {
-    const { students, searchQuery } = get()
-    if (!searchQuery) return students
-    const q = searchQuery.toLowerCase()
-    return students.filter(s => {
-      const nameChosung = getChosung(s.name).toLowerCase()
-      return s.name.toLowerCase().includes(q) ||
-             nameChosung.includes(q) ||
-             String(s.studentId).includes(q) ||
-             String(s.grade).includes(q)
-    })
+    const { students, searchQuery, selectedGradeFilter, selectedBanFilter } = get()
+    let result = students
+
+    // 학년 필터 적용
+    if (selectedGradeFilter) {
+      result = result.filter(s => s.grade === selectedGradeFilter)
+    }
+
+    // 반 필터 적용
+    if (selectedBanFilter) {
+      result = result.filter(s => s.ban === selectedBanFilter)
+    }
+
+    // 검색어 필터 적용
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      result = result.filter(s => {
+        const nameChosung = getChosung(s.name).toLowerCase()
+        return s.name.toLowerCase().includes(q) ||
+               nameChosung.includes(q) ||
+               String(s.studentId).includes(q) ||
+               String(s.grade).includes(q)
+      })
+    }
+
+    return result
   },
 }))
