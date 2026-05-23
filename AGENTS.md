@@ -84,7 +84,7 @@ CounselingLog_Electron/
 │   │   │   ├── Dashboard/      ← 오늘 상담 대시보드
 │   │   │   └── Search/         ← Command Palette 검색
 │   │   ├── pages/
-│   │   ├── hooks/
+│   │   ├── hooks/              ← 전역 훅 (useLayoutResize.js, useGlobalShortcuts.js 등)
 │   │   ├── store/              ← Zustand 상태
 │   │   └── styles/
 │   ├── package.json
@@ -95,7 +95,7 @@ CounselingLog_Electron/
 │   ├── repositories/       ← ExcelRepository (기존에서 이식)
 │   ├── services/           ← 비즈니스 로직
 │   ├── validators/         ← 입력값 검증
-│   ├── utils/              ← 공통 유틸 (logger, path_helper 등)
+│   ├── utils/              ← 공통 유틸 (logger, path_helper, excel_helpers.py 등)
 │   └── requirements.txt
 │
 ├── electron/               ← Electron 메인 프로세스
@@ -134,7 +134,7 @@ Python FastAPI (uvicorn :8765)
 
 # 5. 4단계 개발 계획
 
-## ✅ 현재 단계: 3단계 진행 전
+## ✅ 현재 단계: 개발 완료 및 추가 기능 고도화 완료 (v0.1.7)
 
 ---
 
@@ -252,6 +252,25 @@ Sidebar 컴포넌트만 만들어줘
 - 각 단계 완료 후 반드시 `dev_log.md` 업데이트
 - 포함 항목: 완료 작업, 테스트 결과, 남은 이슈, 다음 단계
 
+## 7-5. 깃허브 커밋 및 릴리즈 원칙
+
+- **깃허브 릴리즈**: 매번 자동으로 릴리즈를 생성하지 않으며, 사용자가 명시적으로 릴리즈 작성을 요청할 때만 수행한다.
+- **깃허브 커밋**: 코드가 수정되거나 리팩토링이 완료될 때마다 깃허브 커밋(`git commit`)을 성실히 수행하여 변경 내역의 버전 관리를 철저히 한다.
+
+## 7-6. 동시성, 캐싱 및 프로세스 안정성 원칙
+
+- **동시성 락 및 트랜잭션 격리**: 엑셀 읽기/쓰기/삭제 시 `threading.RLock()` 및 API 라우터 수준의 트랜잭션 락을 필히 사용하여 다중 쓰기/읽기 경합(Race Condition)을 원천 방지한다.
+- **성능 최적화**: 매번 디스크를 조회하지 않도록 2초 간격의 `mtime` 캐시 스로틀링과 실패 시 이전 캐시를 유지하는 Graceful Fallback 정책을 유지한다.
+- **좀비 프로세스 방지**: Electron 종료 시 `taskkill /pid {pid} /T /F` 시스템 명령어로 파이썬 uvicorn 하위 프로세스 트리까지 강제 종료하도록 메커니즘을 고정한다.
+- **권한 에러 방지**: 빌드 후 `Program Files` 권한 오류 방지를 위해, 로그와 엑셀 백업 등의 쓰기 경로는 상시 사용자 AppData(`Roaming/counselinglog-electron`) 분리 경로를 사용한다.
+
+## 7-7. UX 및 데이터 포맷 제약
+
+- **학번 및 학년 규격**: 학번은 반드시 **4자리**로 제한(예: 2415)하며, 학년은 **1~6학년**으로 확장하고 성별 선택지에는 **'혼합'** 옵션을 포함한다.
+- **인쇄 표준**: 인쇄 프리뷰 제공 시 한국 교육기관 표준 상담일지 양식(상세 보고서 격자 무늬 및 대장 테이블 양식)을 유지하며, `@media print` 스타일 및 `.page-break` 설정을 보장한다.
+- **레이아웃 개인화**: Resizable Split Pane 너비 적용 시 localStorage에서 복원할 때 NaN 값 또는 가로 한계범위(사이드바 200~400px, 에디터 280~500px) 방어 검증 코드를 상시 포함한다.
+- **사용성 배려**: 저장 중일 때 중복 클릭 방지를 위해 입력 폼을 비활성화하고, 저장 애니메이션은 눈의 피로를 덜어주는 은은한 `animate-pulse`를 사용한다.
+
 ---
 
 # 8. 기존 Python 코드 참조
@@ -292,3 +311,4 @@ data/logs/           → .gitignore 필수
 | 2단계: UX 핵심 기능 | ✅ 완료 |
 | 3단계: Python Engine 연결 | ✅ 완료 |
 | 4단계: 배포 패키징 | ✅ 완료 |
+| 추가 개선 및 최적화 기능 (v0.1.7) | ✅ 완료 |
