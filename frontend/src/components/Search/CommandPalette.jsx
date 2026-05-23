@@ -110,7 +110,7 @@ export default function CommandPalette() {
       initialStudentId = trimmedQuery
       if (trimmedQuery.length >= 1) {
         const firstChar = trimmedQuery[0]
-        if (['1', '2', '3'].includes(firstChar)) {
+        if (['1', '2', '3', '4', '5', '6'].includes(firstChar)) {
           initialGrade = firstChar
         }
       }
@@ -133,8 +133,8 @@ export default function CommandPalette() {
       addToast('이름을 입력해 주세요.', 'error')
       return
     }
-    if (!studentId.trim() || studentId.length !== 5) {
-      addToast('학번은 5자리 숫자로 입력해 주세요.', 'error')
+    if (!studentId.trim() || studentId.length !== 4) {
+      addToast('학번은 4자리 숫자로 입력해 주세요.', 'error')
       return
     }
     if (!grade) {
@@ -195,15 +195,15 @@ export default function CommandPalette() {
 
                 {/* 학번 */}
                 <div>
-                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>학번 (5자리)</label>
+                  <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>학번 (4자리)</label>
                   <input
                     type="text"
                     value={registerForm.studentId}
                     onChange={e => setRegisterForm({ ...registerForm, studentId: e.target.value.replace(/\D/g, '') })}
-                    maxLength={5}
+                    maxLength={4}
                     className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:border-indigo-400 transition-colors"
                     style={{ background: 'var(--bg-primary)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-                    placeholder="예: 20415"
+                    placeholder="예: 2415"
                   />
                 </div>
 
@@ -221,6 +221,9 @@ export default function CommandPalette() {
                       <option value="1">1학년</option>
                       <option value="2">2학년</option>
                       <option value="3">3학년</option>
+                      <option value="4">4학년</option>
+                      <option value="5">5학년</option>
+                      <option value="6">6학년</option>
                       <option value="혼합">혼합</option>
                     </select>
                   </div>

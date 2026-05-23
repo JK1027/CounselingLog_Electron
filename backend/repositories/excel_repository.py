@@ -462,6 +462,102 @@ class ExcelRepository:
                     except Exception:
                         pass
 
+    def update_student_info(self, old_name, old_student_id, new_name, new_student_id, grade, gender):
+        """
+        학생의 개인정보(이름, 학번, 학년, 성별)를 모든 시트의 해당 레코드에서 일관되게 수정합니다.
+        메모리 데이터프레임을 수정한 뒤 save_all_data_to_excel()을 호출하여 원자적으로 디스크에 반영합니다.
+        """
+        with self.lock:
+            # 1. 엑셀 최신 데이터 확인 및 로드
+            self.check_and_reload()
+
+            normalized_old_id = old_student_id.strip().replace(".0", "")
+            normalized_new_id = new_student_id.strip().replace(".0", "")
+            normalized_old_name = old_name.strip()
+            normalized_new_name = new_name.strip()
+            normalized_gender = gender.strip()
+
+            # 학년 포맷 정리 ("2" -> "2학년", "혼합" -> "혼합")
+            grade_formatted = grade.strip()
+            if grade_formatted and grade_formatted.isdigit():
+                grade_formatted = f"{grade_formatted}학년"
+
+            # 2. 이미 다른 학생이 해당 이름과 학번 조합을 사용 중인지 검증 (중복 차단)
+            if (normalized_old_name != normalized_new_name) or (normalized_old_id != normalized_new_id):
+                for s_name in SHEET_NAMES:
+                    if s_name == GROUP_COUNSELING_SHEET:
+                        continue
+                    df = self.data_frames.get(s_name)
+                    if df is not None and not df.empty:
+                        for _, row in df.iterrows():
+                            if str(row.get("순번", "")).strip() == "예시":
+                                continue
+                            r_name = str(row.get("이름", "")).strip()
+                            r_shadow_sid = str(row.get("학번", "")).strip().replace(".0", "")
+                            if r_name == normalized_new_name and r_shadow_sid == normalized_new_id:
+                                # oldName/oldStudentId 에 해당하지 않는 타인 매칭 시 충돌 처리
+                                if not (r_name == normalized_old_name and r_shadow_sid == normalized_old_id):
+                                    return False, f"이미 학번 {normalized_new_id}(이름: {normalized_new_name})을 사용하는 학생이 존재합니다. 중복될 수 없습니다."
+
+            modified = False
+
+            # 3. 각 시트 순회하며 업데이트 수행
+            for sheet_name in SHEET_NAMES:
+                df = self.data_frames.get(sheet_name)
+                if df is None or df.empty:
+                    continue
+
+                if sheet_name == GROUP_COUNSELING_SHEET:
+                    # 집단상담 시트 처리 (학번 컬럼 존재)
+                    if "학번" in df.columns:
+                        for idx, row in df.iterrows():
+                            if str(row.get("순번", "")).strip() == "예시":
+                                continue
+                            
+                            val = str(row["학번"]).strip().replace(".0", "")
+                            if not val:
+                                continue
+
+                            sids = [s.strip() for s in val.split(",") if s.strip()]
+                            if normalized_old_id in sids:
+                                # 학번 변경 적용
+                                new_sids = [normalized_new_id if s == normalized_old_id else s for s in sids]
+                                df.at[idx, "학번"] = ", ".join(new_sids)
+                                modified = True
+
+                                # 단일 학생일 경우에만 학년, 성별 업데이트
+                                if len(sids) == 1:
+                                    if "학년" in df.columns:
+                                        df.at[idx, "학년"] = grade_formatted
+                                    if "성별" in df.columns:
+                                        df.at[idx, "성별"] = normalized_gender
+                else:
+                    # 개인상담, 보호자상담, 교원자문, 의뢰 시트 처리
+                    for idx, row in df.iterrows():
+                        if str(row.get("순번", "")).strip() == "예시":
+                            continue
+                        
+                        row_name = str(row.get("이름", "")).strip()
+                        row_sid = str(row.get("학번", "")).strip().replace(".0", "")
+
+                        if row_name == normalized_old_name and row_sid == normalized_old_id:
+                            df.at[idx, "이름"] = normalized_new_name
+                            df.at[idx, "학번"] = normalized_new_id
+                            if "학년" in df.columns:
+                                df.at[idx, "학년"] = grade_formatted
+                            if "성별" in df.columns:
+                                df.at[idx, "성별"] = normalized_gender
+                            modified = True
+
+            if modified:
+                # 변경 사항 저장 (Safe Save)
+                success, err = self.save_all_data_to_excel()
+                if not success:
+                    return False, err
+                return True, None
+            else:
+                return False, "수정 대상 학생 데이터를 엑셀에서 찾지 못했거나 변경사항이 없습니다."
+
     def _ensure_template_initialized(self):
         """기본 템플릿 파일이 없으면 생성합니다."""
         if not os.path.exists(self.main_file_path):
@@ -577,6 +673,13 @@ class ExcelRepository:
                     cell = worksheet.cell(row=target_row_idx, column=headers['순번'])
                     cell.alignment = center_alignment_with_wrap
                     cell.border = thin_border
+
+                # _record_id 컬럼 숨김 처리
+                for cell in worksheet[1]:
+                    if cell.value == RECORD_ID_COL:
+                        from openpyxl.utils import get_column_letter
+                        worksheet.column_dimensions[get_column_letter(cell.column)].hidden = True
+                        break
 
                 workbook.save(temp_file_path)
                 workbook.close()

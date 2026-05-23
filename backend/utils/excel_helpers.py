@@ -29,7 +29,8 @@ def find_empty_row_by_key(worksheet, seq_col_idx, key_col_idx, sheet_name):
     return None
 
 def apply_excel_formatting(worksheet):
-    """주어진 워크시트에 표준 서식(센터 정렬, 테두리)을 적용합니다."""
+    """주어진 워크시트에 표준 서식(센터 정렬, 테두리)을 적용하고, _record_id 컬럼을 숨김 처리합니다."""
+    from openpyxl.utils import get_column_letter
     thin_border = Border(
         left=Side(style='thin'), 
         right=Side(style='thin'), 
@@ -46,3 +47,10 @@ def apply_excel_formatting(worksheet):
         for cell in row:
             cell.alignment = center_alignment_with_wrap
             cell.border = thin_border
+
+    # _record_id 컬럼 숨김 처리
+    for cell in worksheet[1]:
+        if cell.value == "_record_id":
+            col_letter = get_column_letter(cell.column)
+            worksheet.column_dimensions[col_letter].hidden = True
+            break

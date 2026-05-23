@@ -315,6 +315,49 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
+  // ─── 학생 정보 수정 ───────────────────────────────────────────────────
+  updateStudentInfo: async (oldName, oldStudentId, studentData) => {
+    set({ saveState: 'saving' })
+    try {
+      await apiFetch('/students/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          oldName,
+          oldStudentId,
+          newName: studentData.name,
+          newStudentId: studentData.studentId,
+          grade: studentData.grade,
+          gender: studentData.gender
+        })
+      })
+      
+      set({ saveState: 'saved' })
+      setTimeout(() => set({ saveState: 'idle' }), 3000)
+
+      // 전체 학생 목록 및 통계 새로고침
+      await get().initialize()
+
+      // 선택된 학생의 정보 갱신 및 세션 리로드
+      const newStudents = get().students
+      const updatedStudent = newStudents.find(
+        s => s.name === studentData.name && s.studentId === studentData.studentId
+      )
+      if (updatedStudent) {
+        set({ selectedStudent: updatedStudent })
+        await get().loadSessions(updatedStudent)
+      } else {
+        set({ selectedStudent: null, sessions: [] })
+      }
+      
+      get().addToast('학생 정보가 수정되었습니다.', 'success')
+    } catch (e) {
+      set({ saveState: 'error' })
+      get().addToast(e.message, 'error')
+      throw e
+    }
+  },
+
   // ─── 세션 삭제 ─────────────────────────────────────────────────────────
   deleteSession: async (sessionId) => {
     const { selectedStudent } = get()

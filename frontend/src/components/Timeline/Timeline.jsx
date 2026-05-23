@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { Plus, FileText, Calendar, Layers, Edit2, Trash2, Printer } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { Avatar, TagBadge, formatDate, SaveStateIndicator } from '@/components/ui/shared'
+import EditStudentModal from '@/components/Student/EditStudentModal'
 
 export default function Timeline({ onOpenPrintModal }) {
   const { selectedStudent, sessions, selectedSession, setSelectedSession, setEditorOpen, setEditorMode, isCompactMode, deleteSession } = useAppStore()
   const [selectedSheetFilter, setSelectedSheetFilter] = useState('전체')
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   // 학생 변경 시 필터 '전체'로 초기화
   useEffect(() => {
@@ -50,9 +52,19 @@ export default function Timeline({ onOpenPrintModal }) {
         <div className={`flex items-center ${isCompactMode ? 'gap-3' : 'gap-4'}`}>
           <Avatar name={selectedStudent.name} size={isCompactMode ? "md" : "lg"} />
           <div>
-            <h2 className={`${isCompactMode ? 'text-base' : 'text-lg'} font-bold`} style={{ color: 'var(--text-primary)' }}>
-              {selectedStudent.name}
-            </h2>
+            <div className="flex items-center gap-1.5">
+              <h2 className={`${isCompactMode ? 'text-base' : 'text-lg'} font-bold`} style={{ color: 'var(--text-primary)' }}>
+                {selectedStudent.name}
+              </h2>
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                title="학생 개인정보 수정"
+                className="p-1 rounded-lg hover:bg-hover hover:text-accent transition-colors cursor-pointer inline-flex items-center justify-center"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                <Edit2 size={isCompactMode ? 13 : 15} />
+              </button>
+            </div>
             <div className="flex items-center gap-3 mt-0.5 flex-wrap">
               <span className={isCompactMode ? 'text-xs' : 'text-sm'} style={{ color: 'var(--text-secondary)' }}>
                 {selectedStudent.grade}학년 · {selectedStudent.studentId} · {selectedStudent.gender} {selectedStudent.ban && `· ${selectedStudent.ban}반`}
@@ -188,6 +200,12 @@ export default function Timeline({ onOpenPrintModal }) {
           </div>
         )}
       </div>
+
+      <EditStudentModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        student={selectedStudent}
+      />
     </main>
   )
 }

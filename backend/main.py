@@ -79,6 +79,14 @@ class SessionUpdate(BaseModel):
 class OpenFileRequest(BaseModel):
     path: str
 
+class StudentUpdate(BaseModel):
+    oldName: str
+    oldStudentId: str
+    newName: str
+    newStudentId: str
+    grade: str
+    gender: str
+
 def extract_ban_from_student_id(student_id: str) -> str:
     student_id = student_id.strip()
     if not student_id.isdigit():
@@ -173,6 +181,39 @@ def get_students():
         # 최근 상담일 내림차순, 이름 오름차순 정렬
         result.sort(key=lambda x: (x["lastDate"], x["name"]), reverse=True)
         return result
+
+@app.post("/students/update")
+def update_student(data: StudentUpdate):
+    """
+    학생의 개인정보(이름, 학번, 학년, 성별)를 모든 시트에서 일괄 수정합니다.
+    """
+    with repo.lock:
+        try:
+            repo.check_and_reload()
+        except Exception as e:
+            logger.error(f"데이터 리로드 실패: {e}")
+            if not any(not df.empty for df in repo.data_frames.values()):
+                raise HTTPException(status_code=500, detail="데이터베이스 리로드 실패로 수정 작업을 진행할 수 없습니다.")
+
+        # 이름과 학번 필수 검증
+        if not data.newName.strip():
+            raise HTTPException(status_code=400, detail="이름은 비어 있을 수 없습니다.")
+        if not data.newStudentId.strip() or not data.newStudentId.isdigit():
+            raise HTTPException(status_code=400, detail="학번은 숫자만 입력해 주세요.")
+
+        success, err = repo.update_student_info(
+            old_name=data.oldName,
+            old_student_id=data.oldStudentId,
+            new_name=data.newName,
+            new_student_id=data.newStudentId,
+            grade=data.grade,
+            gender=data.gender
+        )
+        
+        if not success:
+            raise HTTPException(status_code=400 if "이미 학번" in str(err) else 500, detail=err)
+
+        return {"status": "success"}
 
 @app.get("/sessions/{student_name}")
 def get_sessions(student_name: str, student_id: str = Query("")):
