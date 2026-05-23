@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { CheckCircle2, AlertCircle, X } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 
@@ -17,6 +18,13 @@ export default function ToastContainer() {
 
 function ToastItem({ toast, onClose }) {
   const isSuccess = toast.type === 'success'
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose()
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, [onClose])
 
   return (
     <div
@@ -46,3 +54,4 @@ function ToastItem({ toast, onClose }) {
     </div>
   )
 }
+

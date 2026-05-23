@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Search, Users, ChevronRight, AlertCircle, BookOpen, FolderOpen, Maximize2, Minimize2, UserPlus, Home } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { Avatar, TagBadge } from '@/components/ui/shared'
@@ -12,6 +13,7 @@ export default function Sidebar({ width }) {
     students: allStudents,
     isCompactMode, toggleCompactMode,
     setRegisterOpen,
+    searchQuery,
   } = useAppStore()
 
   const handleOpenFile = async () => {
@@ -25,31 +27,43 @@ export default function Sidebar({ width }) {
     }
   }
 
-  const students = getFilteredStudents()
+  // 필터 및 검색 연산 useMemo 캐싱 적용
+  const students = useMemo(() => {
+    return getFilteredStudents()
+  }, [allStudents, searchQuery, selectedGradeFilter, selectedBanFilter, getFilteredStudents])
 
   // 전체 학생 목록으로부터 존재하는 모든 학년과 반 목록을 추출
-  const availableGrades = Array.from(
-    new Set(allStudents.map(s => s.grade).filter(Boolean))
-  ).sort()
+  const availableGrades = useMemo(() => {
+    return Array.from(
+      new Set(allStudents.map(s => s.grade).filter(Boolean))
+    ).sort()
+  }, [allStudents])
 
-  const availableBans = Array.from(
-    new Set(
-      allStudents
-        .filter(s => !selectedGradeFilter || s.grade === selectedGradeFilter)
-        .map(s => s.ban)
-        .filter(Boolean)
+  const availableBans = useMemo(() => {
+    return Array.from(
+      new Set(
+        allStudents
+          .filter(s => !selectedGradeFilter || s.grade === selectedGradeFilter)
+          .map(s => s.ban)
+          .filter(Boolean)
+      )
+    ).sort((a, b) => {
+      const na = parseInt(a, 10)
+      const nb = parseInt(b, 10)
+      if (isNaN(na) || isNaN(nb)) return a.localeCompare(b)
+      return na - nb
+    })
+  }, [allStudents, selectedGradeFilter])
+
+  const urgentStudents = useMemo(() => {
+    return students.filter(s =>
+      s.tags?.some(t => ['자해 및 자살', '학교폭력 피해', '학교폭력 가해'].includes(t))
     )
-  ).sort((a, b) => {
-    const na = parseInt(a, 10)
-    const nb = parseInt(b, 10)
-    if (isNaN(na) || isNaN(nb)) return a.localeCompare(b)
-    return na - nb
-  })
+  }, [students])
 
-  const urgentStudents = students.filter(s =>
-    s.tags?.some(t => ['자해 및 자살', '학교폭력 피해', '학교폭력 가해'].includes(t))
-  )
-  const regularStudents = students.filter(s => !urgentStudents.includes(s))
+  const regularStudents = useMemo(() => {
+    return students.filter(s => !urgentStudents.includes(s))
+  }, [students, urgentStudents])
 
   return (
     <aside
@@ -234,33 +248,52 @@ function StudentItem({ student, selected, onClick, urgent, compact }) {
     <button
       onClick={onClick}
       className={`w-full flex items-center transition-all duration-150 group relative rounded-xl ${
-        compact ? 'gap-2 px-2.5 py-1 my-0.5 mx-1' : 'gap-3 px-3 py-2.5 mx-1'
+        compact ? 'gap-2 px-2.5 py-1.5 my-0.5 mx-1' : 'gap-3 px-3 py-3 mx-1'
       }`}
       style={{
         width: 'calc(100% - 8px)',
-        background: selected ? 'var(--accent-soft)' : 'transparent',
+        background: selected ? 'var(--bg-selected)' : 'transparent',
         color: selected ? 'var(--accent-dark)' : 'var(--text-primary)',
+        paddingLeft: selected ? (compact ? '12px' : '16px') : undefined,
       }}
       onMouseEnter={e => { if (!selected) e.currentTarget.style.background = 'var(--bg-hover)' }}
       onMouseLeave={e => { if (!selected) e.currentTarget.style.background = 'transparent' }}
     >
+      {selected && (
+        <div 
+          className="absolute left-0 top-[15%] bottom-[15%] w-1 rounded-r-full" 
+          style={{ backgroundColor: 'var(--accent)' }} 
+        />
+      )}
       <Avatar name={student.name} size={compact ? "xs" : "sm"} selected={selected} />
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 text-left">
         <div className="flex items-center gap-1.5">
-          <span className={`${compact ? 'text-xs' : 'text-sm'} font-medium truncate`} style={{
+          <span className={`${compact ? 'text-xs' : 'text-sm'} font-bold truncate`} style={{
             color: selected ? 'var(--accent-dark)' : 'var(--text-primary)'
           }}>
             {student.name}
           </span>
-          {urgent && <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--red)' }} />}
+          {urgent && <div className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse" style={{ background: 'var(--red)' }} />}
         </div>
         <div className="flex items-center gap-1 mt-0.5">
-          <span className="text-[10px]" style={{ color: selected ? 'var(--accent)' : 'var(--text-muted)' }}>
-            {student.grade}학년 · {student.sessionCount}회기 {student.ban && `· ${student.ban}반`}
+          <span className="text-[10px]" style={{ color: selected ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+            {student.grade}학년{student.ban && ` · ${student.ban}반`}
           </span>
         </div>
       </div>
-      <ChevronRight size={compact ? 11 : 13} style={{ color: 'var(--text-muted)' }} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="flex items-center gap-1 shrink-0">
+        <span 
+          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-all"
+          style={{
+            background: selected ? 'var(--accent)' : 'var(--bg-hover)',
+            color: selected ? '#ffffff' : 'var(--text-secondary)',
+          }}
+        >
+          {student.sessionCount}회기
+        </span>
+        <ChevronRight size={compact ? 11 : 13} style={{ color: 'var(--text-muted)' }} className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+      </div>
     </button>
   )
 }
+

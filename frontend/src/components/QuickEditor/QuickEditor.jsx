@@ -32,54 +32,97 @@ export default function QuickEditor({ width }) {
     date: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
   })
 
+  // 유효성 검사 에러 상태 추가
+  const [errors, setErrors] = useState({})
+
   useEffect(() => {
-    if (editorMode === 'edit' && selectedSession) {
-      setForm({
-        type: selectedSession.type || '',
-        sheetType: selectedSession.sheetType || '개인상담',
-        summary: selectedSession.summary || '',
-        detail: selectedSession.detail || '',
-        date: selectedSession.date || '',
-      })
-    } else {
-      setForm({
-        type: '',
-        sheetType: '개인상담',
-        summary: '',
-        detail: '',
-        date: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
-      })
+    if (editorOpen) {
+      // 폼 리셋 시 에러 상태 초기화
+      setErrors({})
+
+      if (editorMode === 'edit' && selectedSession) {
+        setForm({
+          type: selectedSession.type || '',
+          sheetType: selectedSession.sheetType || '개인상담',
+          summary: selectedSession.summary || '',
+          detail: selectedSession.detail || '',
+          date: selectedSession.date || '',
+        })
+        // 수정 모드 진입 시 제목 필드 포커스
+        setTimeout(() => summaryRef.current?.focus(), 100)
+      } else {
+        if (isContinuousEntry) {
+          // 연속 입력 모드: 날짜, 시트구분, 상담구분 유지 / 제목, 내용만 초기화
+          setForm(f => ({
+            ...f,
+            summary: '',
+            detail: '',
+          }))
+          // 연속 입력 시 다음 학생 제목으로 포커스
+          setTimeout(() => summaryRef.current?.focus(), 100)
+        } else {
+          setForm({
+            type: '',
+            sheetType: '개인상담',
+            summary: '',
+            detail: '',
+            date: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+          })
+          // 일반 새 상담 시 날짜로 포커스
+          setTimeout(() => dateRef.current?.focus(), 100)
+        }
+      }
     }
-  }, [editorMode, selectedSession, editorOpen])
+  }, [editorMode, selectedSession, editorOpen, selectedStudent?.id])
 
   if (!editorOpen || !selectedStudent) return null
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (saveState === 'saving') return
-    if (!form.date) {
-      addToast('상담일자를 입력해 주세요.', 'error')
-      return
-    }
-    if (form.date.length !== 8) {
-      addToast('상담일자는 YYYYMMDD 형식의 8자리 숫자여야 합니다.', 'error')
-      return
+
+    const newErrors = {}
+    if (!form.date || form.date.length !== 8) {
+      newErrors.date = true
     }
     if (!form.type) {
-      addToast('상담 구분을 선택해 주세요.', 'error')
-      return
+      newErrors.type = true
     }
     if (!form.summary) {
-      addToast('상담 제목을 입력해 주세요.', 'error')
-      return
+      newErrors.summary = true
     }
     if (!form.detail) {
-      addToast('상담 상세 내용을 입력해 주세요.', 'error')
+      newErrors.detail = true
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+
+      // 첫 에러 발생 필드로 포커스 이동 및 Toast 알림 출력
+      if (newErrors.date) {
+        dateRef.current?.focus()
+        addToast('상담일자를 YYYYMMDD 형식의 8자리 숫자로 입력해 주세요.', 'error')
+      } else if (newErrors.type) {
+        typeRef.current?.focus()
+        addToast('상담 구분을 선택해 주세요.', 'error')
+      } else if (newErrors.summary) {
+        summaryRef.current?.focus()
+        addToast('상담 제목을 입력해 주세요.', 'error')
+      } else if (newErrors.detail) {
+        detailRef.current?.focus()
+        addToast('상담 상세 내용을 입력해 주세요.', 'error')
+      }
       return
     }
-    if (editorMode === 'edit' && selectedSession) {
-      updateSession(selectedSession.id, form)
-    } else {
-      addSession(form)
+
+    setErrors({})
+    try {
+      if (editorMode === 'edit' && selectedSession) {
+        await updateSession(selectedSession.id, form)
+      } else {
+        await addSession(form)
+      }
+    } catch (e) {
+      console.error(e)
     }
   }
 
@@ -93,19 +136,23 @@ export default function QuickEditor({ width }) {
       }
       if (e.key === 'Escape') {
         e.preventDefault()
-        setEditorOpen(false)
+        if (saveState !== 'saving') {
+          setEditorOpen(false)
+        }
       }
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [editorOpen, form, editorMode, selectedSession, saveState])
+  }, [editorOpen, form, editorMode, selectedSession, saveState, errors])
 
   const handleKeyDown = (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault()
       handleSave()
     }
-    if (e.key === 'Escape') setEditorOpen(false)
+    if (e.key === 'Escape' && saveState !== 'saving') {
+      setEditorOpen(false)
+    }
   }
 
   return (
@@ -133,11 +180,14 @@ export default function QuickEditor({ width }) {
           </p>
         </div>
         <button
-          onClick={() => setEditorOpen(false)}
-          className="w-7 h-7 flex items-center justify-center rounded-lg transition-all"
+          onClick={() => saveState !== 'saving' && setEditorOpen(false)}
+          disabled={saveState === 'saving'}
+          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all ${
+            saveState === 'saving' ? 'opacity-40 cursor-not-allowed' : ''
+          }`}
           style={{ color: 'var(--text-muted)' }}
-          onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          onMouseEnter={e => { if (saveState !== 'saving') e.currentTarget.style.background = 'var(--bg-hover)' }}
+          onMouseLeave={e => { if (saveState !== 'saving') e.currentTarget.style.background = 'transparent' }}
         >
           <X size={16} />
         </button>
@@ -153,7 +203,10 @@ export default function QuickEditor({ width }) {
             type="text"
             value={form.date}
             disabled={saveState === 'saving'}
-            onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+            onChange={e => {
+              setForm(f => ({ ...f, date: e.target.value }))
+              if (errors.date) setErrors(errs => ({ ...errs, date: false }))
+            }}
             placeholder="YYYYMMDD"
             maxLength={8}
             className={`w-full px-3 py-2 rounded-xl text-sm outline-none transition-all ${
@@ -161,11 +214,11 @@ export default function QuickEditor({ width }) {
             }`}
             style={{
               background: 'var(--bg-primary)',
-              border: '1.5px solid var(--border)',
+              border: errors.date ? '1.5px solid var(--red)' : '1.5px solid var(--border)',
               color: 'var(--text-primary)',
             }}
-            onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border)'}
+            onFocus={e => e.target.style.borderColor = errors.date ? 'var(--red)' : 'var(--accent)'}
+            onBlur={e => e.target.style.borderColor = errors.date ? 'var(--red)' : 'var(--border)'}
           />
         </FormField>
 
@@ -188,7 +241,15 @@ export default function QuickEditor({ width }) {
             onKeyDown={e => handleEnterKey(e, summaryRef)}
             value={form.type}
             disabled={saveState === 'saving'}
-            onChange={v => setForm(f => ({ ...f, type: v }))}
+            error={errors.type}
+            onChange={v => {
+              setForm(f => ({ ...f, type: v }))
+              if (errors.type) setErrors(errs => ({ ...errs, type: false }))
+              if (v) {
+                // 상담구분 선택 시 제목 필드로 즉시 포커스 이동
+                setTimeout(() => summaryRef.current?.focus(), 50)
+              }
+            }}
             options={COUNSELING_TYPES}
             placeholder="구분 선택..."
           />
@@ -202,18 +263,21 @@ export default function QuickEditor({ width }) {
             type="text"
             value={form.summary}
             disabled={saveState === 'saving'}
-            onChange={e => setForm(f => ({ ...f, summary: e.target.value }))}
+            onChange={e => {
+              setForm(f => ({ ...f, summary: e.target.value }))
+              if (errors.summary) setErrors(errs => ({ ...errs, summary: false }))
+            }}
             placeholder="한 줄 요약..."
             className={`w-full px-3 py-2 rounded-xl text-sm outline-none transition-all ${
               saveState === 'saving' ? 'opacity-60 cursor-not-allowed' : ''
             }`}
             style={{
               background: 'var(--bg-primary)',
-              border: '1.5px solid var(--border)',
+              border: errors.summary ? '1.5px solid var(--red)' : '1.5px solid var(--border)',
               color: 'var(--text-primary)',
             }}
-            onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border)'}
+            onFocus={e => e.target.style.borderColor = errors.summary ? 'var(--red)' : 'var(--accent)'}
+            onBlur={e => e.target.style.borderColor = errors.summary ? 'var(--red)' : 'var(--border)'}
           />
         </FormField>
 
@@ -223,7 +287,10 @@ export default function QuickEditor({ width }) {
             ref={detailRef}
             value={form.detail}
             disabled={saveState === 'saving'}
-            onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
+            onChange={e => {
+              setForm(f => ({ ...f, detail: e.target.value }))
+              if (errors.detail) setErrors(errs => ({ ...errs, detail: false }))
+            }}
             placeholder="상담 내용을 입력하세요..."
             rows={8}
             className={`w-full px-3 py-2 rounded-xl text-sm outline-none resize-none transition-all leading-relaxed ${
@@ -231,11 +298,11 @@ export default function QuickEditor({ width }) {
             }`}
             style={{
               background: 'var(--bg-primary)',
-              border: '1.5px solid var(--border)',
+              border: errors.detail ? '1.5px solid var(--red)' : '1.5px solid var(--border)',
               color: 'var(--text-primary)',
             }}
-            onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border)'}
+            onFocus={e => e.target.style.borderColor = errors.detail ? 'var(--red)' : 'var(--accent)'}
+            onBlur={e => e.target.style.borderColor = errors.detail ? 'var(--red)' : 'var(--border)'}
           />
         </FormField>
 
@@ -317,7 +384,7 @@ function FormField({ label, required, children }) {
   )
 }
 
-function Select({ selectRef, onKeyDown, value, onChange, options, placeholder, disabled }) {
+function Select({ selectRef, onKeyDown, value, onChange, options, placeholder, disabled, error }) {
   return (
     <div className="relative">
       <select
@@ -331,11 +398,11 @@ function Select({ selectRef, onKeyDown, value, onChange, options, placeholder, d
         }`}
         style={{
           background: 'var(--bg-primary)',
-          border: '1.5px solid var(--border)',
+          border: error ? '1.5px solid var(--red)' : '1.5px solid var(--border)',
           color: value ? 'var(--text-primary)' : 'var(--text-muted)',
         }}
-        onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-        onBlur={e => e.target.style.borderColor = 'var(--border)'}
+        onFocus={e => e.target.style.borderColor = error ? 'var(--red)' : 'var(--accent)'}
+        onBlur={e => e.target.style.borderColor = error ? 'var(--red)' : 'var(--border)'}
       >
         {placeholder && <option value="" style={{ color: 'var(--text-muted)' }}>{placeholder}</option>}
         {options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -345,3 +412,4 @@ function Select({ selectRef, onKeyDown, value, onChange, options, placeholder, d
     </div>
   )
 }
+

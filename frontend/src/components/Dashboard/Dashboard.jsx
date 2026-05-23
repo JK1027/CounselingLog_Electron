@@ -1,6 +1,6 @@
 import { BarChart2, Clock, AlertTriangle, BookOpen, Archive, Printer } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
-import { Avatar, formatDate } from '@/components/ui/shared'
+import { Avatar, formatDate, SaveStateIndicator } from '@/components/ui/shared'
 
 export default function Dashboard({ onOpenPrintModal }) {
   const { students, todayStats, setSelectedStudent, setEditorOpen, setEditorMode } = useAppStore()
@@ -23,15 +23,19 @@ export default function Dashboard({ onOpenPrintModal }) {
             {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
           </p>
         </div>
-        <button
-          onClick={onOpenPrintModal}
-          className="flex items-center gap-1.5 rounded-xl text-xs font-semibold border px-3 py-1.5 transition-all duration-150 hover:bg-hover active:scale-95 cursor-pointer print-exclude"
-          style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-primary)' }}
-        >
-          <Printer size={13} />
-          상담일지 출력
-        </button>
+        <div className="flex items-center gap-4 print-exclude">
+          <SaveStateIndicator />
+          <button
+            onClick={onOpenPrintModal}
+            className="flex items-center gap-1.5 rounded-xl text-xs font-semibold border px-3 py-1.5 transition-all duration-150 hover:bg-hover active:scale-95 cursor-pointer"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-primary)' }}
+          >
+            <Printer size={13} />
+            상담일지 출력
+          </button>
+        </div>
       </div>
+
 
       {/* 통계 카드 */}
       <div className="mb-6">

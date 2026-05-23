@@ -3,6 +3,41 @@ import { getChosung } from '@/utils/hangul'
 
 const API_BASE = 'http://localhost:8765'
 
+async function apiFetch(endpoint, options = {}) {
+  const url = `${API_BASE}${endpoint}`
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 8000)
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      let errorMsg = `API 요청 실패 (상태 코드: ${response.status})`
+      try {
+        const errData = await response.json()
+        if (errData && errData.detail) {
+          errorMsg = errData.detail
+        }
+      } catch (_) {
+        // JSON parsing failed or detail not found
+      }
+      throw new Error(errorMsg)
+    }
+
+    return response
+  } catch (error) {
+    clearTimeout(timeoutId)
+    if (error.name === 'AbortError') {
+      throw new Error('요청 시간이 초과되었습니다. 서버 상태를 확인해 주세요.')
+    }
+    throw error
+  }
+}
+
 export const useAppStore = create((set, get) => ({
   // 현재 활성화된 엑셀 파일 경로
   currentFilePath: '',
@@ -39,9 +74,6 @@ export const useAppStore = create((set, get) => ({
   addToast: (message, type = 'success') => {
     const id = Date.now()
     set(state => ({ toasts: [...state.toasts, { id, message, type }] }))
-    setTimeout(() => {
-      set(state => ({ toasts: state.toasts.filter(t => t.id !== id) }))
-    }, 3000)
   },
   removeToast: (id) => set(state => ({ toasts: state.toasts.filter(t => t.id !== id) })),
 
@@ -81,18 +113,18 @@ export const useAppStore = create((set, get) => ({
   initialize: async () => {
     try {
       // 서버 건강상태 및 현재 파일 경로 조회
-      const resHealth = await fetch(`${API_BASE}/health`)
-      if (resHealth.ok) {
+      try {
+        const resHealth = await apiFetch('/health')
         const healthData = await resHealth.json()
         set({ currentFilePath: healthData.excel_path })
+      } catch (e) {
+        console.warn('Health check failed', e)
       }
 
-      const resStudents = await fetch(`${API_BASE}/students`)
-      if (!resStudents.ok) throw new Error('학생 목록 로드 실패')
+      const resStudents = await apiFetch('/students')
       const studentsData = await resStudents.json()
 
-      const resStats = await fetch(`${API_BASE}/stats/today`)
-      if (!resStats.ok) throw new Error('대시보드 통계 로드 실패')
+      const resStats = await apiFetch('/stats/today')
       const statsData = await resStats.json()
 
       set({ 
@@ -116,8 +148,7 @@ export const useAppStore = create((set, get) => ({
       return
     }
     try {
-      const res = await fetch(`${API_BASE}/sessions/${encodeURIComponent(student.name)}?student_id=${encodeURIComponent(student.studentId || '')}`)
-      if (!res.ok) throw new Error('상담 이력을 불러오지 못했습니다.')
+      const res = await apiFetch(`/sessions/${encodeURIComponent(student.name)}?student_id=${encodeURIComponent(student.studentId || '')}`)
       const data = await res.json()
       set({ sessions: data })
     } catch (e) {
@@ -158,7 +189,7 @@ export const useAppStore = create((set, get) => ({
 
     set({ saveState: 'saving' })
     try {
-      const res = await fetch(`${API_BASE}/sessions`, {
+      await apiFetch('/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -169,10 +200,6 @@ export const useAppStore = create((set, get) => ({
           ...formData
         })
       })
-      if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.detail || '상담 저장 실패')
-      }
       
       set({ saveState: 'saved' })
       setTimeout(() => set({ saveState: 'idle' }), 3000)
@@ -228,17 +255,13 @@ export const useAppStore = create((set, get) => ({
     const { selectedStudent } = get()
     set({ saveState: 'saving' })
     try {
-      const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+      await apiFetch(`/sessions/${sessionId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData
         })
       })
-      if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.detail || '상담 수정 실패')
-      }
       
       set({ saveState: 'saved' })
       setTimeout(() => set({ saveState: 'idle' }), 3000)
@@ -271,13 +294,9 @@ export const useAppStore = create((set, get) => ({
     const { selectedStudent } = get()
     set({ saveState: 'saving' })
     try {
-      const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+      await apiFetch(`/sessions/${sessionId}`, {
         method: 'DELETE'
       })
-      if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.detail || '상담 삭제 실패')
-      }
       
       set({ saveState: 'saved' })
       setTimeout(() => set({ saveState: 'idle' }), 3000)
@@ -310,11 +329,7 @@ export const useAppStore = create((set, get) => ({
   // ─── 수동 백업 ─────────────────────────────────────────────────────────
   triggerBackup: async () => {
     try {
-      const res = await fetch(`${API_BASE}/backup`, { method: 'POST' })
-      if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.detail || '백업 생성 실패')
-      }
+      const res = await apiFetch('/backup', { method: 'POST' })
       const data = await res.json()
       get().addToast(`백업이 생성되었습니다: ${data.filename}`, 'success')
     } catch (e) {
@@ -325,15 +340,11 @@ export const useAppStore = create((set, get) => ({
   // ─── 엑셀 파일 경로 선택 및 불러오기 ────────────────────────────────────
   openFileByPath: async (filePath) => {
     try {
-      const res = await fetch(`${API_BASE}/open-file`, {
+      const res = await apiFetch('/open-file', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: filePath })
       })
-      if (!res.ok) {
-        const errData = await res.json()
-        throw new Error(errData.detail || '엑셀 파일을 불러오는데 실패했습니다.')
-      }
       const data = await res.json()
       set({ 
         currentFilePath: data.excel_path,

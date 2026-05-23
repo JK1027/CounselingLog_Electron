@@ -8,7 +8,7 @@ import Dashboard from '@/components/Dashboard/Dashboard'
 import ToastContainer from '@/components/ui/ToastContainer'
 import PrintSetupModal from '@/components/Print/PrintSetupModal'
 import PrintPreview from '@/components/Print/PrintPreview'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { FileSpreadsheet } from 'lucide-react'
 import { useLayoutResize } from '@/hooks/useLayoutResize'
@@ -24,26 +24,31 @@ export default function App() {
   const { sidebarWidth, editorWidth, resizing, setResizing } = useLayoutResize()
   useGlobalShortcuts()
 
-  // 드래그 앤 드롭 이벤트 핸들러
+  // 윈도우 레벨에서 파일 드래그가 감입될 때만 오버레이 활성화
+  useEffect(() => {
+    const handleWindowDragEnter = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+        setIsDragging(true)
+      }
+    }
+    window.addEventListener('dragenter', handleWindowDragEnter)
+    return () => {
+      window.removeEventListener('dragenter', handleWindowDragEnter)
+    }
+  }, [])
+
+  // 드래그 앤 드롭 오버레이 내부 이벤트 핸들러
   const handleDragOver = (e) => {
     e.preventDefault()
     e.stopPropagation()
   }
 
-  const handleDragEnter = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
-      setIsDragging(true)
-    }
-  }
-
   const handleDragLeave = (e) => {
     e.preventDefault()
     e.stopPropagation()
-    if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget)) {
-      setIsDragging(false)
-    }
+    setIsDragging(false)
   }
 
   const handleDrop = async (e) => {
@@ -69,10 +74,6 @@ export default function App() {
 
   return (
     <div 
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
       className={`flex h-screen w-screen overflow-hidden relative ${resizing ? 'select-none cursor-col-resize' : ''}`} 
       style={{ background: 'var(--bg-primary)' }}
     >
@@ -145,7 +146,10 @@ export default function App() {
       {/* 드래그앤드롭 오버레이 */}
       {isDragging && (
         <div 
-          className="absolute inset-0 z-50 flex flex-col items-center justify-center pointer-events-none transition-all duration-200"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-200 pointer-events-auto"
           style={{ 
             background: 'rgba(240, 244, 249, 0.92)', 
             backdropFilter: 'blur(10px)' 
@@ -175,3 +179,4 @@ export default function App() {
     </div>
   )
 }
+

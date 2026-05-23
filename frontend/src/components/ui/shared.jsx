@@ -1,4 +1,5 @@
 import { TAG_COLORS } from '@/data/mockData'
+import { useAppStore } from '@/store/useAppStore'
 
 export function TagBadge({ type }) {
   const colorClass = TAG_COLORS[type] || TAG_COLORS['default']
@@ -33,3 +34,49 @@ export function Avatar({ name, size = 'md', selected = false }) {
     </div>
   )
 }
+
+export function SaveStateIndicator() {
+  const { saveState } = useAppStore()
+
+  if (saveState === 'idle') {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium select-none">
+        <span className="w-2 h-2 rounded-full bg-neutral-300 transition-all duration-300" />
+        <span>대기 중</span>
+      </div>
+    )
+  }
+
+  if (saveState === 'saving') {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-blue-500 font-semibold select-none">
+        <div className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+        </div>
+        <span>저장 중...</span>
+      </div>
+    )
+  }
+
+  if (saveState === 'saved') {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-green-600 font-semibold select-none">
+        <span className="w-2 h-2 rounded-full bg-green-500 transition-all duration-300" />
+        <span>저장 완료</span>
+      </div>
+    )
+  }
+
+  if (saveState === 'error') {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-red-500 font-semibold select-none">
+        <span className="w-2 h-2 rounded-full bg-red-500 transition-all duration-300" />
+        <span>저장 실패</span>
+      </div>
+    )
+  }
+
+  return null
+}
+
