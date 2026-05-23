@@ -142,7 +142,7 @@ export default function PrintPreview({ setupData, onClose }) {
                       <td className="border border-black bg-gray-50 font-bold">상담일자</td>
                       <td className="border border-black font-medium">{formatDate(session.date)}</td>
                       <td className="border border-black bg-gray-50 font-bold">상담구분</td>
-                      <td className="border border-black font-semibold text-indigo-700">{session.type}</td>
+                      <td className="border border-black font-semibold">{session.type}</td>
                     </tr>
                     <tr className="h-10">
                       <td className="border border-black bg-gray-50 font-bold">상담회기</td>
