@@ -17,16 +17,23 @@ else:
 
 GENERATED_ICON_PNG = r"C:\Users\user\.gemini\antigravity-ide\brain\42038f0d-d29a-4004-8910-bf887cb25f3d\counseling_app_icon_1779371372161.png"
 
-def run_command(args, cwd=None):
+def run_command(args, cwd=None, ignore_error=False):
     print(f"Running: {' '.join(args)} in {cwd or os.getcwd()}")
     res = subprocess.run(args, cwd=cwd, shell=True)
     if res.returncode != 0:
         print(f"Error executing command: {' '.join(args)}")
-        sys.exit(res.returncode)
+        if not ignore_error:
+            sys.exit(res.returncode)
+        return False
+    return True
 
 def main():
     print("=== [1] 패키징 라이브러리 설치 ===")
-    run_command([PIP_BIN, "install", "pyinstaller", "pillow"])
+    # GitHub Actions나 글로벌 환경에서는 python -m pip 포맷을 사용하고, 실패해도 빌드를 멈추지 않음
+    pip_cmd = [PIP_BIN, "install", "pyinstaller", "pillow"]
+    if PIP_BIN == "pip":
+        pip_cmd = ["python", "-m", "pip", "install", "pyinstaller", "pillow"]
+    run_command(pip_cmd, ignore_error=True)
 
     # Update requirements.txt to include new deps
     req_file = os.path.join(BACKEND_DIR, "requirements.txt")
