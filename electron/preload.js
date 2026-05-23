@@ -6,8 +6,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getVersion: () => ipcRenderer.invoke('app:version'),
   getPlatform: () => ipcRenderer.invoke('app:platform'),
 
-  // 3단계에서 추가될 API (FastAPI 연동)
-  // getStudents: () => ipcRenderer.invoke('api:students'),
-  // getSessions: (studentName) => ipcRenderer.invoke('api:sessions', studentName),
-  // saveSession: (data) => ipcRenderer.invoke('api:saveSession', data),
+  // 파일 제어
+  openFileDialog: () => ipcRenderer.invoke('dialog:openFile'),
+  onFileOpened: (callback) => {
+    const subscription = (event, filePath) => callback(filePath)
+    ipcRenderer.on('menu:file-opened', subscription)
+    return () => {
+      ipcRenderer.removeListener('menu:file-opened', subscription)
+    }
+  }
 })

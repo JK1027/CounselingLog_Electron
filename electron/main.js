@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
 
@@ -58,6 +58,100 @@ function startPythonBackend() {
   pythonProcess.on('close', (code) => console.log('[Python] 종료, exit code:', code))
 }
 
+// ─── 공통 파일 열기 다이얼로그 ─────────────────────────────────────────────
+async function handleFileOpen(window) {
+  const { canceled, filePaths } = await dialog.showOpenDialog(window, {
+    title: '상담일지 엑셀 파일 열기',
+    filters: [
+      { name: 'Excel Files', extensions: ['xlsx'] }
+    ],
+    properties: ['openFile']
+  })
+  if (!canceled && filePaths.length > 0) {
+    return filePaths[0]
+  }
+  return null
+}
+
+// ─── 한국어 메뉴 설정 ──────────────────────────────────────────────────────
+function setCustomMenu(window) {
+  const template = [
+    {
+      label: '파일',
+      submenu: [
+        {
+          label: '상담일지 열기...',
+          accelerator: 'CmdOrCtrl+O',
+          click: async () => {
+            const filePath = await handleFileOpen(window)
+            if (filePath && window) {
+              window.webContents.send('menu:file-opened', filePath)
+            }
+          }
+        },
+        { type: 'separator' },
+        {
+          label: '종료',
+          role: 'quit',
+          accelerator: 'CmdOrCtrl+Q'
+        }
+      ]
+    },
+    {
+      label: '편집',
+      submenu: [
+        { label: '실행 취소', role: 'undo' },
+        { label: '다시 실행', role: 'redo' },
+        { type: 'separator' },
+        { label: '잘라내기', role: 'cut' },
+        { label: '복사', role: 'copy' },
+        { label: '붙여넣기', role: 'paste' },
+        { label: '모두 선택', role: 'selectall' }
+      ]
+    },
+    {
+      label: '보기',
+      submenu: [
+        { label: '새로고침', role: 'reload' },
+        { label: '강제 새로고침', role: 'forcereload' },
+        { label: '개발자 도구', role: 'toggledevtools' },
+        { type: 'separator' },
+        { label: '실제 크기', role: 'resetzoom' },
+        { label: '확대', role: 'zoomin' },
+        { label: '축소', role: 'zoomout' },
+        { type: 'separator' },
+        { label: '전체 화면', role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: '창',
+      submenu: [
+        { label: '최소화', role: 'minimize' },
+        { label: '창 닫기', role: 'close' }
+      ]
+    },
+    {
+      label: '도움말',
+      submenu: [
+        {
+          label: '상담일지 정보',
+          click: () => {
+            dialog.showMessageBox(window, {
+              type: 'info',
+              title: '앱 정보',
+              message: '상담일지 관리 시스템',
+              detail: `버전(Version): ${app.getVersion()}\n플랫폼: ${process.platform}\n\nElectron + React + Python FastAPI 기반으로 구현된 초경량 상담 기록 도구입니다.`
+            })
+          }
+        }
+      ]
+    }
+  ]
+
+  const menu = Menu.buildFromTemplate(template)
+  Menu.setApplicationMenu(menu)
+}
+
 // ─── 메인 윈도우 생성 ─────────────────────────────────────────────────────
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -86,6 +180,7 @@ function createWindow() {
   // 준비되면 부드럽게 표시
   mainWindow.once('ready-to-show', () => {
     mainWindow.show()
+    setCustomMenu(mainWindow)
   })
 
   mainWindow.on('closed', () => {
@@ -123,3 +218,6 @@ app.on('quit', () => {
 // ─── IPC 핸들러 (3단계에서 확장) ──────────────────────────────────────────
 ipcMain.handle('app:version', () => app.getVersion())
 ipcMain.handle('app:platform', () => process.platform)
+ipcMain.handle('dialog:openFile', async () => {
+  return await handleFileOpen(mainWindow)
+})

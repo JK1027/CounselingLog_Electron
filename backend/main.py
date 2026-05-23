@@ -23,28 +23,28 @@ app.add_middleware(
 )
 
 # Initialize Excel Repository
-EXCEL_PATH = get_writable_path("data/상담일지.xlsx")
+CURRENT_EXCEL_PATH = get_writable_path("data/상담일지.xlsx")
 # Ensure directory exists
-ensure_directory_exists(os.path.dirname(EXCEL_PATH))
+ensure_directory_exists(os.path.dirname(CURRENT_EXCEL_PATH))
 
 repo = ExcelRepository()
 
 @app.on_event("startup")
 def startup_event():
     logger.info("FastAPI 서버 시작 및 데이터 로딩...")
-    if not os.path.exists(EXCEL_PATH):
-        logger.warning(f"상담일지 엑셀 파일이 없습니다. 기본 템플릿 생성을 개시합니다. 경로: {EXCEL_PATH}")
-        repo.main_file_path = EXCEL_PATH
+    if not os.path.exists(CURRENT_EXCEL_PATH):
+        logger.warning(f"상담일지 엑셀 파일이 없습니다. 기본 템플릿 생성을 개시합니다. 경로: {CURRENT_EXCEL_PATH}")
+        repo.main_file_path = CURRENT_EXCEL_PATH
         repo._ensure_template_initialized()
     try:
-        repo.load_data(EXCEL_PATH)
+        repo.load_data(CURRENT_EXCEL_PATH)
         logger.info("엑셀 데이터 로드 완료")
     except Exception as e:
         logger.error(f"엑셀 데이터 로드 중 에러 발생: {e}")
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "excel_path": EXCEL_PATH}
+    return {"status": "ok", "excel_path": CURRENT_EXCEL_PATH}
 
 # Pydantic Schemas for Requests
 class SessionCreate(BaseModel):
@@ -65,6 +65,9 @@ class SessionUpdate(BaseModel):
     detail: str
     sheetType: str
 
+class OpenFileRequest(BaseModel):
+    path: str
+
 @app.get("/students")
 def get_students():
     """
@@ -73,7 +76,7 @@ def get_students():
     """
     try:
         # 엑셀 최신 데이터 보장
-        repo.load_data(EXCEL_PATH)
+        repo.load_data(CURRENT_EXCEL_PATH)
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 
@@ -151,7 +154,7 @@ def get_sessions(student_name: str, student_id: str = Query("")):
     학번이 일치하는 집단상담 내역도 조회하여 병합 반환합니다.
     """
     try:
-        repo.load_data(EXCEL_PATH)
+        repo.load_data(CURRENT_EXCEL_PATH)
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 
@@ -242,7 +245,7 @@ def create_session(data: SessionCreate):
         raise HTTPException(status_code=400, detail=f"알 수 없는 시트 타입입니다: {data.sheetType}")
 
     try:
-        repo.load_data(EXCEL_PATH)
+        repo.load_data(CURRENT_EXCEL_PATH)
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 
@@ -323,7 +326,7 @@ def update_session(session_id: str, data: SessionUpdate):
     기존 상담 기록을 수정하고 엑셀 시트에 안전하게 반영합니다.
     """
     try:
-        repo.load_data(EXCEL_PATH)
+        repo.load_data(CURRENT_EXCEL_PATH)
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 
@@ -367,7 +370,7 @@ def get_today_stats():
     오늘 진행된 상담 건수를 집계합니다.
     """
     try:
-        repo.load_data(EXCEL_PATH)
+        repo.load_data(CURRENT_EXCEL_PATH)
     except Exception as e:
         logger.error(f"데이터 리로드 실패: {e}")
 
@@ -415,6 +418,24 @@ def trigger_backup():
         "filename": file_name,
         "directory": backup_dir
     }
+
+@app.post("/open-file")
+def open_file(data: OpenFileRequest):
+    """
+    엑셀 파일을 새로 로드하고 활성화된 파일 경로를 변경합니다.
+    """
+    global CURRENT_EXCEL_PATH
+    path = data.path.strip()
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="지정된 경로에 파일이 존재하지 않습니다.")
+    try:
+        repo.load_data(path)
+        CURRENT_EXCEL_PATH = path
+        logger.info(f"성공적으로 새 엑셀 파일을 불러왔습니다: {path}")
+        return {"status": "success", "excel_path": path}
+    except Exception as e:
+        logger.error(f"엑셀 파일 로딩 중 에러 발생: {e}")
+        raise HTTPException(status_code=500, detail=f"엑셀 파일을 열 수 없습니다: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

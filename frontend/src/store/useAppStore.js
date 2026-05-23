@@ -4,6 +4,9 @@ import { getChosung } from '@/utils/hangul'
 const API_BASE = 'http://localhost:8765'
 
 export const useAppStore = create((set, get) => ({
+  // 현재 활성화된 엑셀 파일 경로
+  currentFilePath: '',
+
   // 학생 목록
   students: [],
 
@@ -54,6 +57,13 @@ export const useAppStore = create((set, get) => ({
   // ─── API 초기화 ────────────────────────────────────────────────────────
   initialize: async () => {
     try {
+      // 서버 건강상태 및 현재 파일 경로 조회
+      const resHealth = await fetch(`${API_BASE}/health`)
+      if (resHealth.ok) {
+        const healthData = await resHealth.json()
+        set({ currentFilePath: healthData.excel_path })
+      }
+
       const resStudents = await fetch(`${API_BASE}/students`)
       if (!resStudents.ok) throw new Error('학생 목록 로드 실패')
       const studentsData = await resStudents.json()
@@ -214,6 +224,33 @@ export const useAppStore = create((set, get) => ({
       }
       const data = await res.json()
       get().addToast(`백업이 생성되었습니다: ${data.filename}`, 'success')
+    } catch (e) {
+      get().addToast(e.message, 'error')
+    }
+  },
+
+  // ─── 엑셀 파일 경로 선택 및 불러오기 ────────────────────────────────────
+  openFileByPath: async (filePath) => {
+    try {
+      const res = await fetch(`${API_BASE}/open-file`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: filePath })
+      })
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.detail || '엑셀 파일을 불러오는데 실패했습니다.')
+      }
+      const data = await res.json()
+      set({ 
+        currentFilePath: data.excel_path,
+        selectedStudent: null,
+        sessions: []
+      })
+      
+      // 데이터 리로드
+      await get().initialize()
+      get().addToast(`상담일지를 불러왔습니다: ${filePath.split(/[\\/]/).pop()}`, 'success')
     } catch (e) {
       get().addToast(e.message, 'error')
     }

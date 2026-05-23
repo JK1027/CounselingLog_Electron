@@ -1,4 +1,4 @@
-import { Search, Users, ChevronRight, AlertCircle, BookOpen } from 'lucide-react'
+import { Search, Users, ChevronRight, AlertCircle, BookOpen, FolderOpen } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { Avatar, TagBadge } from '@/components/ui/shared'
 
@@ -6,7 +6,19 @@ export default function Sidebar() {
   const {
     selectedStudent, setSelectedStudent,
     setCommandOpen, getFilteredStudents,
+    currentFilePath, openFileByPath,
   } = useAppStore()
+
+  const handleOpenFile = async () => {
+    if (window.electronAPI && window.electronAPI.openFileDialog) {
+      const filePath = await window.electronAPI.openFileDialog()
+      if (filePath) {
+        await openFileByPath(filePath)
+      }
+    } else {
+      useAppStore.getState().addToast('일렉트론 환경에서만 지원되는 기능입니다.', 'error')
+    }
+  }
 
   const students = getFilteredStudents()
 
@@ -33,7 +45,18 @@ export default function Sidebar() {
           </div>
           <div>
             <h1 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>상담일지</h1>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>2026학년도</p>
+            <div className="flex items-center gap-1 mt-0.5 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+              <span className="truncate max-w-[130px] font-medium" title={currentFilePath}>
+                {currentFilePath ? currentFilePath.split(/[\\/]/).pop() : '상담일지.xlsx'}
+              </span>
+              <button
+                onClick={handleOpenFile}
+                title="상담일지 파일 열기"
+                className="p-0.5 rounded hover:bg-hover transition-colors inline-flex items-center justify-center cursor-pointer"
+              >
+                <FolderOpen size={11} style={{ color: 'var(--accent)' }} />
+              </button>
+            </div>
           </div>
         </div>
 

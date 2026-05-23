@@ -16,19 +16,18 @@ def get_resource_path(relative_path):
 
 def get_writable_path(relative_path):
     """
-    Get writable path in the runtime directory where the executable/script is executed.
-    Used for reading/writing dynamic data files, backups, and logs.
+    Get writable path for runtime data.
+    In production (PyInstaller packaged), this writes to the user's AppData folder
+    to avoid PermissionErrors when installed in write-protected system directories (e.g. Program Files).
     """
     if getattr(sys, 'frozen', False):
-        exe_dir = os.path.dirname(sys.executable)
-        # 패키징된 Electron 앱 내부의 resources/backend/에서 실행되는 경우
-        if "resources" in exe_dir.lower():
-            # resources 상위 폴더(설치 폴더 루트)로 이동
-            base_dir = os.path.abspath(os.path.join(exe_dir, "..", ".."))
-        else:
-            base_dir = exe_dir
+        # 프로덕션 패키징 환경: 사용자 AppData/Roaming/counselinglog-electron 경로 사용
+        appdata = os.environ.get('APPDATA')
+        if not appdata:
+            appdata = os.path.expanduser('~')
+        base_dir = os.path.join(appdata, "counselinglog-electron")
     else:
-        # Under development, workspace root (parent of 'backend')
+        # 개발 환경: workspace root (parent of 'backend')
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     return os.path.normpath(os.path.join(base_dir, relative_path))
 
