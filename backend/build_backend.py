@@ -78,9 +78,8 @@ def main():
     print("\n=== [3] PyInstaller 백엔드 빌드 실행 ===")
     dist_dir = os.path.join(ROOT_DIR, "electron", "resources")
     
-    # PyInstaller execution command
+    # PyInstaller execution command arguments
     pyinstaller_args = [
-        PYINSTALLER_BIN,
         "--onedir",
         "--clean",
         "--noconfirm",
@@ -104,7 +103,14 @@ def main():
         "main.py"
     ]
 
-    run_command(pyinstaller_args, cwd=BACKEND_DIR)
+    # 글로벌 환경("pyinstaller" 지정된 경우)은 python -m PyInstaller 포맷을 사용하고, 
+    # 로컬 venv 환경은 가상환경 내부 pyinstaller.exe 절대 경로를 사용합니다.
+    if PYINSTALLER_BIN == "pyinstaller":
+        pyinstaller_cmd = ["python", "-m", "PyInstaller"] + pyinstaller_args
+    else:
+        pyinstaller_cmd = [PYINSTALLER_BIN] + pyinstaller_args
+
+    run_command(pyinstaller_cmd, cwd=BACKEND_DIR)
     print("\n=== 백엔드 빌드 완료! ===")
     print(f"결과물 위치: {os.path.join(dist_dir, 'backend')}")
 
