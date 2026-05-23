@@ -21,7 +21,8 @@ export default function Sidebar({ width }) {
     downloadPercent,
     newVersionInfo,
     updateErrorMessage,
-    setUpdateStatus
+    setUpdateStatus,
+    setBackupModalOpen
   } = useAppStore()
 
   const handleCheckUpdate = () => {
@@ -38,9 +39,7 @@ export default function Sidebar({ width }) {
   }
 
   const handleRestart = () => {
-    if (window.updaterAPI) {
-      window.updaterAPI.quitAndInstall()
-    }
+    setBackupModalOpen(true)
   }
 
   const handleOpenFile = async () => {

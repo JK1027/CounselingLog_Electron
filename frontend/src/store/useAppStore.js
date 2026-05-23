@@ -61,6 +61,10 @@ export const useAppStore = create((set, get) => ({
   setNewVersionInfo: (info) => set({ newVersionInfo: info }),
   setUpdateErrorMessage: (msg) => set({ updateErrorMessage: msg }),
 
+  // 업데이트 전 백업 확인 모달 상태
+  isBackupModalOpen: false,
+  setBackupModalOpen: (open) => set({ isBackupModalOpen: open }),
+
   // 현재 활성화된 엑셀 파일 경로
   currentFilePath: '',
 

@@ -8,6 +8,7 @@ import Dashboard from '@/components/Dashboard/Dashboard'
 import ToastContainer from '@/components/ui/ToastContainer'
 import PrintSetupModal from '@/components/Print/PrintSetupModal'
 import PrintPreview from '@/components/Print/PrintPreview'
+import PreUpdateBackupModal from '@/components/ui/PreUpdateBackupModal'
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { FileSpreadsheet } from 'lucide-react'
@@ -22,7 +23,8 @@ export default function App() {
     addToast,
     initializeUpdater,
     updateStatus,
-    downloadPercent
+    downloadPercent,
+    setBackupModalOpen
   } = useAppStore()
 
   const [dragCounter, setDragCounter] = useState(0)
@@ -114,22 +116,23 @@ export default function App() {
     >
       {/* 최상단 업데이트 알림 배너 */}
       {updateStatus === 'downloaded' && (
-        <div className="absolute top-0 left-0 right-0 h-[36px] z-50 flex items-center justify-between px-5 bg-blue-600 text-white text-[11px] font-medium shadow-sm animate-pulse print-exclude" style={{ backgroundColor: 'var(--accent)' }}>
+        <div className="absolute top-0 left-0 right-0 h-[36px] z-50 flex items-center justify-between px-5 text-white text-[11px] font-medium shadow-sm print-exclude" style={{ backgroundColor: 'var(--accent)' }}>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-            <span>상담일지의 새로운 업데이트 설치 준비가 완료되었습니다. 변경 사항을 적용하려면 앱을 다시 시작해 주세요.</span>
+            <span>새로운 업데이트 설치 준비가 완료되었습니다. 변경 사항을 적용하려면 앱을 다시 시작해 주세요.</span>
           </div>
           <button 
-            onClick={() => {
-              if (window.updaterAPI) window.updaterAPI.quitAndInstall()
-            }}
-            className="px-3 py-1 bg-white text-blue-600 rounded-lg text-[10px] font-bold hover:bg-neutral-100 transition-all cursor-pointer"
+            onClick={() => setBackupModalOpen(true)}
+            className="px-3 py-1 bg-white rounded-lg text-[10px] font-bold hover:bg-neutral-100 transition-all cursor-pointer"
             style={{ color: 'var(--accent)' }}
           >
             재시작 및 설치
           </button>
         </div>
       )}
+
+      {/* 업데이트 전 데이터 백업 확인 모달 */}
+      <PreUpdateBackupModal />
 
       {/* 사이드바: 학생 목록 */}
       <Sidebar width={sidebarWidth} />
