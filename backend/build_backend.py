@@ -12,14 +12,16 @@ if os.path.exists(VENV_DIR):
     PIP_BIN = os.path.join(VENV_DIR, "Scripts", "pip.exe")
     PYINSTALLER_BIN = os.path.join(VENV_DIR, "Scripts", "pyinstaller.exe")
 else:
-    PIP_BIN = "pip"
-    PYINSTALLER_BIN = "pyinstaller"
+    # shell=False 호환성을 위해 shutil.which로 글로벌 절대 경로 탐색
+    PIP_BIN = shutil.which("pip") or "pip"
+    PYINSTALLER_BIN = shutil.which("pyinstaller") or "pyinstaller"
 
 GENERATED_ICON_PNG = r"C:\Users\user\.gemini\antigravity-ide\brain\42038f0d-d29a-4004-8910-bf887cb25f3d\counseling_app_icon_1779371372161.png"
 
 def run_command(args, cwd=None, ignore_error=False):
     print(f"Running: {' '.join(args)} in {cwd or os.getcwd()}")
-    res = subprocess.run(args, cwd=cwd, shell=True)
+    # Windows CI 등에서 인자 파싱 및 경로 탈출 오류 방지를 위해 shell=False 적용
+    res = subprocess.run(args, cwd=cwd, shell=False)
     if res.returncode != 0:
         print(f"Error executing command: {' '.join(args)}")
         if not ignore_error:
@@ -28,11 +30,14 @@ def run_command(args, cwd=None, ignore_error=False):
     return True
 
 def main():
+    python_bin = shutil.which("python") or "python"
+    
     print("=== [1] 패키징 라이브러리 설치 ===")
-    # GitHub Actions나 글로벌 환경에서는 python -m pip 포맷을 사용하고, 실패해도 빌드를 멈추지 않음
-    pip_cmd = [PIP_BIN, "install", "pyinstaller", "pillow"]
-    if PIP_BIN == "pip":
-        pip_cmd = ["python", "-m", "pip", "install", "pyinstaller", "pillow"]
+    # 글로벌 환경이거나 경로가 절대경로가 아닌 경우 python -m pip 형식을 사용
+    if not os.path.isabs(PIP_BIN):
+        pip_cmd = [python_bin, "-m", "pip", "install", "pyinstaller", "pillow"]
+    else:
+        pip_cmd = [PIP_BIN, "install", "pyinstaller", "pillow"]
     run_command(pip_cmd, ignore_error=True)
 
     # Update requirements.txt to include new deps
@@ -99,14 +104,19 @@ def main():
         "--hidden-import=uvicorn.protocols.websockets.auto",
         "--hidden-import=uvicorn.lifespan",
         "--hidden-import=uvicorn.lifespan.on",
+        # FastAPI, Pandas, Openpyxl 및 anyio 등 런타임 누락 방지용 hidden-import 명시 추가
+        "--hidden-import=fastapi",
+        "--hidden-import=pandas",
+        "--hidden-import=openpyxl",
+        "--hidden-import=anyio",
+        "--hidden-import=starlette",
         # Source script
         "main.py"
     ]
 
-    # 글로벌 환경("pyinstaller" 지정된 경우)은 python -m PyInstaller 포맷을 사용하고, 
-    # 로컬 venv 환경은 가상환경 내부 pyinstaller.exe 절대 경로를 사용합니다.
-    if PYINSTALLER_BIN == "pyinstaller":
-        pyinstaller_cmd = ["python", "-m", "PyInstaller"] + pyinstaller_args
+    # 글로벌 환경이거나 경로가 절대경로가 아닌 경우 python -m PyInstaller 형식으로 안전하게 구동
+    if not os.path.isabs(PYINSTALLER_BIN):
+        pyinstaller_cmd = [python_bin, "-m", "PyInstaller"] + pyinstaller_args
     else:
         pyinstaller_cmd = [PYINSTALLER_BIN] + pyinstaller_args
 
