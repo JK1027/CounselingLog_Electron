@@ -1,12 +1,28 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
     ['main.py'],
-    pathex=['C:\\Coding3\\CounselingLog_Electron'],
+    pathex=['.'],
     binaries=[],
     datas=[('config.json', '.')],
-    hiddenimports=['uvicorn', 'uvicorn.logging', 'uvicorn.loops', 'uvicorn.loops.auto', 'uvicorn.protocols', 'uvicorn.protocols.http', 'uvicorn.protocols.http.auto', 'uvicorn.protocols.websockets', 'uvicorn.protocols.websockets.auto', 'uvicorn.lifespan', 'uvicorn.lifespan.on'],
+    hiddenimports=[
+        'uvicorn', 
+        'uvicorn.logging', 
+        'uvicorn.loops', 
+        'uvicorn.loops.auto', 
+        'uvicorn.protocols', 
+        'uvicorn.protocols.http', 
+        'uvicorn.protocols.http.auto', 
+        'uvicorn.protocols.websockets', 
+        'uvicorn.protocols.websockets.auto', 
+        'uvicorn.lifespan', 
+        'uvicorn.lifespan.on', 
+        'fastapi', 
+        'pandas', 
+        'openpyxl', 
+        'anyio', 
+        'starlette'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -32,6 +48,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='../assets/icon.ico'
 )
 coll = COLLECT(
     exe,

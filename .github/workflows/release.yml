@@ -11,6 +11,7 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    timeout-minutes: 25
 
     steps:
       - name: Checkout Source Code
@@ -28,9 +29,33 @@ jobs:
           pip install -r backend/requirements.txt
           pip install pyinstaller pillow
 
+      - name: Debug Before Build
+        run: |
+          echo "=== Root Directory ==="
+          dir
+          echo "=== Backend Directory ==="
+          dir backend
+          echo "=== Assets Directory ==="
+          dir assets
+
       - name: Build Python Backend (PyInstaller)
         run: |
           python backend/build_backend.py
+
+      - name: Debug After Build
+        run: |
+          echo "=== Electron Resources Directory ==="
+          dir electron/resources/backend
+
+      - name: Upload PyInstaller Build Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyinstaller-build-logs
+          path: |
+            backend/build/
+            backend/dist/
+            backend/backend.spec
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
