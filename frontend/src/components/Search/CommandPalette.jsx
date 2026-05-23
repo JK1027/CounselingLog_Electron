@@ -230,7 +230,7 @@ export default function CommandPalette() {
                   <div>
                     <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>성별</label>
                     <div className="flex gap-2 h-[38px] items-center">
-                      {['남', '여'].map(g => (
+                      {['남', '여', '혼합'].map(g => (
                         <button
                           key={g}
                           type="button"
