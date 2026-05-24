@@ -697,6 +697,19 @@
   - `backend/build_backend.py`를 가동하여 PyInstaller 컴파일 수행 및 패키징 바이너리(`backend.exe`) 복사 완료.
   - 프론트엔드 React 프로덕션 빌드 무결성 확인 완료.
 
+---
 
+## [2026-05-24] 또래상담 학생 기초 명단 관리 기능 추가 완료
 
-
+### 작업 내용
+- [x] **[Backend] AppData 기반 JSON 로드 및 저장 API 구현 (`main.py`)**:
+  - GET `/peer-counsel/students` 및 POST `/peer-counsel/students` 엔드포인트를 설계하여 디렉토리 유실 및 배포 패키지 갱신 시에도 유지되도록 AppData 폴더 내에 `peer_counsel_students.json` 파일로 데이터 영속 저장.
+  - FastAPI의 요청 본문 분석에서 list 형식이 multipart/form-data로 잘못 해석되는 것을 방지하기 위해 `Body(...)` 파라미터 적용.
+- [x] **[Frontend] Zustand 전역 상태 및 또래상담 명단 설정 뷰 연동 (`useAppStore.js`, `PeerCounselDialog.jsx`)**:
+  - `loadPeerStudents` 및 `savePeerStudents` 비동기 액션을 Zustand 스토어에 설계하여 저장 안정성 인디케이터 및 Toast 피드백 바인딩.
+  - `PeerCounselDialog.jsx` 내부에 `viewMode` 스위칭 기법을 추가하여 톱니바퀴 버튼 클릭 시 `명단 설정` 관리 모드로 전환되는 유연한 다이얼로그 설계.
+  - 학년, 반, 번호, 이름, 학번의 실시간 인라인 인풋 수정 및 휴지통 삭제 기능을 제공하고, 하단에 신규 학생 가로 추가 폼을 탑재하여 완결성 있는 관리 기능 완비.
+  - 저장 요청 시 자동 정렬(학년->반->번호 순) 및 입력 유효성 가드 적용.
+- [x] **테스트 및 빌드 무결성 검증 완료**:
+  - API 통합 E2E 테스트 스크립트(`test_peer_counsel_api.py`)를 통해 GET/POST API 동작 및 JSON 데이터의 디스크 입출력 완벽 테스트 완료.
+  - 리액트 프로덕션 빌드(`npm run build`) 및 PyInstaller backend 패키징 빌드(`build_backend.py`) 검증 완료.

@@ -1,7 +1,7 @@
 import os
 import datetime
 import uuid
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
@@ -687,6 +687,67 @@ def open_file(data: OpenFileRequest):
         except Exception as e:
             logger.error(f"엑셀 파일 로딩 중 에러 발생: {e}")
             raise HTTPException(status_code=500, detail=f"엑셀 파일을 열 수 없습니다: {str(e)}")
+
+import json
+
+DEFAULT_PEER_STUDENTS = [
+    { "grade": 4, "class": 1, "number": 1, "name": "임현준", "studentId": "4101" },
+    { "grade": 4, "class": 1, "number": 2, "name": "조서영", "studentId": "4102" },
+    { "grade": 4, "class": 2, "number": 1, "name": "조의성", "studentId": "4201" },
+    { "grade": 4, "class": 2, "number": 2, "name": "조하윤", "studentId": "4202" },
+    { "grade": 5, "class": 1, "number": 1, "name": "김다미", "studentId": "5101" },
+    { "grade": 5, "class": 1, "number": 2, "name": "두란사", "studentId": "5102" },
+    { "grade": 5, "class": 2, "number": 1, "name": "김선우", "studentId": "5201" },
+    { "grade": 5, "class": 2, "number": 2, "name": "이하람", "studentId": "5202" },
+    { "grade": 6, "class": 2, "number": 1, "name": "이가인", "studentId": "6201" },
+    { "grade": 6, "class": 2, "number": 2, "name": "한다은", "studentId": "6202" },
+    { "grade": 6, "class": 1, "number": 1, "name": "이영희", "studentId": "6101" },
+    { "grade": 6, "class": 1, "number": 2, "name": "김철수", "studentId": "6102" }
+]
+
+@app.get("/peer-counsel/students")
+def get_peer_students():
+    """
+    또래상담 학생 명단을 로드합니다.
+    AppData 디렉토리에 파일이 없을 경우 기본 명단 12명 파일을 자동 생성하여 반환합니다.
+    """
+    file_path = get_writable_path("peer_counsel_students.json")
+    # 디렉토리 존재 보장
+    ensure_directory_exists(os.path.dirname(file_path))
+    
+    if not os.path.exists(file_path):
+        try:
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(DEFAULT_PEER_STUDENTS, f, ensure_ascii=False, indent=2)
+            logger.info(f"기본 또래상담 학생 데이터 생성 완료: {file_path}")
+        except Exception as e:
+            logger.error(f"기본 또래상담 학생 데이터 생성 실패: {e}")
+            raise HTTPException(status_code=500, detail=f"기본 학생 명단 생성 실패: {str(e)}")
+            
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            students = json.load(f)
+        return students
+    except Exception as e:
+        logger.error(f"또래상담 학생 데이터 로드 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"또래상담 학생 명단 파일 읽기 실패: {str(e)}")
+
+@app.post("/peer-counsel/students")
+def save_peer_students(students: list = Body(...)):
+    """
+    또래상담 학생 명단을 AppData 내 파일에 덮어쓰고 저장합니다.
+    """
+    file_path = get_writable_path("peer_counsel_students.json")
+    ensure_directory_exists(os.path.dirname(file_path))
+    
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(students, f, ensure_ascii=False, indent=2)
+        logger.info(f"또래상담 학생 데이터 저장 완료: {file_path}")
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"또래상담 학생 데이터 저장 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"또래상담 학생 명단 파일 쓰기 실패: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

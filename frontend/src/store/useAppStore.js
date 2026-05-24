@@ -71,6 +71,9 @@ export const useAppStore = create((set, get) => ({
   // 학생 목록
   students: [],
 
+  // 또래상담 학생 목록
+  peerStudents: [],
+
   // 오늘 대시보드 통계
   todayStats: { total: 0, pending: 0, guardian: 0, referral: 0 },
 
@@ -196,6 +199,38 @@ export const useAppStore = create((set, get) => ({
       const data = await res.json()
       set({ groupSessions: data })
     } catch (e) {
+      get().addToast(e.message, 'error')
+    }
+  },
+
+  // ─── 또래상담 학생 명단 로드 ──────────────────────────────────────────
+  loadPeerStudents: async () => {
+    try {
+      const res = await apiFetch('/peer-counsel/students')
+      const data = await res.json()
+      set({ peerStudents: data })
+    } catch (e) {
+      get().addToast(e.message, 'error')
+    }
+  },
+
+  // ─── 또래상담 학생 명단 저장 ──────────────────────────────────────────
+  savePeerStudents: async (studentsList) => {
+    set({ saveState: 'saving' })
+    try {
+      await apiFetch('/peer-counsel/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(studentsList)
+      })
+      set({ saveState: 'saved' })
+      setTimeout(() => set({ saveState: 'idle' }), 3000)
+      
+      // 상태 갱신
+      set({ peerStudents: studentsList })
+      get().addToast('또래상담 학생 명단이 저장되었습니다.', 'success')
+    } catch (e) {
+      set({ saveState: 'error' })
       get().addToast(e.message, 'error')
     }
   },
