@@ -788,5 +788,27 @@
 - [x] **무결성 정적 빌드 검증 완료**:
   - `npm run build` in `frontend` 정상 통과 확인.
 
+---
+
+## [2026-05-24] 바탕화면 바로가기 강제 생성 설정 및 패키징 완료 (v0.2.11)
+
+### 작업 내용
+- [x] **[Electron] NSIS 바탕화면 바로가기 강제 생성 옵션 추가 (`package.json`)**:
+  - `electron/package.json` 내 `nsis` 빌드 설정에 `"createDesktopShortcut": "always"` 옵션을 명시하여 기존에 바로가기가 삭제된 상태에서도 설치 시 바로가기가 항상 생성되도록 강제화.
+  - 버전을 `0.2.11`로 업데이트하고 패키징 빌드를 수행하여 `dist/counselinglog-electron-setup-0.2.11.exe` 생성 및 검증 완료.
+
+---
+
+## [2026-05-24] 드래그 앤 드롭 파일 경로 조회 오류 수정 및 릴리즈 배포 완료 (v0.2.12)
+
+### 작업 내용
+- [x] **[Electron] 렌더러 내 파일 절대 경로 획득 보안 우회 API 노출 (`preload.js`)**:
+  - Electron 32+ 보안 정책 변경(렌더러 내 DOM File 객체의 `.path` 속성 접근 폐지)에 대응하기 위해 프리로드 스크립트에 `webUtils.getPathForFile` API를 바인딩하여 안전하게 경로를 조회할 수 있는 가교 설계.
+- [x] **[Frontend] 드래그 앤 드롭 파일 로딩 시 보안 API 연동 (`App.jsx`)**:
+  - 파일 드롭 핸들러(`handleDrop`)에서 `file.path` 대신 `window.electronAPI.getPathForFile(file)`을 사용하여 에러 없이 정상적으로 엑셀 파일 절대 경로를 읽어오도록 코드 교정 및 리다이렉션 방어 리스너(`dragover` / `drop` preventDefault) 강화.
+- [x] **[Release] 버전 0.2.12 업데이트 및 GitHub Actions 자동 배포 트리거**:
+  - `electron/package.json` 버전을 `0.2.12`로 범프하고 `v0.2.12` 릴리즈 태그를 원격 저장소에 푸시하여 배포 파이프라인 가동 완료.
+
+
 
 
