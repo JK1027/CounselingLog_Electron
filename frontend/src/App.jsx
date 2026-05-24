@@ -105,7 +105,11 @@ export default function App() {
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0]
-      const path = file.path
+      
+      // Electron 32+ 대응: webUtils.getPathForFile API 사용
+      const path = window.electronAPI && window.electronAPI.getPathForFile
+        ? window.electronAPI.getPathForFile(file)
+        : file.path
       
       if (path) {
         if (path.toLowerCase().endsWith('.xlsx')) {

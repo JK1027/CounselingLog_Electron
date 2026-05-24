@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer, webUtils } = require('electron')
 
 // ─── Renderer에서 사용할 수 있는 안전한 API 노출 ──────────────────────────
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -14,7 +14,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => {
       ipcRenderer.removeListener('menu:file-opened', subscription)
     }
-  }
+  },
+  
+  // DOM File 객체로부터 실제 절대 경로를 안전하게 추출 (Electron 32+ 대응)
+  getPathForFile: (file) => webUtils.getPathForFile(file)
 })
 
 contextBridge.exposeInMainWorld('updaterAPI', {
