@@ -146,6 +146,15 @@ export default function CommandPalette() {
       return
     }
 
+    if (grade !== '혼합') {
+      const firstDigit = studentId.trim()[0]
+      if (firstDigit !== grade) {
+        if (!window.confirm('학년 및 학번에 오류가 있는지 확인해주세요.')) {
+          return
+        }
+      }
+    }
+
     registerVirtualStudent(name.trim(), studentId.trim(), grade, gender)
   }
 
