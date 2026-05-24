@@ -763,7 +763,7 @@
 
 ---
 
-## [2026-05-24] 프로그램 아이콘 변경 및 패키징 완료 (시안 2 적용)
+## [2026-05-24] 프로그램 아이콘 변경 및 패키징 완료 (v0.2.9)
 
 ### 작업 내용
 - [x] **[Assets] 새로운 고해상도 투명 아이콘 적용**:
@@ -774,6 +774,6 @@
 - [x] **[Frontend] React 프로덕션 빌드 검증**:
   - `npm run build` (vite build) 정상 작동 확인.
 - [x] **[Electron] 데스크톱 패키징 및 NSIS 인스톨러 생성 검증**:
-  - `electron-builder`를 사용하여 새 아이콘이 바인딩된 단일 배포용 인스톨러(`counselinglog-electron-setup-0.2.8.exe`) 빌드를 무결하게 완료.
+  - `electron-builder`를 사용하여 새 아이콘이 바인딩된 단일 배포용 인스톨러(`counselinglog-electron-setup-0.2.9.exe`) 빌드를 무결하게 완료.
 
 
