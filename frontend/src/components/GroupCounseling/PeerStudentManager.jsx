@@ -93,8 +93,54 @@ export default function PeerStudentManager({
 
   // 명단 저장 및 서버 반영
   const handleSaveStudentsList = async () => {
+    let finalStudents = [...tempStudents]
+
+    // 하단 추가 폼에 무언가 작성 중인지 체크
+    if (newName.trim() || newStudentId.trim() || newClass.trim() || newNumber.trim()) {
+      // 1. 모든 정보가 완벽히 입력된 경우 -> 자동 추가 진행
+      if (newName.trim() && newStudentId.trim() && newClass.trim() && newNumber.trim()) {
+        if (newStudentId.trim().length !== 4 || !/^\d{4}$/.test(newStudentId.trim())) {
+          addToast('작성 중인 학번은 4자리 숫자로 입력해 주세요 (예: 4103).', 'error')
+          return
+        }
+        if (newStudentId.trim()[0] !== String(newGrade)) {
+          addToast('작성 중인 선택 학년과 학번의 첫 번째 숫자가 일치하지 않습니다.', 'error')
+          return
+        }
+        if (!newClass.trim() || isNaN(newClass.trim())) {
+          addToast('반을 숫자로 입력해 주세요.', 'error')
+          return
+        }
+        if (!newNumber.trim() || isNaN(newNumber.trim())) {
+          addToast('번호를 숫자로 입력해 주세요.', 'error')
+          return
+        }
+
+        // 중복 학번 검사
+        const isDuplicate = tempStudents.some(s => s.studentId === newStudentId.trim())
+        if (isDuplicate) {
+          addToast('이미 명단에 존재하는 학번입니다.', 'error')
+          return
+        }
+
+        const autoAddedStudent = {
+          grade: parseInt(newGrade, 10),
+          class: parseInt(newClass.trim(), 10),
+          number: parseInt(newNumber.trim(), 10),
+          name: newName.trim(),
+          studentId: newStudentId.trim()
+        }
+        
+        finalStudents.push(autoAddedStudent)
+      } else {
+        // 2. 정보가 불완전하게 입력된 경우 -> 경고 메시지 노출 및 저장 중단
+        addToast('작성 중인 새 학생 정보가 있습니다. 추가(+) 버튼을 클릭하여 목록에 등록하거나, 입력창을 비워주세요.', 'warning')
+        return
+      }
+    }
+
     // 최종 검증
-    for (const s of tempStudents) {
+    for (const s of finalStudents) {
       if (!String(s.name).trim()) {
         addToast('이름이 비어 있는 학생이 있습니다.', 'error')
         return
@@ -110,7 +156,7 @@ export default function PeerStudentManager({
     }
 
     // 정렬 (학년 -> 반 -> 번호 순)
-    const sorted = [...tempStudents].sort((a, b) => {
+    const sorted = [...finalStudents].sort((a, b) => {
       if (a.grade !== b.grade) return a.grade - b.grade
       if (a.class !== b.class) return a.class - b.class
       return a.number - b.number
@@ -119,6 +165,7 @@ export default function PeerStudentManager({
     await savePeerStudents(sorted)
     onSaveSuccess()
   }
+
 
   return (
     <>
