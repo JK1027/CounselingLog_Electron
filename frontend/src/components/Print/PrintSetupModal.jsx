@@ -136,7 +136,11 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview }) {
                 <option value="all">전체 상담 회기 ({sessions.length}건)</option>
                 {sessions.map((s, idx) => (
                   <option key={s.id} value={s.id}>
-                    {s.session ? `${s.session}회기` : `${sessions.length - idx}번째`} · {s.date} · {s.type} · {s.summary}
+                    {s.session 
+                      ? (String(s.session).trim() === '단회' 
+                          ? '단회' 
+                          : (String(s.session).trim().endsWith('회기') ? String(s.session).trim() : `${String(s.session).trim()}회기`)) 
+                      : `${sessions.length - idx}번째`} · {s.date} · {s.type} · {s.summary}
                   </option>
                 ))}
               </select>

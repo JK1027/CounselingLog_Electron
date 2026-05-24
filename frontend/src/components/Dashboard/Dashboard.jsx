@@ -375,7 +375,11 @@ function DashboardSessionRow({ session, onGoToStudent, onEdit }) {
               <span>{formatDate(session.date)}</span>
               {session.session && (
                 <span className="px-1 py-0.25 rounded bg-neutral-100 text-neutral-600 font-semibold text-[10px]">
-                  {session.session}회기
+                  {String(session.session).trim() === '단회' 
+                    ? '단회' 
+                    : (String(session.session).trim().endsWith('회기') 
+                        ? String(session.session).trim() 
+                        : `${String(session.session).trim()}회기`)}
                 </span>
               )}
             </div>

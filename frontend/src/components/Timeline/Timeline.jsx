@@ -282,7 +282,11 @@ function SessionCard({ session, sessionNumber, isSelected, onClick, onEdit, onDe
                 <span>{formatDate(session.date)}</span>
                 {session.session && (
                   <span className="px-1 py-0.25 rounded bg-gray-100 text-gray-600 font-semibold text-[10px]">
-                    {session.session}회기
+                    {String(session.session).trim() === '단회' 
+                      ? '단회' 
+                      : (String(session.session).trim().endsWith('회기') 
+                          ? String(session.session).trim() 
+                          : `${String(session.session).trim()}회기`)}
                   </span>
                 )}
               </div>

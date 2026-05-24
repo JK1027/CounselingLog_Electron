@@ -145,16 +145,18 @@ export default function PrintPreview({ setupData, onClose }) {
                       <td className="border border-black font-semibold">{session.type}</td>
                     </tr>
                     <tr className="h-10">
-                      <td className="border border-black bg-gray-50 font-bold">상담회기</td>
-                      <td className="border border-black font-semibold">
+                      <td className="w-[15%] border border-black bg-gray-50 font-bold">상담회기</td>
+                      <td className="w-[35%] border border-black font-semibold">
                         {session.session 
-                          ? (String(session.session).trim().endsWith('회기') 
-                              ? String(session.session).trim() 
-                              : `${String(session.session).trim()}회기`) 
+                          ? (String(session.session).trim() === '단회'
+                              ? '단회'
+                              : (String(session.session).trim().endsWith('회기') 
+                                  ? String(session.session).trim() 
+                                  : `${String(session.session).trim()}회기`)) 
                           : '1회기'}
                       </td>
-                      <td className="border border-black bg-gray-50 font-bold">상담유형</td>
-                      <td className="border border-black font-semibold">{session.sheetType}</td>
+                      <td className="w-[15%] border border-black bg-gray-50 font-bold">상담유형</td>
+                      <td className="w-[35%] border border-black font-semibold">{session.sheetType}</td>
                     </tr>
                     <tr className="h-11">
                       <td colSpan={4} className="border border-black text-left px-3 font-bold bg-neutral-50/50">
