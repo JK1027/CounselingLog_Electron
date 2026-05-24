@@ -713,3 +713,20 @@
 - [x] **테스트 및 빌드 무결성 검증 완료**:
   - API 통합 E2E 테스트 스크립트(`test_peer_counsel_api.py`)를 통해 GET/POST API 동작 및 JSON 데이터의 디스크 입출력 완벽 테스트 완료.
   - 리액트 프로덕션 빌드(`npm run build`) 및 PyInstaller backend 패키징 빌드(`build_backend.py`) 검증 완료.
+
+---
+
+## [2026-05-24] 또래상담 입력 도우미 컴포넌트 리팩토링 및 관심사 분리 완료
+
+### 작업 내용
+- [x] **상담 내용 조립 로직 분리 (`peerCounselHelper.js` 신설)**:
+  - `PeerCounselDialog.jsx` 내부에 작성되어 있던 참여/미참여 학생 가공 및 전체 상세 텍스트 빌드 알고리즘을 격리하여 순수 헬퍼 유틸리티 `buildPeerCounselContent` 함수로 분리 및 이관.
+- [x] **명단 설정 편집/추가 폼 컴포넌트 격리 (`PeerStudentManager.jsx` 신설)**:
+  - 명단 설정 뷰 렌더링 영역(Editable Grid 테이블, 신규 가로 추가 폼, validation 로직 등)과 관련된 임시 상태(`tempStudents`, `newGrade`, `newClass`, `newNumber`, `newName`, `newStudentId`)를 이 서브 컴포넌트로 완전히 캡슐화.
+  - 컴포넌트가 마운트될 때만 명단 관련 상태를 초기화하도록 변경하여 기존 부모 컴포넌트의 비대화 예방 및 불필요한 `useEffect` 동기화 로직 제거.
+- [x] **메인 다이얼로그 뷰 경량화 (`PeerCounselDialog.jsx`)**:
+  - `PeerCounselDialog.jsx` 파일 라인 수를 약 560줄에서 190줄 수준으로 대폭 축소(약 66% 감소).
+  - Zustand 스토어 액션의 불필요한 의존성 관계를 정리하여 `useEffect` 트리거링을 단순화.
+- [x] **정적 및 빌드 무결성 검증 완료**:
+  - `npm run build` in `frontend` 프로덕션 빌드를 기동하여 컴포넌트 간 임포트 및 컴파일 시 경고나 오류가 존재하지 않음을 최종 검증 완료.
+
