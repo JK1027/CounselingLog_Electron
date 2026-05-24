@@ -69,6 +69,12 @@ export default function Dashboard({ onOpenPrintModal }) {
   }
 
   const handleEditSession = async (session) => {
+    if (session.sheetType === '집단상담') {
+      setSelectedStudent({ id: 'group_counseling', name: '집단상담 대장', isGroupTab: true })
+      setSelectedSession(session)
+      return
+    }
+
     const firstStudentName = session.name.split(',')[0].trim()
     const firstStudentId = session.studentId.split(',')[0].trim()
     
@@ -403,16 +409,18 @@ function DashboardSessionRow({ session, onGoToStudent, onEdit }) {
 
         {/* 액션 버튼 */}
         <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-all">
-          <button
-            onClick={e => { e.stopPropagation(); onGoToStudent(); }}
-            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-primary)' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-primary)'}
-          >
-            <ExternalLink size={11} />
-            타임라인 이동
-          </button>
+          {session.sheetType !== '집단상담' && (
+            <button
+              onClick={e => { e.stopPropagation(); onGoToStudent(); }}
+              className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-primary)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-primary)'}
+            >
+              <ExternalLink size={11} />
+              타임라인 이동
+            </button>
+          )}
           <button
             onClick={e => { e.stopPropagation(); onEdit(); }}
             className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-white"

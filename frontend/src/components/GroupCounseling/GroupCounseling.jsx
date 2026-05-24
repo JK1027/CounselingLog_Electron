@@ -24,7 +24,9 @@ export default function GroupCounseling() {
     deleteGroupSession, 
     saveState, 
     isCompactMode, 
-    loadGroupSessions 
+    loadGroupSessions,
+    selectedSession,
+    setSelectedSession
   } = useAppStore()
 
   const [loading, setLoading] = useState(true)
@@ -91,6 +93,13 @@ export default function GroupCounseling() {
     })
     setShowForm(true)
   }
+
+  useEffect(() => {
+    if (selectedSession && selectedSession.sheetType === '집단상담') {
+      handleOpenEditForm(selectedSession)
+      setSelectedSession(null)
+    }
+  }, [selectedSession, setSelectedSession])
 
   const handleInputChange = (field, value) => {
     setFormValues(prev => ({ ...prev, [field]: value }))
