@@ -65,11 +65,9 @@ ${attendedText || '없음'}
 미참여학생:
 ${absentText || '없음'}`
 
-    const studentIdsCsv = attended.map(s => s.studentId).join(', ')
-
     onComplete({
       summary: summary.trim(),
-      studentId: studentIdsCsv,
+      studentId: '4학년~6학년',
       detail: compiledDetail
     })
   }
