@@ -44,8 +44,13 @@ export default function App() {
     }
   }, [initializeUpdater])
 
-  // 2. 윈도우 레벨에서 파일 드래그가 감입될 때만 오버레이 활성화 (Drag Counter 방식)
+  // 2. 윈도우 레벨에서 파일 드래그 기본 동작 방어 및 오버레이 활성화 (Drag Counter 방식)
   useEffect(() => {
+    const handleWindowDragOver = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
     const handleWindowDragEnter = (e) => {
       e.preventDefault()
       e.stopPropagation()
@@ -62,14 +67,18 @@ export default function App() {
       }
     }
 
-    const handleWindowDrop = () => {
+    const handleWindowDrop = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
       setDragCounter(0)
     }
 
+    window.addEventListener('dragover', handleWindowDragOver)
     window.addEventListener('dragenter', handleWindowDragEnter)
     window.addEventListener('dragleave', handleWindowDragLeave)
     window.addEventListener('drop', handleWindowDrop)
     return () => {
+      window.removeEventListener('dragover', handleWindowDragOver)
       window.removeEventListener('dragenter', handleWindowDragEnter)
       window.removeEventListener('dragleave', handleWindowDragLeave)
       window.removeEventListener('drop', handleWindowDrop)

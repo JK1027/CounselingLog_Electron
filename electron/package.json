@@ -1,6 +1,6 @@
 {
   "name": "counselinglog-electron",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "description": "상담일지 Electron 앱",
   "main": "main.js",
   "scripts": {
@@ -43,7 +43,8 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always"
     },
     "publish": [
       {
