@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Search, Users, ChevronRight, AlertCircle, BookOpen, FolderOpen, Maximize2, Minimize2, UserPlus, Home, Sparkles, Download, RefreshCw } from 'lucide-react'
+import { Search, Users, ChevronRight, AlertCircle, BookOpen, FolderOpen, Maximize2, Minimize2, UserPlus, Home, Sparkles, Download, RefreshCw, Database } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { Avatar, TagBadge } from '@/components/ui/shared'
 
@@ -22,7 +22,8 @@ export default function Sidebar({ width }) {
     newVersionInfo,
     updateErrorMessage,
     setUpdateStatus,
-    setBackupModalOpen
+    setBackupModalOpen,
+    triggerBackup
   } = useAppStore()
 
   const handleCheckUpdate = () => {
@@ -132,6 +133,16 @@ export default function Sidebar({ width }) {
                   ) : (
                     <Maximize2 size={11} style={{ color: 'var(--text-muted)' }} />
                   )}
+                </button>
+                <button
+                  onClick={async () => {
+                    await triggerBackup()
+                  }}
+                  title="데이터 수동 백업"
+                  className="p-1 rounded hover:bg-hover transition-colors inline-flex items-center justify-center cursor-pointer ml-1.5"
+                  style={{ border: '1px solid var(--border)', background: 'var(--bg-primary)' }}
+                >
+                  <Database size={13} style={{ color: 'var(--accent)' }} />
                 </button>
                 <button
                   onClick={() => setSelectedStudent(null)}
