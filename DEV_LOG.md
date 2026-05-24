@@ -761,3 +761,19 @@
   - 격리 테스트용 스크립트(`test_session_resequence.py`)를 통해 삭제 후 회기 당겨짐 및 소급 입력 시 회기 밀려남 E2E 테스트 통과 완료.
   - 리액트 프론트엔드 빌드(`npm run build`) 무결성 확인 완료.
 
+---
+
+## [2026-05-24] 프로그램 아이콘 변경 및 패키징 완료 (시안 2 적용)
+
+### 작업 내용
+- [x] **[Assets] 새로운 고해상도 투명 아이콘 적용**:
+  - 사용자가 선택한 시안 2(다이어리 & 말풍선 하이브리드 테마) 디자인을 바탕으로, 연회색 외곽 배경을 지우고 둥근 사각형(Squircle) 경계면을 투명하게 처리한 알파 채널 적용 고품질 `assets/icon.png`를 생성.
+  - 16x16, 32x32, 48x48, 64x64, 128x128, 256x256의 다중 해상도를 번들링한 `assets/icon.ico` 파일을 Pillow를 활용해 자동 변환 및 덮어쓰기 완료.
+- [x] **[Backend] 독립 백엔드 빌드 무결성 검증**:
+  - `build_backend.py`를 실행하여 새로운 `icon.ico` 리소스 정보가 정상 반영된 `backend.exe` 단독 패키징을 성공적으로 수행.
+- [x] **[Frontend] React 프로덕션 빌드 검증**:
+  - `npm run build` (vite build) 정상 작동 확인.
+- [x] **[Electron] 데스크톱 패키징 및 NSIS 인스톨러 생성 검증**:
+  - `electron-builder`를 사용하여 새 아이콘이 바인딩된 단일 배포용 인스톨러(`counselinglog-electron-setup-0.2.8.exe`) 빌드를 무결하게 완료.
+
+
