@@ -99,3 +99,11 @@ CounselingLog_Electron/
 * `data/backup/` 폴더 내 백업용 엑셀 복제본
 * `data/logs/app.log` 및 `err.log` / `out.log`
 * 빌드 결과물인 `dist/` 폴더
+
+---
+
+## 6. 배포 및 패키징 아키텍처 (Deployment & Packaging)
+
+* **배포 파이프라인**: Python 백엔드는 PyInstaller를 통해 독립 실행형 바이너리로 먼저 빌드되며, 일렉트론 리소스 경로(`electron/resources/backend`)에 내장되어 패키징됩니다.
+* **배포 산출물**: `electron-builder` 설정을 기반으로 최종 단일 설치용 인스톨러(`상담일지 Setup X.Y.Z.exe`) 및 자동 업데이트 메타데이터(`latest.yml`)가 빌드됩니다.
+* **배포 저장소**: 빌드 완료된 최종 산출물은 GitHub Release에 업로드되어 배포되며, 프로그램 구동 시 Electron `autoUpdater` 리스너를 통해 버전 업그레이드를 자동 탐색 및 패치합니다.
