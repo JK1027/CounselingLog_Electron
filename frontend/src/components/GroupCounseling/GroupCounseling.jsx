@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Trash2, Edit2, Calendar, FileText, Loader2, Sparkles, User, Users, Check } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { formatDate } from '@/components/ui/shared'
+import PeerCounselDialog from './PeerCounselDialog'
 
 const getTodayDateString = () => {
   const d = new Date()
@@ -31,6 +32,7 @@ export default function GroupCounseling() {
 
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showPeerModal, setShowPeerModal] = useState(false)
   const [editorMode, setEditorMode] = useState('new') // 'new' | 'edit'
   const [selectedId, setSelectedId] = useState(null)
 
@@ -69,6 +71,35 @@ export default function GroupCounseling() {
       detail: ''
     })
     setShowForm(true)
+  }
+
+  const handleOpenPeerCounsel = () => {
+    const hasUnsavedContent = formValues.summary.trim() || formValues.detail.trim() || formValues.studentId.trim()
+    if (showForm && hasUnsavedContent) {
+      const confirmOverwrite = window.confirm('현재 작성 또는 수정 중인 상담 양식이 존재합니다. 또래상담 도우미로 덮어쓰시겠습니까?')
+      if (!confirmOverwrite) {
+        return
+      }
+    }
+    setShowPeerModal(true)
+  }
+
+  const handlePeerCounselComplete = (data) => {
+    setEditorMode('new')
+    setSelectedId(null)
+    setFormValues({
+      date: getTodayDateString(),
+      grade: '혼합',
+      ban: '',
+      type: '일반상담',
+      session: '',
+      summary: data.summary,
+      studentId: data.studentId,
+      detail: data.detail
+    })
+    setShowForm(true)
+    setShowPeerModal(false)
+    useAppStore.getState().addToast('또래상담 입력 값이 폼에 정상 주입되었습니다. 내용을 최종 검토해 주십시오.', 'success')
   }
 
   const handleOpenEditForm = (session) => {
@@ -178,16 +209,32 @@ export default function GroupCounseling() {
               <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>총 {groupSessions.length}건의 집단상담이 등록되어 있습니다.</p>
             </div>
           </div>
-          <button
-            onClick={handleOpenNewForm}
-            className={`flex items-center gap-1.5 rounded-xl text-xs font-bold text-white transition-all active:scale-95 cursor-pointer ${
-              isCompactMode ? 'px-3 py-1.5' : 'px-4 py-2.5'
-            }`}
-            style={{ background: 'var(--accent)', boxShadow: '0 2px 8px rgba(75,142,241,0.35)' }}
-          >
-            <Plus size={13} />
-            새 집단상담 등록
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleOpenPeerCounsel}
+              className={`flex items-center gap-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+                isCompactMode ? 'px-3 py-1.5' : 'px-4 py-2.5'
+              }`}
+              style={{
+                background: 'var(--bg-hover)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)'
+              }}
+            >
+              <Sparkles size={13} className="text-yellow-500 animate-pulse" />
+              또래상담 추가
+            </button>
+            <button
+              onClick={handleOpenNewForm}
+              className={`flex items-center gap-1.5 rounded-xl text-xs font-bold text-white transition-all active:scale-95 cursor-pointer ${
+                isCompactMode ? 'px-3 py-1.5' : 'px-4 py-2.5'
+              }`}
+              style={{ background: 'var(--accent)', boxShadow: '0 2px 8px rgba(75,142,241,0.35)' }}
+            >
+              <Plus size={13} />
+              새 집단상담 등록
+            </button>
+          </div>
         </div>
 
         {/* 테이블 본문 */}
@@ -451,6 +498,13 @@ export default function GroupCounseling() {
           </form>
         </div>
       )}
+
+      {/* 또래상담 입력 도우미 모달 */}
+      <PeerCounselDialog
+        isOpen={showPeerModal}
+        onClose={() => setShowPeerModal(false)}
+        onComplete={handlePeerCounselComplete}
+      />
     </div>
   )
 }
