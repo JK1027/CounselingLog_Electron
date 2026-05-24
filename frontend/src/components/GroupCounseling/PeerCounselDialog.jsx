@@ -6,14 +6,14 @@ import studentsData from '@/data/peer_counsel_students.json'
 export default function PeerCounselDialog({ isOpen, onClose, onComplete }) {
   const { addToast } = useAppStore()
   const [summary, setSummary] = useState('또래상담 프로그램')
-  const [detail, setDetail] = useState('또래상담 기본교육\n자기 소개 및 경청연습')
+  const [detail, setDetail] = useState('또래상담 기본교육')
   const [attendedIds, setAttendedIds] = useState([])
 
   // 모달이 열릴 때 기본값으로 모든 학생들을 선택하도록 초기화
   useEffect(() => {
     if (isOpen) {
       setSummary('또래상담 프로그램')
-      setDetail('또래상담 기본교육\n자기 소개 및 경청연습')
+      setDetail('또래상담 기본교육')
       setAttendedIds(studentsData.map(s => s.studentId))
     }
   }, [isOpen])
@@ -54,7 +54,7 @@ export default function PeerCounselDialog({ isOpen, onClose, onComplete }) {
     const absent = studentsData.filter(s => !attendedIds.includes(s.studentId))
 
     const attendedText = attended.map(s => `${s.name}(${s.grade}-${s.class})`).join(', ')
-    const absentText = absent.map(s => `${s.name}(${s.grade}-${s.class})`).join(', ')
+    const absentText = absent.map(s => `${s.name}(${s.grade}-${s.class})`).join('\n')
 
     // 참여/미참여 포맷 조립
     const compiledDetail = `${detail.trim()}
