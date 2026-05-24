@@ -3,7 +3,7 @@ import { X, Loader } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 
 export default function EditStudentModal({ isOpen, onClose, student }) {
-  const { updateStudentInfo, addToast } = useAppStore()
+  const { updateStudentInfo, deleteStudent, addToast } = useAppStore()
   const [name, setName] = useState('')
   const [studentId, setStudentId] = useState('')
   const [grade, setGrade] = useState('')
@@ -20,6 +20,20 @@ export default function EditStudentModal({ isOpen, onClose, student }) {
   }, [student, isOpen])
 
   if (!isOpen || !student) return null
+
+  const handleDelete = async () => {
+    if (window.confirm(`${student.name}학생에 대한 정보를 삭제하겠습니까?`)) {
+      setIsSaving(true)
+      try {
+        await deleteStudent(student.name, student.studentId)
+        onClose()
+      } catch (err) {
+        // Error toast is handled inside store
+      } finally {
+        setIsSaving(false)
+      }
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -168,31 +182,42 @@ export default function EditStudentModal({ isOpen, onClose, student }) {
           </div>
 
           {/* 하단 버튼 */}
-          <div className="flex justify-end gap-2 pt-3 mt-4" style={{ borderTop: '1px solid var(--border)' }}>
+          <div className="flex justify-between gap-2 pt-3 mt-4" style={{ borderTop: '1px solid var(--border)' }}>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleDelete}
               disabled={isSaving}
-              className="px-4 py-2 text-xs font-semibold rounded-lg border transition-all hover:bg-neutral-50 cursor-pointer"
-              style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+              className="px-4 py-2 text-xs font-semibold rounded-lg text-white transition-all shadow-md cursor-pointer"
+              style={{ background: 'var(--red)', boxShadow: '0 2px 8px rgba(239, 68, 68, 0.25)' }}
             >
-              취소
+              학생 삭제
             </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-4 py-2 text-xs font-semibold rounded-lg text-white transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
-              style={{ background: 'var(--accent)', boxShadow: '0 2px 8px var(--accent-glow)' }}
-            >
-              {isSaving ? (
-                <>
-                  <Loader size={12} className="animate-spin" />
-                  저장 중...
-                </>
-              ) : (
-                '저장'
-              )}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSaving}
+                className="px-4 py-2 text-xs font-semibold rounded-lg border transition-all hover:bg-neutral-50 cursor-pointer"
+                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-4 py-2 text-xs font-semibold rounded-lg text-white transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                style={{ background: 'var(--accent)', boxShadow: '0 2px 8px var(--accent-glow)' }}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader size={12} className="animate-spin" />
+                    저장 중...
+                  </>
+                ) : (
+                  '저장'
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

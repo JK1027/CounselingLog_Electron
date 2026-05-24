@@ -558,6 +558,72 @@ class ExcelRepository:
             else:
                 return False, "수정 대상 학생 데이터를 엑셀에서 찾지 못했거나 변경사항이 없습니다."
 
+    def delete_student_info(self, name, student_id):
+        """
+        학생의 모든 상담 기록(개인상담, 보호자상담, 교원자문, 의뢰)을 삭제합니다.
+        집단상담 대장은 역사성 보존 및 다수 참여 특성상 삭제 대상에서 제외합니다.
+        삭제 전 선제적으로 수동 백업을 1회 강제 수행합니다.
+        """
+        with self.lock:
+            # 1. 삭제 전 안전 예비 수동 백업 수행
+            backup_success, backup_result = self.save_backup_excel()
+            if not backup_success:
+                logger.error(f"학생 삭제 전 자동 백업 실패: {backup_result}")
+                return False, f"삭제 전 선제 백업본 저장 실패로 인해 작업을 진행하지 못했습니다. 원인: {backup_result}"
+
+            # 2. 엑셀 최신 데이터 확인 및 로드
+            self.check_and_reload()
+
+            normalized_id = student_id.strip().replace(".0", "")
+            normalized_name = name.strip()
+            modified = False
+
+            # 집단상담을 제외한 타겟 시트 순회
+            target_sheets = [s for s in SHEET_NAMES if s != GROUP_COUNSELING_SHEET]
+
+            for sheet_name in target_sheets:
+                df = self.data_frames.get(sheet_name)
+                if df is None or df.empty:
+                    continue
+
+                indices_to_drop = []
+                for idx, row in df.iterrows():
+                    if str(row.get("순번", "")).strip() == "예시":
+                        continue
+                    
+                    row_name = str(row.get("이름", "")).strip()
+                    row_sid = str(row.get("학번", "")).strip().replace(".0", "")
+
+                    if row_name == normalized_name and row_sid == normalized_id:
+                        indices_to_drop.append(idx)
+                        modified = True
+
+                if indices_to_drop:
+                    # 행 드롭 및 인덱스 리셋
+                    df = df.drop(indices_to_drop).reset_index(drop=True)
+                    
+                    # 순번 재정렬
+                    if "순번" in df.columns:
+                        seq_counter = 1
+                        key_col_name = "학번" if sheet_name == GROUP_COUNSELING_SHEET else "이름"
+                        for idx, row in df.iterrows():
+                            if str(row["순번"]).strip() == "예시":
+                                continue
+                            if str(row.get(key_col_name, "")).strip():
+                                df.at[idx, "순번"] = str(seq_counter)
+                                seq_counter += 1
+                    
+                    self.data_frames[sheet_name] = df
+
+            if modified:
+                # 엑셀 파일 저장
+                success, err = self.save_all_data_to_excel()
+                if not success:
+                    return False, err
+                return True, None
+            else:
+                return False, "삭제 대상 학생 데이터를 엑셀에서 찾지 못했습니다."
+
     def _ensure_template_initialized(self):
         """기본 템플릿 파일이 없으면 생성합니다."""
         if not os.path.exists(self.main_file_path):

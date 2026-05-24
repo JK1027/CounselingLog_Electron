@@ -376,6 +376,39 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
+  // ─── 학생 정보 삭제 ───────────────────────────────────────────────────
+  deleteStudent: async (name, studentId) => {
+    set({ saveState: 'saving' })
+    try {
+      await apiFetch('/students/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          studentId
+        })
+      })
+      
+      set({ saveState: 'saved' })
+      setTimeout(() => set({ saveState: 'idle' }), 3000)
+
+      // 전체 학생 목록 및 통계 새로고침
+      await get().initialize()
+
+      // 선택된 학생이 본인일 경우 선택 해제
+      const { selectedStudent } = get()
+      if (selectedStudent && selectedStudent.name === name && selectedStudent.studentId === studentId) {
+        set({ selectedStudent: null, sessions: [] })
+      }
+      
+      get().addToast(`${name} 학생의 모든 정보가 삭제되었습니다.`, 'success')
+    } catch (e) {
+      set({ saveState: 'error' })
+      get().addToast(e.message, 'error')
+      throw e
+    }
+  },
+
   // ─── 세션 삭제 ─────────────────────────────────────────────────────────
   deleteSession: async (sessionId) => {
     const { selectedStudent } = get()

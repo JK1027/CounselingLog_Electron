@@ -87,6 +87,10 @@ class StudentUpdate(BaseModel):
     grade: str
     gender: str
 
+class StudentDelete(BaseModel):
+    name: str
+    studentId: str
+
 def extract_ban_from_student_id(student_id: str) -> str:
     student_id = student_id.strip()
     if not student_id.isdigit():
@@ -212,6 +216,29 @@ def update_student(data: StudentUpdate):
         
         if not success:
             raise HTTPException(status_code=400 if "이미 학번" in str(err) else 500, detail=err)
+
+        return {"status": "success"}
+
+@app.post("/students/delete")
+def delete_student(data: StudentDelete):
+    """
+    학생의 모든 개인 상담 기록(개인상담, 보호자상담, 교원자문, 의뢰)을 엑셀 시트에서 일괄 삭제합니다.
+    """
+    with repo.lock:
+        try:
+            repo.check_and_reload()
+        except Exception as e:
+            logger.error(f"데이터 리로드 실패: {e}")
+            if not any(not df.empty for df in repo.data_frames.values()):
+                raise HTTPException(status_code=500, detail="데이터베이스 리로드 실패로 삭제 작업을 진행할 수 없습니다.")
+
+        success, err = repo.delete_student_info(
+            name=data.name,
+            student_id=data.studentId
+        )
+        
+        if not success:
+            raise HTTPException(status_code=400, detail=err)
 
         return {"status": "success"}
 
