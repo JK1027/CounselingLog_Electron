@@ -344,7 +344,7 @@ export default function Sidebar({ width }) {
                     새 버전 발견!
                   </span>
                 </div>
-                <span className="text-[10px] font-extrabold px-1.5 py-0.25 rounded bg-accent text-white">
+                <span className="text-[10px] font-extrabold px-1.5 py-0.25 rounded" style={{ background: 'var(--accent)', color: '#ffffff' }}>
                   v{newVersionInfo?.version}
                 </span>
               </div>
