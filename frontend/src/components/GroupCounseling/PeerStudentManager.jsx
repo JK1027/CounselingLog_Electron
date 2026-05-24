@@ -51,6 +51,10 @@ export default function PeerStudentManager({
       addToast('학년을 선택해 주세요.', 'error')
       return
     }
+    if (newStudentId.trim()[0] !== String(newGrade)) {
+      addToast('선택한 학년과 학번의 첫 번째 숫자가 일치하지 않습니다. 다시 확인해 주세요.', 'error')
+      return
+    }
     if (!newClass || isNaN(newClass)) {
       addToast('반을 숫자로 입력해 주세요.', 'error')
       return
@@ -97,6 +101,10 @@ export default function PeerStudentManager({
       }
       if (!String(s.studentId).trim() || !/^\d{4}$/.test(s.studentId)) {
         addToast(`학번 형식이 잘못되었습니다: ${s.name}(${s.studentId})`, 'error')
+        return
+      }
+      if (String(s.studentId).trim()[0] !== String(s.grade)) {
+        addToast(`선택한 학년과 학번의 첫 번째 숫자가 일치하지 않는 학생이 있습니다: ${s.name}(${s.studentId})`, 'error')
         return
       }
     }

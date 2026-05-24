@@ -149,9 +149,8 @@ export default function CommandPalette() {
     if (grade !== '혼합') {
       const firstDigit = studentId.trim()[0]
       if (firstDigit !== grade) {
-        if (!window.confirm('학년 및 학번에 오류가 있는지 확인해주세요.')) {
-          return
-        }
+        addToast('선택한 학년과 학번의 첫 번째 숫자가 일치하지 않습니다. 다시 확인해 주세요.', 'error')
+        return
       }
     }
 
