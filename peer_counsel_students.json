@@ -1,0 +1,86 @@
+[
+  {
+    "grade": 4,
+    "class": 1,
+    "number": 1,
+    "name": "임현준",
+    "studentId": "4101"
+  },
+  {
+    "grade": 4,
+    "class": 1,
+    "number": 2,
+    "name": "조서영",
+    "studentId": "4102"
+  },
+  {
+    "grade": 4,
+    "class": 2,
+    "number": 1,
+    "name": "조의성",
+    "studentId": "4201"
+  },
+  {
+    "grade": 4,
+    "class": 2,
+    "number": 2,
+    "name": "조하윤",
+    "studentId": "4202"
+  },
+  {
+    "grade": 5,
+    "class": 1,
+    "number": 1,
+    "name": "김다미",
+    "studentId": "5101"
+  },
+  {
+    "grade": 5,
+    "class": 1,
+    "number": 2,
+    "name": "두란사",
+    "studentId": "5102"
+  },
+  {
+    "grade": 5,
+    "class": 2,
+    "number": 1,
+    "name": "김선우",
+    "studentId": "5201"
+  },
+  {
+    "grade": 5,
+    "class": 2,
+    "number": 2,
+    "name": "이하람",
+    "studentId": "5202"
+  },
+  {
+    "grade": 6,
+    "class": 2,
+    "number": 1,
+    "name": "이가인",
+    "studentId": "6201"
+  },
+  {
+    "grade": 6,
+    "class": 2,
+    "number": 2,
+    "name": "한다은",
+    "studentId": "6202"
+  },
+  {
+    "grade": 6,
+    "class": 1,
+    "number": 1,
+    "name": "이영희",
+    "studentId": "6101"
+  },
+  {
+    "grade": 6,
+    "class": 1,
+    "number": 2,
+    "name": "김철수",
+    "studentId": "6102"
+  }
+]
