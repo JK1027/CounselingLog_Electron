@@ -373,7 +373,7 @@ function DashboardSessionRow({ session, onGoToStudent, onEdit }) {
             <div className="flex items-center gap-1.5 text-[10px]" style={{ color: 'var(--text-secondary)' }}>
               <Calendar size={10} style={{ color: 'var(--text-muted)' }} />
               <span>{formatDate(session.date)}</span>
-              {session.session && (
+              {session.session && session.sheetType !== '집단상담' && (
                 <span className="px-1 py-0.25 rounded bg-neutral-100 text-neutral-600 font-semibold text-[10px]">
                   {String(session.session).trim() === '단회' 
                     ? '단회' 
