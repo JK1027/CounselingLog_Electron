@@ -260,7 +260,10 @@ def get_sessions(student_name: str, student_id: str = Query("")):
                 if name_match and id_match:
                     sessions.append({
                         "id": str(row.get(RECORD_ID_COL, "")),
-                        "studentId": f"{student_name}_{student_id}",
+                        "name": row_name,
+                        "studentId": row_sid,
+                        "grade": str(row.get("학년", "")).strip().replace("학년", ""),
+                        "gender": str(row.get("성별", "")).strip(),
                         "date": str(row.get("*상담일자", "")),
                         "session": str(row.get("상담회기", "")) if "상담회기" in row else "",
                         "type": str(row.get("*상담구분", "")),
@@ -284,7 +287,10 @@ def get_sessions(student_name: str, student_id: str = Query("")):
                     if student_id == row_sid or student_id in [sid.strip() for sid in row_sid.split(",")]:
                         sessions.append({
                             "id": str(row.get(RECORD_ID_COL, "")),
-                            "studentId": f"{student_name}_{student_id}",
+                            "name": str(row.get("이름", "")).strip() if "이름" in row else "",
+                            "studentId": student_id,
+                            "grade": str(row.get("학년", "")).strip().replace("학년", ""),
+                            "gender": str(row.get("성별", "")).strip(),
                             "date": str(row.get("*상담일자", "")),
                             "session": str(row.get("상담회기", "")),
                             "type": str(row.get("*상담구분", "")),
@@ -293,6 +299,21 @@ def get_sessions(student_name: str, student_id: str = Query("")):
                             "detail": str(row.get("상담내용(상세)", "")),
                             "rawIndex": idx
                         })
+
+        # 3. 상담유형별(sheetType)로 세션들을 분류하여 날짜 오름차순 기준으로 회기 번호 동적 보정
+        by_type = {}
+        for s in sessions:
+            stype = s["sheetType"]
+            if stype not in by_type:
+                by_type[stype] = []
+            by_type[stype].append(s)
+
+        for stype, type_sessions in by_type.items():
+            type_sessions.sort(key=lambda x: (x["date"], x.get("rawIndex", 0)))
+            for i, s in enumerate(type_sessions):
+                existing_session = str(s.get("session", "")).strip()
+                if not existing_session or existing_session == "nan":
+                    s["session"] = str(i + 1)
 
         # 날짜 역순으로 정렬
         sessions.sort(key=lambda x: x["date"], reverse=True)
@@ -360,6 +381,21 @@ def get_all_sessions(sheet_type: str = Query(None)):
                     "detail": str(row.get("상담내용(상세)", "")),
                     "rawIndex": idx
                 })
+
+        # 학생별(name + studentId) 및 상담유형별(sheetType)로 세션들을 그룹화하여 날짜 오름차순 기준으로 회기 번호 동적 보정
+        by_student_and_type = {}
+        for s in sessions:
+            key = (s.get("name", ""), s.get("studentId", ""), s.get("sheetType", ""))
+            if key not in by_student_and_type:
+                by_student_and_type[key] = []
+            by_student_and_type[key].append(s)
+
+        for key, group_sessions in by_student_and_type.items():
+            group_sessions.sort(key=lambda x: (x["date"], x.get("rawIndex", 0)))
+            for i, s in enumerate(group_sessions):
+                existing_session = str(s.get("session", "")).strip()
+                if not existing_session or existing_session == "nan":
+                    s["session"] = str(i + 1)
                 
         # 날짜 최신순 정렬
         sessions.sort(key=lambda x: x["date"], reverse=True)
