@@ -123,7 +123,7 @@ export default function Timeline({ onOpenPrintModal }) {
           background: 'var(--bg-secondary)'
         }}
       >
-        {['전체', '개인상담', '집단상담', '보호자상담', '교원자문', '의뢰'].map(filter => {
+        {['전체', '개인상담', '보호자상담', '교원자문', '의뢰'].map(filter => {
           const count = getCountForFilter(filter)
           const isActive = selectedSheetFilter === filter
           return (

@@ -157,6 +157,28 @@ export default function Sidebar({ width }) {
           </div>
         </div>
 
+        {/* 집단상담 대장 진입 버튼 */}
+        <button
+          onClick={() => setSelectedStudent({ id: 'group_counseling', name: '집단상담 대장', isGroupTab: true })}
+          className={`w-full flex items-center gap-2 rounded-xl text-sm font-bold transition-all duration-150 text-left mb-2 cursor-pointer ${
+            isCompactMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-2'
+          }`}
+          style={{
+            background: selectedStudent?.isGroupTab ? 'var(--accent-soft)' : 'var(--bg-primary)',
+            color: selectedStudent?.isGroupTab ? 'var(--accent-dark)' : 'var(--text-secondary)',
+            border: selectedStudent?.isGroupTab ? '1px solid var(--accent)' : '1px solid var(--border)',
+          }}
+          onMouseEnter={e => {
+            if (!selectedStudent?.isGroupTab) e.currentTarget.style.borderColor = 'var(--accent)'
+          }}
+          onMouseLeave={e => {
+            if (!selectedStudent?.isGroupTab) e.currentTarget.style.borderColor = 'var(--border)'
+          }}
+        >
+          <Users size={isCompactMode ? 12 : 14} style={{ color: selectedStudent?.isGroupTab ? 'var(--accent)' : 'var(--text-muted)' }} />
+          <span className="flex-1">👥 집단상담 대장</span>
+        </button>
+
         {/* 검색 버튼 */}
         <button
           onClick={() => setCommandOpen(true)}

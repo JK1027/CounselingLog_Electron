@@ -107,11 +107,18 @@ export const useAppStore = create((set, get) => ({
   selectedStudent: null,
   setSelectedStudent: async (student) => {
     set({ selectedStudent: student })
-    await get().loadSessions(student)
+    if (student?.isGroupTab) {
+      await get().loadGroupSessions()
+    } else {
+      await get().loadSessions(student)
+    }
   },
 
   // 현재 세션 목록
   sessions: [],
+
+  // 집단상담 세션 목록
+  groupSessions: [],
 
   // 선택된 세션
   selectedSession: null,
@@ -177,6 +184,17 @@ export const useAppStore = create((set, get) => ({
       const res = await apiFetch(`/sessions/${encodeURIComponent(student.name)}?student_id=${encodeURIComponent(student.studentId || '')}`)
       const data = await res.json()
       set({ sessions: data })
+    } catch (e) {
+      get().addToast(e.message, 'error')
+    }
+  },
+
+  // ─── 집단상담 이력 로드 ──────────────────────────────────────────
+  loadGroupSessions: async () => {
+    try {
+      const res = await apiFetch(`/sessions?sheet_type=${encodeURIComponent('집단상담')}`)
+      const data = await res.json()
+      set({ groupSessions: data })
     } catch (e) {
       get().addToast(e.message, 'error')
     }
@@ -389,6 +407,76 @@ export const useAppStore = create((set, get) => ({
       }
       
       get().addToast('상담 기록이 삭제되었습니다.', 'success')
+    } catch (e) {
+      set({ saveState: 'error' })
+      get().addToast(e.message, 'error')
+    }
+  },
+
+  // ─── 집단상담 저장 ───────────────────────────────────────────────────
+  addGroupSession: async (formData) => {
+    set({ saveState: 'saving' })
+    try {
+      await apiFetch('/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sheetType: '집단상담',
+          ...formData
+        })
+      })
+      
+      set({ saveState: 'saved' })
+      setTimeout(() => set({ saveState: 'idle' }), 3000)
+
+      await get().initialize()
+      await get().loadGroupSessions()
+      get().addToast('새 집단상담 기록이 저장되었습니다.', 'success')
+    } catch (e) {
+      set({ saveState: 'error' })
+      get().addToast(e.message, 'error')
+    }
+  },
+
+  // ─── 집단상담 수정 ───────────────────────────────────────────────────
+  updateGroupSession: async (sessionId, formData) => {
+    set({ saveState: 'saving' })
+    try {
+      await apiFetch(`/sessions/${sessionId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sheetType: '집단상담',
+          ...formData
+        })
+      })
+      
+      set({ saveState: 'saved' })
+      setTimeout(() => set({ saveState: 'idle' }), 3000)
+
+      await get().initialize()
+      await get().loadGroupSessions()
+      get().addToast('집단상담 기록이 수정되었습니다.', 'success')
+    } catch (e) {
+      set({ saveState: 'error' })
+      get().addToast(e.message, 'error')
+    }
+  },
+
+  // ─── 집단상담 삭제 ───────────────────────────────────────────────────
+  deleteGroupSession: async (sessionId) => {
+    set({ saveState: 'saving' })
+    try {
+      await apiFetch(`/sessions/${sessionId}`, {
+        method: 'DELETE'
+      })
+      
+      set({ saveState: 'saved' })
+      setTimeout(() => set({ saveState: 'idle' }), 3000)
+
+      await get().initialize()
+      await get().loadGroupSessions()
+      get().addToast('집단상담 기록이 삭제되었습니다.', 'success')
     } catch (e) {
       set({ saveState: 'error' })
       get().addToast(e.message, 'error')

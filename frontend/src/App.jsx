@@ -5,6 +5,7 @@ import Timeline from '@/components/Timeline/Timeline'
 import QuickEditor from '@/components/QuickEditor/QuickEditor'
 import CommandPalette from '@/components/Search/CommandPalette'
 import Dashboard from '@/components/Dashboard/Dashboard'
+import GroupCounseling from '@/components/GroupCounseling/GroupCounseling'
 import ToastContainer from '@/components/ui/ToastContainer'
 import PrintSetupModal from '@/components/Print/PrintSetupModal'
 import PrintPreview from '@/components/Print/PrintPreview'
@@ -149,11 +150,17 @@ export default function App() {
 
       {/* 메인 영역 */}
       <div className="flex flex-1 min-w-0">
-        {/* 타임라인 or 대시보드 */}
+        {/* 타임라인 or 집단상담 대장 or 대시보드 */}
         {selectedStudent ? (
-          <div className="flex-1 min-w-0">
-            <Timeline onOpenPrintModal={() => setIsPrintModalOpen(true)} />
-          </div>
+          selectedStudent.isGroupTab ? (
+            <div className="flex-1 min-w-0">
+              <GroupCounseling />
+            </div>
+          ) : (
+            <div className="flex-1 min-w-0">
+              <Timeline onOpenPrintModal={() => setIsPrintModalOpen(true)} />
+            </div>
+          )
         ) : (
           <div className="flex-1 min-w-0">
             <Dashboard onOpenPrintModal={() => setIsPrintModalOpen(true)} />
