@@ -322,6 +322,11 @@ class ExcelRepository:
                         worksheet.cell(row=excel_row_num, column=col_idx).value = sanitized_val
                         sanitized_updates[col_name] = sanitized_val
                 
+                # 상담회기 재정렬
+                target_name = str(original_data.get("이름", "")).strip()
+                target_sid = str(original_data.get("학번", "")).strip()
+                self._resequence_sessions_in_worksheet(worksheet, sheet_name, target_name, target_sid)
+
                 workbook.save(temp_file_path)
                 workbook.close()
                 workbook = None
@@ -335,6 +340,9 @@ class ExcelRepository:
                 # Sync in-memory DataFrame
                 for col, val in sanitized_updates.items():
                     df.at[df_index, col] = val
+
+                # 메모리 데이터프레임 상담회기 재정렬
+                df = self._resequence_sessions_in_df(df, sheet_name, target_name, target_sid)
                 self.data_frames[sheet_name] = df
                 
                 if os.path.exists(self.main_file_path):
@@ -414,6 +422,11 @@ class ExcelRepository:
                                 seq_cell.value = str(seq_counter)
                                 seq_counter += 1
 
+                # 상담회기 재정렬
+                target_name = str(original_data.get("이름", "")).strip()
+                target_sid = str(original_data.get("학번", "")).strip()
+                self._resequence_sessions_in_worksheet(worksheet, sheet_name, target_name, target_sid)
+
                 workbook.save(temp_file_path)
                 workbook.close()
                 workbook = None
@@ -435,6 +448,8 @@ class ExcelRepository:
                             df.at[idx, "순번"] = str(seq_counter)
                             seq_counter += 1
                 
+                # 메모리 데이터프레임 상담회기 재정렬
+                df = self._resequence_sessions_in_df(df, sheet_name, target_name, target_sid)
                 self.data_frames[sheet_name] = df
                 
                 if os.path.exists(self.main_file_path):
@@ -747,6 +762,11 @@ class ExcelRepository:
                         worksheet.column_dimensions[get_column_letter(cell.column)].hidden = True
                         break
 
+                # 상담회기 재정렬
+                target_name = str(row_data_dict.get("이름", "")).strip()
+                target_sid = str(row_data_dict.get("학번", "")).strip()
+                self._resequence_sessions_in_worksheet(worksheet, sheet_name, target_name, target_sid)
+
                 workbook.save(temp_file_path)
                 workbook.close()
                 workbook = None
@@ -765,6 +785,9 @@ class ExcelRepository:
                 
                 for col, val in sanitized_row.items():
                     df.at[df_idx, col] = val
+
+                # 메모리 데이터프레임 상담회기 재정렬
+                df = self._resequence_sessions_in_df(df, sheet_name, target_name, target_sid)
                 self.data_frames[sheet_name] = df
                 
                 if os.path.exists(self.main_file_path):
@@ -813,3 +836,85 @@ class ExcelRepository:
             except Exception as e:
                 logger.error(f"save_backup_excel 에러: {e}")
                 return False, str(e)
+
+    def _resequence_sessions_in_worksheet(self, worksheet, sheet_name, target_name, target_sid):
+        """지정된 학생의 상담회기 컬럼을 날짜 오름차순 기준으로 다시 1부터 순차적으로 정렬하여 저장합니다.
+           실제 행의 위치는 그대로 둔 채 '상담회기' 값만 변경합니다."""
+        headers = {cell.value: cell.column for cell in worksheet[1] if cell.value is not None}
+        if "상담회기" not in headers:
+            return
+            
+        counsel_col_idx = headers["상담회기"]
+        date_col_idx = headers.get("*상담일자")
+        if not date_col_idx:
+            return
+
+        student_rows = []
+        real_max = find_real_max_row(worksheet)
+        seq_col_idx = headers.get("순번")
+        
+        for r in range(2, real_max + 1):
+            if seq_col_idx:
+                if str(worksheet.cell(row=r, column=seq_col_idx).value).strip() == "예시":
+                    continue
+            
+            match = False
+            if sheet_name == GROUP_COUNSELING_SHEET:
+                if "학번" in headers and target_sid:
+                    sid_val = str(worksheet.cell(row=r, column=headers["학번"]).value).strip().replace(".0", "")
+                    match = (target_sid == sid_val or target_sid in [s.strip() for s in sid_val.split(",")])
+            else:
+                if "이름" in headers and target_name:
+                    name_val = str(worksheet.cell(row=r, column=headers["이름"]).value).strip()
+                    match = (name_val == target_name)
+                    if match and "학번" in headers and target_sid:
+                        sid_val = str(worksheet.cell(row=r, column=headers["학번"]).value).strip().replace(".0", "")
+                        match = (sid_val == target_sid)
+            
+            if match:
+                date_val = str(worksheet.cell(row=r, column=date_col_idx).value).strip()
+                student_rows.append({
+                    "row_num": r,
+                    "date": date_val
+                })
+                
+        student_rows.sort(key=lambda x: (x["date"], x["row_num"]))
+        
+        for idx, item in enumerate(student_rows):
+            worksheet.cell(row=item["row_num"], column=counsel_col_idx).value = str(idx + 1)
+
+    def _resequence_sessions_in_df(self, df, sheet_name, target_name, target_sid):
+        """메모리 DataFrame의 상담회기 컬럼을 날짜 오름차순 기준으로 다시 1부터 순차적으로 정렬합니다."""
+        if "상담회기" not in df.columns or "*상담일자" not in df.columns:
+            return df
+            
+        student_indices = []
+        for idx, row in df.iterrows():
+            if str(row.get("순번", "")).strip() == "예시":
+                continue
+                
+            match = False
+            if sheet_name == GROUP_COUNSELING_SHEET:
+                if "학번" in df.columns and target_sid:
+                    sid_val = str(row["학번"]).strip().replace(".0", "")
+                    match = (target_sid == sid_val or target_sid in [s.strip() for s in sid_val.split(",")])
+            else:
+                if "이름" in df.columns and target_name:
+                    name_val = str(row["이름"]).strip()
+                    match = (name_val == target_name)
+                    if match and "학번" in df.columns and target_sid:
+                        sid_val = str(row["학번"]).strip().replace(".0", "")
+                        match = (sid_val == target_sid)
+                        
+            if match:
+                student_indices.append({
+                    "df_idx": idx,
+                    "date": str(row["*상담일자"]).strip()
+                })
+                
+        student_indices.sort(key=lambda x: (x["date"], x["df_idx"]))
+        
+        for idx, item in enumerate(student_indices):
+            df.at[item["df_idx"], "상담회기"] = str(idx + 1)
+            
+        return df

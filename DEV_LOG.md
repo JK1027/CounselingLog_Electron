@@ -743,3 +743,21 @@
   - 명단 최종 저장("명단 저장") 직전 목록의 모든 행에 대해 학년-학번 불일치 여부를 전수 검사하여 미일치 대상 존재 시 Toast 피드백 및 파일 쓰기를 완전히 차단.
 - [x] **버전업 패키징 배포 자동화 트리거 (v0.2.8)**:
   - `electron/package.json` 버전을 `0.2.8`로 올리고, 신규 배포 태그 `v0.2.8`을 생성 및 GitHub 원격 저장소에 푸시 완료.
+
+---
+
+## [2026-05-24] 상담 일지 삭제/끼워넣기 시 상담 회기 자동 재정렬 기능 추가 완료
+
+### 작업 내용
+- [x] **[Backend] 엑셀 물리 시트 및 메모리 내 상담회기 재정렬 헬퍼 구현 (`excel_repository.py`)**:
+  - openpyxl 워크시트와 pandas 메모리 DataFrame에서 특정 학생의 세션들을 `*상담일자` 기준으로 오름차순 정렬한 뒤 `상담회기` 컬럼 값을 1부터 차례대로 재부여하는 `_resequence_sessions_in_worksheet` 및 `_resequence_sessions_in_df` 메서드 신설.
+- [x] **[Backend] 데이터 변경 시점별 재정렬 트리거 바인딩 (`excel_repository.py`)**:
+  - **상담 삭제 (`delete_excel_row`)**: 삭제 후 남은 세션들의 회기를 즉각 1부터 당겨서 메우도록 연계.
+  - **상담 수정 (`update_excel_row`)**: 일자 변경 등으로 발생할 수 있는 chronological 순서 변화에 맞춰 엑셀 시트 갱신.
+  - **상담 추가 (`append_new_row_to_excel`)**: 소급 입력(과거 날짜 입력)을 하더라도 날짜 순서에 맞게 회기 번호가 자동으로 재배치되도록 갱신.
+- [x] **[Backend] 조회 API 내 동적 회기 보정 강제 적용 (`main.py`)**:
+  - `/sessions/{name}` 및 `/sessions` GET 엔드포인트에서 엑셀 원본 값과 무관하게 상시 날짜 오름차순 기준으로 회기 번호(`session`)를 재생성하여 반환하도록 동적 보정 로직을 강제 적용하여 UI와 인쇄 화면의 일관된 consecutiveness 보장.
+- [x] **테스트 및 빌드 검증 완료**:
+  - 격리 테스트용 스크립트(`test_session_resequence.py`)를 통해 삭제 후 회기 당겨짐 및 소급 입력 시 회기 밀려남 E2E 테스트 통과 완료.
+  - 리액트 프론트엔드 빌드(`npm run build`) 무결성 확인 완료.
+

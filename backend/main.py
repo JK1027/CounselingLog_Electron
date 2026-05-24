@@ -338,9 +338,7 @@ def get_sessions(student_name: str, student_id: str = Query("")):
         for stype, type_sessions in by_type.items():
             type_sessions.sort(key=lambda x: (x["date"], x.get("rawIndex", 0)))
             for i, s in enumerate(type_sessions):
-                existing_session = str(s.get("session", "")).strip()
-                if not existing_session or existing_session == "nan":
-                    s["session"] = str(i + 1)
+                s["session"] = str(i + 1)
 
         # 날짜 역순으로 정렬
         sessions.sort(key=lambda x: x["date"], reverse=True)
@@ -420,9 +418,7 @@ def get_all_sessions(sheet_type: str = Query(None)):
         for key, group_sessions in by_student_and_type.items():
             group_sessions.sort(key=lambda x: (x["date"], x.get("rawIndex", 0)))
             for i, s in enumerate(group_sessions):
-                existing_session = str(s.get("session", "")).strip()
-                if not existing_session or existing_session == "nan":
-                    s["session"] = str(i + 1)
+                s["session"] = str(i + 1)
                 
         # 날짜 최신순 정렬
         sessions.sort(key=lambda x: x["date"], reverse=True)
