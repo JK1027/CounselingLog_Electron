@@ -75,8 +75,6 @@ export default function QuickEditor({ width }) {
     }
   }, [editorMode, selectedSession, editorOpen, selectedStudent?.id])
 
-  if (!editorOpen || !selectedStudent) return null
-
   const handleSave = async () => {
     if (saveState === 'saving') return
 
@@ -154,6 +152,8 @@ export default function QuickEditor({ width }) {
       setEditorOpen(false)
     }
   }
+
+  if (!editorOpen || !selectedStudent) return null
 
   return (
     <div

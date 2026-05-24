@@ -14,6 +14,7 @@ export default function Sidebar({ width }) {
     isCompactMode, toggleCompactMode,
     setRegisterOpen,
     searchQuery,
+    setEditorOpen,
     
     // 글로벌 업데이트 상태들
     appVersion,
@@ -145,7 +146,10 @@ export default function Sidebar({ width }) {
                   <Database size={13} style={{ color: 'var(--accent)' }} />
                 </button>
                 <button
-                  onClick={() => setSelectedStudent(null)}
+                  onClick={() => {
+                    setSelectedStudent(null)
+                    setEditorOpen(false)
+                  }}
                   title="홈 화면(대시보드)으로 이동"
                   className="p-1 rounded hover:bg-hover transition-colors inline-flex items-center justify-center cursor-pointer ml-1.5"
                   style={{ border: '1px solid var(--border)', background: 'var(--bg-primary)' }}
@@ -157,9 +161,11 @@ export default function Sidebar({ width }) {
           </div>
         </div>
 
-        {/* 집단상담 대장 진입 버튼 */}
         <button
-          onClick={() => setSelectedStudent({ id: 'group_counseling', name: '집단상담 대장', isGroupTab: true })}
+          onClick={() => {
+            setSelectedStudent({ id: 'group_counseling', name: '집단상담 대장', isGroupTab: true })
+            setEditorOpen(false)
+          }}
           className={`w-full flex items-center gap-2 rounded-xl text-sm font-bold transition-all duration-150 text-left mb-2 cursor-pointer ${
             isCompactMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-2'
           }`}
