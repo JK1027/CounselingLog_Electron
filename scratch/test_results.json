@@ -1,0 +1,488 @@
+{
+  "total": 96,
+  "passed": 96,
+  "failed": 0,
+  "errors": [],
+  "results": [
+    {
+      "name": "GET /health returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Health response has status=ok",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Health response has excel_path",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "GET /students returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Returns a list",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Has students (> 0)",
+      "passed": true,
+      "detail": "Count: 38"
+    },
+    {
+      "name": "Student has required fields",
+      "passed": true,
+      "detail": "All fields present"
+    },
+    {
+      "name": "Duplicate name '김민수' resolved by studentId",
+      "passed": true,
+      "detail": "Found 2 entries"
+    },
+    {
+      "name": "김민수 has correct student IDs (1101, 2101)",
+      "passed": true,
+      "detail": "IDs: ['1101', '2101']"
+    },
+    {
+      "name": "Tags are serialized as lists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Grade values do not contain '학년' suffix",
+      "passed": true,
+      "detail": "Grades: {'1', '4', '2', '6', '3', '5'}"
+    },
+    {
+      "name": "All students have sessionCount > 0",
+      "passed": true,
+      "detail": "0 students with 0 sessions"
+    },
+    {
+      "name": "Ban (class) extracted from studentId",
+      "passed": true,
+      "detail": "38 students have ban"
+    },
+    {
+      "name": "Ban extraction: 1201 -> ban=2",
+      "passed": true,
+      "detail": "ban=2"
+    },
+    {
+      "name": "GET /sessions/오수빈 returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Returns a list",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Has sessions",
+      "passed": true,
+      "detail": "Count: 11"
+    },
+    {
+      "name": "Session has required fields",
+      "passed": true,
+      "detail": "All fields present"
+    },
+    {
+      "name": "Sessions sorted by date descending",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Session numbers (회기) assigned",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "GET /sessions/김민수?student_id=1101 returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Duplicate name: different sessions by studentId",
+      "passed": true,
+      "detail": "Individual overlap: 0"
+    },
+    {
+      "name": "Non-existent student returns 200 with empty list",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "GET /sessions returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Returns sessions",
+      "passed": true,
+      "detail": "Count: 152"
+    },
+    {
+      "name": "Filter by sheetType='개인상담' returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "  All results match sheetType='개인상담'",
+      "passed": true,
+      "detail": "Count: 81"
+    },
+    {
+      "name": "Filter by sheetType='집단상담' returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "  All results match sheetType='집단상담'",
+      "passed": true,
+      "detail": "Count: 37"
+    },
+    {
+      "name": "Filter by sheetType='보호자상담' returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "  All results match sheetType='보호자상담'",
+      "passed": true,
+      "detail": "Count: 22"
+    },
+    {
+      "name": "Filter by sheetType='교원자문' returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "  All results match sheetType='교원자문'",
+      "passed": true,
+      "detail": "Count: 7"
+    },
+    {
+      "name": "Filter by sheetType='의뢰' returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "  All results match sheetType='의뢰'",
+      "passed": true,
+      "detail": "Count: 5"
+    },
+    {
+      "name": "Session numbers assigned in all-sessions view",
+      "passed": true,
+      "detail": "152/152 have session numbers"
+    },
+    {
+      "name": "GET /stats/today returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Stats has required fields",
+      "passed": true,
+      "detail": "All present"
+    },
+    {
+      "name": "Today total > 0",
+      "passed": true,
+      "detail": "total=8"
+    },
+    {
+      "name": "Guardian count >= 0",
+      "passed": true,
+      "detail": "guardian=2"
+    },
+    {
+      "name": "Referral count >= 0",
+      "passed": true,
+      "detail": "referral=1"
+    },
+    {
+      "name": "Today total matches expected (~8)",
+      "passed": true,
+      "detail": "total=8 (expected ~8)"
+    },
+    {
+      "name": "Guardian matches expected (~2)",
+      "passed": true,
+      "detail": "guardian=2 (expected ~2)"
+    },
+    {
+      "name": "Referral matches expected (~1)",
+      "passed": true,
+      "detail": "referral=1 (expected ~1)"
+    },
+    {
+      "name": "POST /sessions (individual) returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Response has status=success",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Response has session_id",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Created session found in GET /sessions",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Created session has correct summary",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Created session has correct date",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Created session sheetType is 개인상담",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /sessions (group) returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /sessions (guardian) returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /sessions (teacher) returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /sessions (referral) returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /sessions with invalid sheetType returns 400",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "PUT /sessions/{id} returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Response has status=success",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Updated session has new summary",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Updated session has new date",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Updated session has new type",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "PUT /sessions with non-existent ID returns 404",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "DELETE /sessions/{id} returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Response has status=success",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Deleted session no longer found",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Session count decreased by 1",
+      "passed": true,
+      "detail": "Before: 1, After: 0"
+    },
+    {
+      "name": "DELETE non-existent session returns 404",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /students/update returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Update with empty name returns 400",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Update with non-numeric studentId returns 400",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /open-file returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Response has status=success",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Open non-existent file returns 404",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /backup returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Backup response has filename",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Backup response has directory",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "GET /peer-counsel/students returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Returns a list",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Has peer students",
+      "passed": true,
+      "detail": "Count: 1"
+    },
+    {
+      "name": "Peer student has required fields",
+      "passed": true,
+      "detail": "All present"
+    },
+    {
+      "name": "POST /peer-counsel/students returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Saved peer students retrieved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Created 3 test sessions",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Session numbers are sequential (1, 2, 3...)",
+      "passed": true,
+      "detail": "Got: ['1', '2', '3'] Expected: ['1', '2', '3']"
+    },
+    {
+      "name": "Deleted middle session for resequencing",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Session numbers resequenced after deletion",
+      "passed": true,
+      "detail": "Got: ['1', '2'] Expected: ['1', '2']"
+    },
+    {
+      "name": "Example rows (순번=예시) are excluded from students",
+      "passed": true,
+      "detail": "Found 0 example entries"
+    },
+    {
+      "name": "Real 홍길동(6203) exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Formula injection input accepted (sanitized server-side)",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Long content (5000 chars) accepted",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Created test student for deletion",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Created guardian session for test student",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /students/delete returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Deleted student not in student list",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Deleted student has no individual sessions",
+      "passed": true,
+      "detail": "Remaining: 0"
+    },
+    {
+      "name": "Delete non-existent student returns 400",
+      "passed": true,
+      "detail": ""
+    }
+  ]
+}
