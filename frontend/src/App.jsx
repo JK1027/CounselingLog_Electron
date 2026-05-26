@@ -11,6 +11,7 @@ import PrintSetupModal from '@/components/Print/PrintSetupModal'
 import PrintPreview from '@/components/Print/PrintPreview'
 import PreUpdateBackupModal from '@/components/ui/PreUpdateBackupModal'
 import SettingsModal from '@/components/Settings/SettingsModal'
+import LoginScreen from '@/components/Login/LoginScreen'
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { FileSpreadsheet } from 'lucide-react'
@@ -18,6 +19,21 @@ import { useLayoutResize } from '@/hooks/useLayoutResize'
 import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
 
 export default function App() {
+  const { isAuthenticated } = useAppStore()
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <LoginScreen />
+        <ToastContainer />
+      </>
+    )
+  }
+
+  return <MainLayout />
+}
+
+function MainLayout() {
   const { 
     selectedStudent, 
     editorOpen, 
@@ -25,7 +41,6 @@ export default function App() {
     addToast,
     initializeUpdater,
     updateStatus,
-    downloadPercent,
     setBackupModalOpen,
     loadSettings
   } = useAppStore()

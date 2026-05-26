@@ -57,7 +57,7 @@
     {
       "name": "Grade values do not contain '학년' suffix",
       "passed": true,
-      "detail": "Grades: {'1', '2', '3', '6', '5', '4'}"
+      "detail": "Grades: {'2', '3', '6', '5', '4', '1'}"
     },
     {
       "name": "All students have sessionCount > 0",

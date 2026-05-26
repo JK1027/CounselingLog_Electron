@@ -876,3 +876,28 @@
 - `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
 - `run_tests.py` 백엔드 API 기능 영향성 자동화 검증 수행 결과 102건 전체 성공(Pass Rate: 100%) 확인 ✅
 
+---
+
+## [2026-05-26] 빌드 주입식 해시 암호('1qaz') 기반 로그인 잠금 화면(Lock Screen) 구현
+
+### 작업 내용
+- [x] **[Frontend] Git 보안 격리 보강 (`.gitignore`, `.env`, `.env.example`)**:
+  - `frontend/.gitignore`에 `.env` 및 `.env.*` 차단 규칙을 명시하여 로컬 패스워드 설정이 깃허브 원격에 노출되지 않도록 완벽 격리.
+  - 로컬 `frontend/.env` 파일에 비밀번호 `'1qaz'`의 SHA-256 해시값(`464c7a646393b68d1a42076c010b5aae418d8d322f233ca0b8cd8e2c6bcd9676`)을 등록하여 빌드 타임에 소스에 주입되도록 구성.
+- [x] **[Frontend] Web Crypto 기반 SHA-256 해시 유틸 개발 (`hashHelper.js`)**:
+  - 외부 라이브러리 없이 웹 표준 `crypto.subtle` API를 단독 기용해 입력값을 초고속으로 단방향 해싱하는 무의존성 모듈 구축.
+- [x] **[Frontend] 전역 상태 및 로그인 비동기 검증 연동 (`useAppStore.js`)**:
+  - 스토어 내에 `isAuthenticated` 상태 추가.
+  - `submitLogin` 액션을 구현하여 입력받은 비밀번호를 해싱하고 Vite 주입값(`import.meta.env.VITE_APP_LOCK_PASSWORD_HASH`)과 매칭 성공 시 인증 상태를 승격시키도록 연결.
+- [x] **[Frontend] 세련된 디자인의 잠금 화면 컴포넌트 개발 (`LoginScreen.jsx`)**:
+  - 전체 화면을 뒤덮는 HSL 광원 그래디언트 및 미니멀 로그인 카드 박스 개발.
+  - 비밀번호 표시/숨기기 눈 아이콘, 자동 포커싱, 엔터 로그인 지원.
+  - 비밀번호 입력 오류 시 붉은 테두리 및 좌우로 진동하는 shake 애니메이션 피드백 탑재.
+- [x] **[Frontend] 안전한 React 렌더링 가드 통합 (`App.jsx`)**:
+  - `App.jsx`를 분할하여 `isAuthenticated`가 참이 되기 전에는 오직 `<LoginScreen />`과 최소 Toast 컨테이너만 DOM에 그리고 메인 레이아웃 및 API 데이터 패치 훅(`useGlobalShortcuts()`)은 마운트조차 되지 않게 가두어 우회 접근 완전 통제.
+
+### 테스트 결과
+- `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
+- `run_tests.py` 백엔드 API 기능 영향성 자동화 검증 수행 결과 102건 전체 성공(Pass Rate: 100%) 확인 ✅
+
+
