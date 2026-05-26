@@ -54,3 +54,66 @@ def apply_excel_formatting(worksheet):
             col_letter = get_column_letter(cell.column)
             worksheet.column_dimensions[col_letter].hidden = True
             break
+
+from copy import copy
+from openpyxl.utils import coordinate_to_tuple, get_column_letter
+
+def clone_cell_style(src_cell, dst_cell):
+    """원래 셀의 스타일 객체들을 대상 셀로 안전하게 복제합니다."""
+    if src_cell.has_style:
+        dst_cell.font = copy(src_cell.font)
+        dst_cell.border = copy(src_cell.border)
+        dst_cell.fill = copy(src_cell.fill)
+        dst_cell.number_format = src_cell.number_format
+        dst_cell.protection = copy(src_cell.protection)
+        dst_cell.alignment = copy(src_cell.alignment)
+
+def update_data_validation_ranges(worksheet, old_max, new_max):
+    """행 수가 증가했을 때, 기존 데이터 유효성 검사 범위 중 old_max로 끝나는 주소를 new_max로 확장합니다."""
+    if old_max >= new_max or old_max <= 1:
+        return
+    
+    for dv in worksheet.data_validations.dataValidation:
+        sqref_parts = []
+        updated = False
+        for range_str in str(dv.sqref).split():
+            if ":" in range_str:
+                start, end = range_str.split(":")
+                try:
+                    end_row, end_col = coordinate_to_tuple(end)
+                    if end_row == old_max:
+                        col_letter = get_column_letter(end_col)
+                        new_end = f"{col_letter}{new_max}"
+                        sqref_parts.append(f"{start}:{new_end}")
+                        updated = True
+                    else:
+                        sqref_parts.append(range_str)
+                except Exception:
+                    sqref_parts.append(range_str)
+            else:
+                try:
+                    row_num, col_num = coordinate_to_tuple(range_str)
+                    if row_num == old_max:
+                        col_letter = get_column_letter(col_num)
+                        sqref_parts.append(f"{range_str}:{col_letter}{new_max}")
+                        updated = True
+                    else:
+                        sqref_parts.append(range_str)
+                except Exception:
+                    sqref_parts.append(range_str)
+        if updated:
+            dv.sqref = " ".join(sqref_parts)
+
+def update_auto_filter_range(worksheet, new_max):
+    """자동 필터 영역이 지정되어 있는 경우, 필터 끝 범위 행을 new_max로 재설정합니다."""
+    if worksheet.auto_filter.ref:
+        ref = worksheet.auto_filter.ref
+        if ":" in ref:
+            start, end = ref.split(":")
+            try:
+                end_row, end_col = coordinate_to_tuple(end)
+                col_letter = get_column_letter(end_col)
+                worksheet.auto_filter.ref = f"{start}:{col_letter}{new_max}"
+            except Exception:
+                pass
+

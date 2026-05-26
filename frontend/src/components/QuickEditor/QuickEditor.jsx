@@ -11,6 +11,7 @@ export default function QuickEditor({ width }) {
     selectedStudent, selectedSession,
     addSession, updateSession, addToast,
     saveState, isContinuousEntry, setContinuousEntry,
+    validationOptions,
   } = useAppStore()
 
   const dateRef = useRef(null)
@@ -225,25 +226,48 @@ export default function QuickEditor({ width }) {
         </FormField>
 
         {/* 상담 구분 */}
-        <FormField label="상담 구분" required>
-          <Select
-            selectRef={typeRef}
-            onKeyDown={e => handleEnterKey(e, summaryRef)}
-            value={form.type}
-            disabled={saveState === 'saving'}
-            error={errors.type}
-            onChange={v => {
-              setForm(f => ({ ...f, type: v }))
-              if (errors.type) setErrors(errs => ({ ...errs, type: false }))
-              if (v) {
-                // 상담구분 선택 시 제목 필드로 즉시 포커스 이동
-                setTimeout(() => summaryRef.current?.focus(), 50)
-              }
-            }}
-            options={COUNSELING_TYPES}
-            placeholder="구분 선택..."
-          />
-        </FormField>
+        {(() => {
+          const activeSheetType = form.sheetType || '개인상담'
+          const optionsData = validationOptions?.[activeSheetType]
+          const activeOptions = optionsData?.options || COUNSELING_TYPES
+          const isExcelSynced = optionsData?.source === 'excel'
+          
+          return (
+            <FormField 
+              label={
+                <span className="flex items-center justify-between w-full">
+                  <span>상담 구분</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold tracking-tight leading-none transition-all ${
+                    isExcelSynced 
+                      ? 'bg-green-50 text-green-600 border border-green-100' 
+                      : 'bg-slate-100 text-slate-500 border border-slate-200'
+                  }`}>
+                    {isExcelSynced ? '엑셀 연동됨' : '기본설정'}
+                  </span>
+                </span>
+              } 
+              required
+            >
+              <Select
+                selectRef={typeRef}
+                onKeyDown={e => handleEnterKey(e, summaryRef)}
+                value={form.type}
+                disabled={saveState === 'saving'}
+                error={errors.type}
+                onChange={v => {
+                  setForm(f => ({ ...f, type: v }))
+                  if (errors.type) setErrors(errs => ({ ...errs, type: false }))
+                  if (v) {
+                    // 상담구분 선택 시 제목 필드로 즉시 포커스 이동
+                    setTimeout(() => summaryRef.current?.focus(), 50)
+                  }
+                }}
+                options={activeOptions}
+                placeholder="구분 선택..."
+              />
+            </FormField>
+          )
+        })()}
 
         {/* 상담 제목 */}
         <FormField label="상담 제목" required>

@@ -655,6 +655,22 @@ def get_today_stats():
             "pending": 0  # 미작성 건수는 향후 일정/예약 추가 시 계산
         }
 
+@app.get("/validation-options")
+def get_validation_options():
+    """
+    각 시트별 상담구분 드롭박스 옵션 목록을 반환합니다. (메모리 캐시 즉시 리턴)
+    """
+    return repo.get_validation_options()
+
+@app.post("/validation-options/reload")
+def reload_validation_options():
+    """
+    엑셀의 데이터 유효성 검사 설정을 수동으로 재파싱하여 캐시를 갱신합니다.
+    """
+    with repo.lock:
+        repo.validation_options_cache = {}
+        return repo.get_validation_options()
+
 @app.post("/settings")
 def update_settings(data: SettingsRequest):
     path_helper.CURRENT_BACKUP_DIR = data.backupDir.strip()

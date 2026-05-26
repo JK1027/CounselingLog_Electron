@@ -32,7 +32,7 @@
     {
       "name": "Has students (> 0)",
       "passed": true,
-      "detail": "Count: 38"
+      "detail": "Count: 39"
     },
     {
       "name": "Student has required fields",
@@ -57,7 +57,7 @@
     {
       "name": "Grade values do not contain '학년' suffix",
       "passed": true,
-      "detail": "Grades: {'2', '3', '6', '5', '4', '1'}"
+      "detail": "Grades: {'5', '1', '2', '4', '3', '6'}"
     },
     {
       "name": "All students have sessionCount > 0",
@@ -67,7 +67,7 @@
     {
       "name": "Ban (class) extracted from studentId",
       "passed": true,
-      "detail": "38 students have ban"
+      "detail": "39 students have ban"
     },
     {
       "name": "Ban extraction: 1201 -> ban=2",
@@ -127,7 +127,7 @@
     {
       "name": "Returns sessions",
       "passed": true,
-      "detail": "Count: 152"
+      "detail": "Count: 158"
     },
     {
       "name": "Filter by sheetType='개인상담' returns 200",
@@ -137,7 +137,7 @@
     {
       "name": "  All results match sheetType='개인상담'",
       "passed": true,
-      "detail": "Count: 81"
+      "detail": "Count: 82"
     },
     {
       "name": "Filter by sheetType='집단상담' returns 200",
@@ -147,7 +147,7 @@
     {
       "name": "  All results match sheetType='집단상담'",
       "passed": true,
-      "detail": "Count: 37"
+      "detail": "Count: 38"
     },
     {
       "name": "Filter by sheetType='보호자상담' returns 200",
@@ -157,7 +157,7 @@
     {
       "name": "  All results match sheetType='보호자상담'",
       "passed": true,
-      "detail": "Count: 22"
+      "detail": "Count: 24"
     },
     {
       "name": "Filter by sheetType='교원자문' returns 200",
@@ -167,7 +167,7 @@
     {
       "name": "  All results match sheetType='교원자문'",
       "passed": true,
-      "detail": "Count: 7"
+      "detail": "Count: 8"
     },
     {
       "name": "Filter by sheetType='의뢰' returns 200",
@@ -177,12 +177,12 @@
     {
       "name": "  All results match sheetType='의뢰'",
       "passed": true,
-      "detail": "Count: 5"
+      "detail": "Count: 6"
     },
     {
       "name": "Session numbers assigned in all-sessions view",
       "passed": true,
-      "detail": "152/152 have session numbers"
+      "detail": "158/158 have session numbers"
     },
     {
       "name": "GET /stats/today returns 200",

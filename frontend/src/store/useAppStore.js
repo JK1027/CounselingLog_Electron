@@ -111,6 +111,30 @@ export const useAppStore = create((set, get) => ({
   // 오늘 대시보드 통계
   todayStats: { total: 0, pending: 0, guardian: 0, referral: 0 },
 
+  // 데이터 유효성 검사 (드롭다운 옵션) 맵
+  validationOptions: {
+    "개인상담": {
+      "source": "fallback",
+      "options": ['학업', '진로', '성격', '성', '대인관계', '가정 및 가족관계', '일탈 및 비행', '학교폭력 가해', '학교폭력 피해', '자해 및 자살', '정신건강', '컴퓨터 및 스마트폰 과사용', '정보제공', '기타']
+    },
+    "집단상담(또래상담, 학급별 집단)": {
+      "source": "fallback",
+      "options": ['정신건강', '진로', '학업', '대인관계', '기타']
+    },
+    "보호자상담": {
+      "source": "fallback",
+      "options": ["학생관련상담", "교사관련상담", "학습", "기타"]
+    },
+    "교원자문": {
+      "source": "fallback",
+      "options": ["학교학습", "사회성발달", "정서발달", "진로발달", "행동발달", "기타"]
+    },
+    "의뢰(정서행동의뢰, 자문의 의뢰 등)": {
+      "source": "fallback",
+      "options": ["외부전문가에게 상담의뢰", "교내 교사에게 상담의뢰", "기타"]
+    }
+  },
+
   // 학급 필터 상태
   selectedGradeFilter: '',
   selectedBanFilter: '',
@@ -179,6 +203,29 @@ export const useAppStore = create((set, get) => ({
   editorMode: 'new',
   setEditorMode: (mode) => set({ editorMode: mode }),
 
+  // 엑셀 유효성 검사 드롭박스 옵션 조회
+  fetchValidationOptions: async () => {
+    try {
+      const res = await apiFetch('/validation-options')
+      const data = await res.json()
+      set({ validationOptions: data })
+    } catch (e) {
+      console.error('Failed to fetch validation options, keeping defaults', e)
+    }
+  },
+
+  // 엑셀 유효성 검사 드롭박스 옵션 수동 재파싱 및 리로드
+  reloadValidationOptions: async () => {
+    try {
+      const res = await apiFetch('/validation-options/reload', { method: 'POST' })
+      const data = await res.json()
+      set({ validationOptions: data })
+      get().addToast('엑셀 데이터 유효성 검사 설정을 새로고침했습니다.', 'success')
+    } catch (e) {
+      get().addToast(`유효성 검사 새로고침 실패: ${e.message}`, 'error')
+    }
+  },
+
   // ─── API 초기화 ────────────────────────────────────────────────────────
   initialize: async () => {
     try {
@@ -196,6 +243,9 @@ export const useAppStore = create((set, get) => ({
 
       const resStats = await apiFetch('/stats/today')
       const statsData = await resStats.json()
+
+      // 엑셀 유효성 검사 드롭박스 동기화
+      await get().fetchValidationOptions()
 
       set({ 
         students: studentsData, 

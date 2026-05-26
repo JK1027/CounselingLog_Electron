@@ -18,7 +18,14 @@ from backend.core.constants import (
     RECORD_ID_COL, 
     SHEET_SCHEMAS
 )
-from backend.utils.excel_helpers import find_real_max_row, find_empty_row_by_key, apply_excel_formatting
+from backend.utils.excel_helpers import (
+    find_real_max_row, 
+    find_empty_row_by_key, 
+    apply_excel_formatting,
+    clone_cell_style,
+    update_data_validation_ranges,
+    update_auto_filter_range
+)
 
 class ExcelRepository:
     """엑셀 파일 데이터를 로드, 수정, 저장 및 백업을 담당하는 리포지토리 클래스"""
@@ -34,6 +41,7 @@ class ExcelRepository:
         # Validation options loading from CONFIG
         from backend.core.constants import CONFIG
         self.validation_options = CONFIG.get("validation_options", {})
+        self.validation_options_cache = {}
 
     def sanitize_value(self, value):
         """Excel Formula Injection 방어를 위해 security 모듈의 sanitize_value를 호출합니다."""
@@ -76,6 +84,10 @@ class ExcelRepository:
 
             logger.info(f"데이터 로드 완료: {file_path}")
             
+            # 유효성 검사 드롭다운 옵션 파싱 및 캐시 갱신
+            from backend.utils.validation_parser import parse_validation_options
+            self.validation_options_cache = parse_validation_options(file_path, self.validation_options)
+            
             # 만약 신규 생성된 UUID가 있다면 dirty_uuid 플래그 마킹 (Startup 지연 방지)
             if uuid_updated:
                 self.dirty_uuid = True
@@ -105,6 +117,14 @@ class ExcelRepository:
                     logger.warning("리로드 오류로 인해 이전 메모리 캐시 데이터를 유지하여 서빙합니다.")
                 else:
                     raise e
+
+    def get_validation_options(self):
+        """캐싱된 데이터 유효성 검사 드롭박스 옵션을 반환합니다."""
+        with self.lock:
+            if not self.validation_options_cache:
+                from backend.utils.validation_parser import parse_validation_options
+                self.validation_options_cache = parse_validation_options(self.main_file_path, self.validation_options)
+            return self.validation_options_cache
 
 
     def swap_temp_and_original(self, temp_file_path, file_path):
@@ -243,7 +263,7 @@ class ExcelRepository:
         return matched_rows[0]
 
     def save_all_data_to_excel(self):
-        """메모리에 있는 모든 데이터프레임을 엑셀 파일에 안전하게 덮어씁니다 (Safe Save & NamedTemporaryFile 적용)."""
+        """메모리에 있는 모든 데이터프레임을 기존 엑셀 파일 서식(드롭다운, 필터 등)을 보존하며 안전하게 덮어씁니다 (Safe Save & NamedTemporaryFile 적용)."""
         with self.lock:
             if not self.main_file_path:
                 return False, "저장할 파일 경로가 지정되지 않았습니다."
@@ -256,12 +276,82 @@ class ExcelRepository:
             temp_file_path = temp_file.name
             temp_file.close() # openpyxl에서 쓰기 위해 일단 닫음
             
+            workbook = None
             try:
-                with pd.ExcelWriter(temp_file_path, engine='openpyxl') as writer:
-                    for sheet_name, df in self.data_frames.items():
-                        df.to_excel(writer, sheet_name=sheet_name, index=False)
-                        worksheet = writer.sheets[sheet_name]
-                        apply_excel_formatting(worksheet)
+                # 기존 엑셀 파일 서식을 보존하기 위해 복사, 없을 시 기본 템플릿 생성 후 복사
+                if os.path.exists(self.main_file_path):
+                    shutil.copy2(self.main_file_path, temp_file_path)
+                else:
+                    self._ensure_template_initialized()
+                    shutil.copy2(self.main_file_path, temp_file_path)
+                
+                workbook = openpyxl.load_workbook(temp_file_path)
+                
+                for sheet_name, df in self.data_frames.items():
+                    if sheet_name in workbook.sheetnames:
+                        worksheet = workbook[sheet_name]
+                    else:
+                        worksheet = workbook.create_sheet(title=sheet_name)
+                    
+                    # 1. 헤더 동기화 및 맵핑
+                    headers = {cell.value: cell.column for cell in worksheet[1] if cell.value is not None}
+                    if not headers:
+                        for col_idx, col_name in enumerate(df.columns, 1):
+                            worksheet.cell(row=1, column=col_idx, value=col_name)
+                        headers = {col_name: col_idx for col_idx, col_name in enumerate(df.columns, 1)}
+                    else:
+                        for col_name in df.columns:
+                            if col_name not in headers:
+                                new_col_idx = worksheet.max_column + 1
+                                worksheet.cell(row=1, column=new_col_idx, value=col_name)
+                                headers[col_name] = new_col_idx
+                    
+                    real_max = find_real_max_row(worksheet)
+                    new_max = len(df) + 1
+                    
+                    # 2. 데이터 업데이트 및 새 행 스타일 복제
+                    for row_idx, row_series in df.iterrows():
+                        excel_row = row_idx + 2
+                        is_new_row = (excel_row > real_max)
+                        
+                        if is_new_row:
+                            # 윗 행(또는 데이터 시작 행인 2행)을 템플릿으로 참조하여 스타일/높이 복제
+                            ref_row = excel_row - 1 if excel_row - 1 >= 2 else 2
+                            if worksheet.row_dimensions[ref_row].height is not None:
+                                worksheet.row_dimensions[excel_row].height = worksheet.row_dimensions[ref_row].height
+                        
+                        for col_name, value in row_series.items():
+                            col_idx = headers[col_name]
+                            cell = worksheet.cell(row=excel_row, column=col_idx)
+                            
+                            # 새 행인 경우에만 스타일 복제 수행
+                            if is_new_row:
+                                ref_cell = worksheet.cell(row=ref_row, column=col_idx)
+                                clone_cell_style(ref_cell, cell)
+                                
+                            cell.value = self.sanitize_value(value)
+                    
+                    # 3. 유효성 검사 및 자동 필터 범위 자동 재조정
+                    update_data_validation_ranges(worksheet, real_max, new_max)
+                    update_auto_filter_range(worksheet, new_max)
+                    
+                    # 4. 남는 잔여 행만 값 지우기 (성능 최적화)
+                    if real_max > new_max:
+                        for r in range(new_max + 1, real_max + 1):
+                            worksheet.row_dimensions[r].height = None
+                            for c in range(1, worksheet.max_column + 1):
+                                worksheet.cell(row=r, column=c).value = None
+                    
+                    # 5. _record_id 컬럼 숨김 처리
+                    for cell in worksheet[1]:
+                        if cell.value == RECORD_ID_COL:
+                            from openpyxl.utils import get_column_letter
+                            worksheet.column_dimensions[get_column_letter(cell.column)].hidden = True
+                            break
+                
+                workbook.save(temp_file_path)
+                workbook.close()
+                workbook = None
                 
                 success, err = self.swap_temp_and_original(temp_file_path, self.main_file_path)
                 if success:
@@ -269,7 +359,7 @@ class ExcelRepository:
                         self._last_loaded_time = os.path.getmtime(self.main_file_path)
                         self._last_checked_time = time.time()
                     self.dirty_uuid = False
-                    logger.info("모든 데이터프레임이 엑셀에 안전하게 저장되었습니다.")
+                    logger.info("모든 데이터프레임이 기존 서식을 보존하며 안전하게 덮어쓰기 완료되었습니다.")
                     return True, None
                 return False, err
             except PermissionError:
@@ -278,6 +368,11 @@ class ExcelRepository:
                 logger.error(f"save_all_data_to_excel 에러: {e}")
                 return False, str(e)
             finally:
+                if workbook is not None:
+                    try:
+                        workbook.close()
+                    except Exception:
+                        pass
                 if os.path.exists(temp_file_path):
                     try:
                         os.remove(temp_file_path)
@@ -733,6 +828,12 @@ class ExcelRepository:
 
                 row_data_dict = df_to_append.iloc[0].to_dict()
                 sanitized_row = {}
+                
+                if is_new_row:
+                    ref_row = target_row_idx - 1 if target_row_idx - 1 >= 2 else 2
+                    if worksheet.row_dimensions[ref_row].height is not None:
+                        worksheet.row_dimensions[target_row_idx].height = worksheet.row_dimensions[ref_row].height
+
                 for col_name, value in row_data_dict.items():
                     if col_name in headers:
                         col_idx = headers[col_name]
@@ -742,18 +843,22 @@ class ExcelRepository:
                         if col_name == '순번' and cell.value is not None and str(cell.value).strip() != "" and (value is None or str(value).strip() == ""):
                             s_val = str(cell.value).strip()
                             
+                        if is_new_row:
+                            ref_cell = worksheet.cell(row=ref_row, column=col_idx)
+                            clone_cell_style(ref_cell, cell)
+                            
                         cell.value = s_val
-                        cell.alignment = center_alignment_with_wrap
-                        cell.border = thin_border
                         sanitized_row[col_name] = s_val
 
                 if is_new_row and '순번' in headers and ('순번' not in sanitized_row or sanitized_row['순번'] == ''):
                     new_seq = self._get_next_sequence_number(worksheet, headers['순번'], real_max)
                     worksheet.cell(row=target_row_idx, column=headers['순번']).value = new_seq
                     sanitized_row['순번'] = new_seq
-                    cell = worksheet.cell(row=target_row_idx, column=headers['순번'])
-                    cell.alignment = center_alignment_with_wrap
-                    cell.border = thin_border
+
+                # 유효성 검사 및 자동 필터 범위 재조정
+                new_max = max(real_max, target_row_idx)
+                update_data_validation_ranges(worksheet, real_max, new_max)
+                update_auto_filter_range(worksheet, new_max)
 
                 # _record_id 컬럼 숨김 처리
                 for cell in worksheet[1]:

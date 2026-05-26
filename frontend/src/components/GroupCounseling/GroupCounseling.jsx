@@ -21,8 +21,13 @@ export default function GroupCounseling({ onOpenPrintModal }) {
     isCompactMode, 
     loadGroupSessions,
     selectedSession,
-    setSelectedSession
+    setSelectedSession,
+    validationOptions
   } = useAppStore()
+
+  const groupValidationData = validationOptions?.["집단상담(또래상담, 학급별 집단)"]
+  const activeGroupOptions = groupValidationData?.options || COUNSELING_TYPES
+  const isExcelSynced = groupValidationData?.source === 'excel'
 
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -402,14 +407,23 @@ export default function GroupCounseling({ onOpenPrintModal }) {
             {/* 상담구분 및 회기 */}
             <div className="flex gap-3">
               <div className="flex-1 space-y-1">
-                <label className="text-[11px] font-bold" style={{ color: 'var(--text-secondary)' }}>상담구분</label>
+                <label className="flex items-center justify-between text-[11px] font-bold mb-0.5" style={{ color: 'var(--text-secondary)' }}>
+                  <span>상담구분</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold tracking-tight leading-none transition-all ${
+                    isExcelSynced 
+                      ? 'bg-green-50 text-green-600 border border-green-100' 
+                      : 'bg-slate-100 text-slate-500 border border-slate-200'
+                  }`}>
+                    {isExcelSynced ? '엑셀 연동됨' : '기본설정'}
+                  </span>
+                </label>
                 <select
                   value={formValues.type}
                   onChange={e => handleInputChange('type', e.target.value)}
                   className="w-full text-xs px-3 py-2.5 rounded-xl border outline-none font-semibold cursor-pointer"
                   style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                 >
-                  {COUNSELING_TYPES.map(t => (
+                  {activeGroupOptions.map(t => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>

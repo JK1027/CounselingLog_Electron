@@ -901,3 +901,46 @@
 - `run_tests.py` 백엔드 API 기능 영향성 자동화 검증 수행 결과 102건 전체 성공(Pass Rate: 100%) 확인 ✅
 
 
+---
+
+## [2026-05-26] 엑셀 수정/저장 시 드롭다운(유효성 검사) 및 자동 필터 서식 보존 구현
+
+### 작업 내용
+- [x] **[Backend] 스타일 복제 및 범위 연장 헬퍼 함수 개발 (`excel_helpers.py`)**:
+  - `clone_cell_style`: 원본 셀의 폰트, 테두리, 배경색, 정렬, 숫자 포맷 등을 대상 셀로 복제하는 함수를 추가했습니다.
+  - `update_data_validation_ranges`: 행 수 증가에 발맞춰 엑셀 내 데이터 유효성 검사(드롭다운) 범위를 동적으로 확장하도록 설계했습니다. (단일 셀 및 콜론 범위 규칙 동시 대응)
+  - `update_auto_filter_range`: 자동 필터 영역이 존재할 경우 영역 끝 범위를 새로운 최대 행으로 갱신하는 로직을 삽입했습니다.
+- [x] **[Backend] 엑셀 일괄 저장 로직 서식 보존형 리팩토링 (`excel_repository.py` - `save_all_data_to_excel`)**:
+  - 기존의 `pandas.to_excel` 방식(시트를 재생성하여 드롭다운/필터/스타일이 유실됨)을 폐기하고, 기존 파일을 `openpyxl`로 로드하여 **값만 업데이트**하는 방식으로 전환했습니다.
+  - 신규 데이터 행에 대해서만 바로 윗 행(또는 2행)으로부터 스타일과 행 높이를 안전하게 복제(Clone)하도록 구성했습니다.
+  - 이전보다 행수가 감소했을 때만 초과 행을 선택적으로 클리어(`value = None`)하도록 튜닝하여 병목을 방지했습니다.
+- [x] **[Backend] 신규 행 추가 로직 스타일 복제 연동 (`excel_repository.py` - `append_new_row_to_excel`)**:
+  - 기존의 테두리/정렬 강제 주입 하드코딩 방식을 배제하고, 신규 행 추가 시 스타일 및 행 높이를 복제하며 유효성 검사/자동 필터 범위를 동적으로 갱신하도록 처리했습니다.
+- [x] **[Test] 엑셀 서식 보존 검증 자동화 스크립트 구축 및 실행 (`test_excel_preservation.py`)**:
+  - 노란색 배경, 붉은 굵은 글씨, 25pt 행 높이, E2:E3 성별 드롭다운, A1:I3 자동 필터 설정을 임의 주입한 엑셀에 대해 수정 및 추가 동작 후 서식이 완벽하게 복제 및 보존되는지 Assert 검증을 통과했습니다.
+
+### 테스트 결과
+- 엑셀 서식 보존 정밀 검증 단위 테스트 (`test_excel_preservation.py`) 통과 ✅
+- `run_tests.py` 백엔드 전체 기능 자동화 검증 수행 결과 102건 전체 성공(Pass Rate: 100%) 확인 ✅
+
+---
+
+## [2026-05-26] 엑셀 드롭다운 실시간 파싱 및 상담 구분 동적 매핑 구현
+
+### 작업 내용
+- [x] **[Backend] 드롭다운 파서 전담 모듈 개발 (`validation_parser.py`)**:
+  - `parse_validation_options`: `data_only=False` 로딩을 통해 Formula 원본을 해석하며, 직접 입력 목록, 셀 범위 참조, Named Range 형태의 유효성 검사 데이터 자동 추출.
+  - `A:A` 전체 열 참조로 인한 무한 루프 및 100만 행 로딩 병목을 전처리 Clamping(`min_row=2`, `max_row=202`)을 통해 사전에 원천 차단.
+  - `list(dict.fromkeys())`를 통해 항목 순서 보존하며 중복을 제거하고 최대 200개(`MAX_OPTIONS`) 크기 제한.
+  - 파싱 실패 시 `config.json`의 기본값(Fallback)으로 자동 원복되며 예외 세부사항 디버그 로깅 적용.
+- [x] **[Backend] 인메모리 캐시 및 API 엔드포인트 연동 (`excel_repository.py`, `main.py`)**:
+  - 엑셀 로딩/핫로드(`check_and_reload`) 라이프사이클에 맞춰 드롭박스 옵션을 파싱해 인메모리에 캐싱(`self.validation_options_cache`).
+  - `GET /validation-options`와 `POST /validation-options/reload` API를 신설하여 0ms 수준의 초고속 응답 및 수동 캐시 갱신 기능 지원.
+- [x] **[Frontend] Zustand 전역 스토어 및 상담 유형별 드롭박스 동적 매핑 (`useAppStore.js`, `QuickEditor.jsx`, `GroupCounseling.jsx`)**:
+  - `validationOptions` 상태 및 비동기 액션(`fetchValidationOptions`, `reloadValidationOptions`) 탑재.
+  - `QuickEditor` 및 `GroupCounseling`에서 선택 시트 유형에 따라 동적으로 드롭다운 항목을 연동 렌더링하고, 라벨 우측에 `엑셀 연동됨`(초록색) / `기본설정`(회색) 상태 뱃지 표출.
+  - 세션 미선택 상태 등에서의 렌더링 에러 방지를 위해 Fallback 가드 패턴 보강.
+
+### 테스트 결과
+- 엑셀 드롭다운 파싱 및 연동 정밀 검증 단위 테스트 (`test_dropdown_api.py`) 작성 및 통과 ✅
+- `run_tests.py` 백엔드 전체 기능 자동화 검증 수행 결과 102건 전체 성공(Pass Rate: 100%) 확인 ✅
