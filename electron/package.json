@@ -1,6 +1,6 @@
 {
   "name": "counselinglog-electron",
-  "version": "0.2.15",
+  "version": "0.2.16",
   "description": "상담일지 Electron 앱",
   "main": "main.js",
   "scripts": {
