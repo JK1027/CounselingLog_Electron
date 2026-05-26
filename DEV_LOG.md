@@ -809,6 +809,27 @@
 - [x] **[Release] 버전 0.2.12 업데이트 및 GitHub Actions 자동 배포 트리거**:
   - `electron/package.json` 버전을 `0.2.12`로 범프하고 `v0.2.12` 릴리즈 태그를 원격 저장소에 푸시하여 배포 파이프라인 가동 완료.
 
+---
+
+## [2026-05-26] 집단상담 대장 인쇄 버튼 추가 및 컴포넌트 리팩토링 완료
+
+### 작업 내용
+- [x] **[Frontend] 공통 `IconButton` 컴포넌트 신설 (`shared.jsx`)**:
+  - 홈, 데이터 백업 등 반복 사용되는 아이콘 버튼의 일관성과 커스터마이징 유연성을 확보한 공통 컴포넌트 개발.
+- [x] **[Frontend] 사이드바 아이콘 버튼 리팩토링 (`Sidebar.jsx`)**:
+  - 기존 하드코딩 스타일이 적용된 '홈 이동', '수동 백업' 버튼을 신설된 `IconButton`으로 대체하여 코드 중복 제거.
+- [x] **[Frontend] 인쇄 설정 모달 결합도 완화 (`PrintSetupModal.jsx`, `App.jsx`)**:
+  - `PrintSetupModal`이 전역 `selectedStudent.isGroupTab`에 종속되지 않도록 `initialConfig` prop을 통해 설정을 외부에서 주입받는 인터페이스 개선.
+  - 가상 탭 혹은 수동 지정 시 '선택된 학생' 옵션이 정상 비활성화 처리되도록 수정.
+  - `App.jsx`에서 인쇄 옵션을 초기화 및 전달하는 상태(`printModalConfig`) 및 핸들러 연동.
+- [x] **[Frontend] 집단상담 대장 인쇄 버튼 연동 (`GroupCounseling.jsx`)**:
+  - '또래상담 추가' 옆에 신설 `IconButton` 기반의 인쇄 버튼 추가.
+  - 클릭 시 '집단상담' 인쇄 기본값 및 '선택된 학생' 비활성화가 자동 셋팅되도록 `onOpenPrintModal` 파라미터 연계 완료.
+
+### 테스트 결과
+- `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
+- 테스트 데이터 오늘 날짜 갱신 후, `run_tests.py` 백엔드 API 기능 영향성 자동화 검증 수행 결과 96건 전체 성공(Pass Rate: 100%) 확인 ✅
+
 
 
 

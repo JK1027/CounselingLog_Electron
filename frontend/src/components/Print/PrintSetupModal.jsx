@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Printer, FileText, Check } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 
-export default function PrintSetupModal({ isOpen, onClose, onPreview }) {
+export default function PrintSetupModal({ isOpen, onClose, onPreview, initialConfig }) {
   const { selectedStudent, sessions } = useAppStore()
   
   const [printTarget, setPrintTarget] = useState('student') // 'student' | 'type' | 'all'
@@ -12,16 +12,16 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview }) {
 
   useEffect(() => {
     if (isOpen) {
-      // 모달이 열릴 때 기본값 리셋
-      if (selectedStudent) {
-        setPrintTarget('student')
-      } else {
-        setPrintTarget('all')
-      }
+      // 모달이 열릴 때 기본값 리셋 (initialConfig가 있는 경우 우선 적용)
+      const target = initialConfig?.initialTarget || (selectedStudent && !selectedStudent.isGroupTab ? 'student' : 'all')
+      const defaultSheet = initialConfig?.defaultSheetType || '개인상담'
+      
+      setPrintTarget(target)
+      setSheetType(defaultSheet)
       setSessionFilter('all')
       setPrintFormat('report')
     }
-  }, [isOpen, selectedStudent])
+  }, [isOpen, selectedStudent, initialConfig])
 
   if (!isOpen) return null
 
@@ -72,10 +72,10 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview }) {
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
-                disabled={!selectedStudent}
+                disabled={!selectedStudent || selectedStudent.isGroupTab || initialConfig?.disableStudentOption}
                 onClick={() => setPrintTarget('student')}
                 className={`py-3 px-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all font-semibold ${
-                  !selectedStudent ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                  (!selectedStudent || selectedStudent.isGroupTab || initialConfig?.disableStudentOption) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
                 }`}
                 style={{
                   background: printTarget === 'student' ? 'var(--accent-soft)' : 'var(--bg-primary)',
@@ -85,7 +85,9 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview }) {
               >
                 <span className="text-xs font-bold">선택된 학생</span>
                 <span className="text-[10px] truncate max-w-full opacity-80">
-                  {selectedStudent ? `${selectedStudent.name} (${selectedStudent.studentId || ''})` : '선택 없음'}
+                  {selectedStudent && !selectedStudent.isGroupTab && !initialConfig?.disableStudentOption
+                    ? `${selectedStudent.name} (${selectedStudent.studentId || ''})`
+                    : '선택 없음'}
                 </span>
               </button>
 

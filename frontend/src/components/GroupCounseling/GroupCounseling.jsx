@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Edit2, Calendar, FileText, Loader2, Sparkles, User, Users, Check } from 'lucide-react'
+import { Plus, Trash2, Edit2, Calendar, FileText, Loader2, Sparkles, User, Users, Check, Printer } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
-import { formatDate } from '@/components/ui/shared'
+import { formatDate, IconButton } from '@/components/ui/shared'
 import PeerCounselDialog from './PeerCounselDialog'
 
 const getTodayDateString = () => {
@@ -17,7 +17,7 @@ const COUNSELING_TYPES = [
   '정신건강', '진로', '학업', '대인관계', '기타'
 ]
 
-export default function GroupCounseling() {
+export default function GroupCounseling({ onOpenPrintModal }) {
   const { 
     groupSessions, 
     addGroupSession, 
@@ -210,6 +210,17 @@ export default function GroupCounseling() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <IconButton
+              icon={Printer}
+              onClick={() => onOpenPrintModal({
+                initialTarget: 'type',
+                defaultSheetType: '집단상담',
+                disableStudentOption: true
+              })}
+              title="집단상담 대장 인쇄"
+              className={isCompactMode ? 'p-1.5 rounded-xl' : 'p-2.5 rounded-xl'}
+              iconSize={13}
+            />
             <button
               onClick={handleOpenPeerCounsel}
               className={`flex items-center gap-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${

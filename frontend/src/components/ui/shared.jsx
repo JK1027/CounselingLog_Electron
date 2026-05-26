@@ -79,3 +79,22 @@ export function SaveStateIndicator() {
   return null
 }
 
+export function IconButton({ icon: Icon, onClick, title, className = 'p-1 rounded', iconSize = 13, style = {} }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`hover:bg-hover transition-colors inline-flex items-center justify-center cursor-pointer ${className}`}
+      style={{
+        border: '1px solid var(--border)',
+        background: 'var(--bg-primary)',
+        color: 'var(--accent)',
+        ...style
+      }}
+    >
+      <Icon size={iconSize} />
+    </button>
+  )
+}
+
+

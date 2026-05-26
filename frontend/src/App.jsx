@@ -30,7 +30,13 @@ export default function App() {
 
   const [dragCounter, setDragCounter] = useState(0)
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false)
+  const [printModalConfig, setPrintModalConfig] = useState(null)
   const [printSetupData, setPrintSetupData] = useState(null)
+
+  const handleOpenPrintModal = (config = null) => {
+    setPrintModalConfig(config)
+    setIsPrintModalOpen(true)
+  }
   
   // 리팩토링: 마우스 레이아웃 조절 및 전역 단축키를 커스텀 훅으로 격리
   const { sidebarWidth, editorWidth, resizing, setResizing } = useLayoutResize()
@@ -167,16 +173,16 @@ export default function App() {
         {selectedStudent ? (
           selectedStudent.isGroupTab ? (
             <div className="flex-1 min-w-0">
-              <GroupCounseling />
+              <GroupCounseling onOpenPrintModal={handleOpenPrintModal} />
             </div>
           ) : (
             <div className="flex-1 min-w-0">
-              <Timeline onOpenPrintModal={() => setIsPrintModalOpen(true)} />
+              <Timeline onOpenPrintModal={handleOpenPrintModal} />
             </div>
           )
         ) : (
           <div className="flex-1 min-w-0">
-            <Dashboard onOpenPrintModal={() => setIsPrintModalOpen(true)} />
+            <Dashboard onOpenPrintModal={handleOpenPrintModal} />
           </div>
         )}
 
@@ -205,11 +211,16 @@ export default function App() {
       {/* 인쇄 설정 모달 */}
       <PrintSetupModal 
         isOpen={isPrintModalOpen} 
-        onClose={() => setIsPrintModalOpen(false)} 
+        onClose={() => {
+          setIsPrintModalOpen(false)
+          setPrintModalConfig(null)
+        }} 
         onPreview={(data) => {
           setIsPrintModalOpen(false)
+          setPrintModalConfig(null)
           setPrintSetupData(data)
         }} 
+        initialConfig={printModalConfig}
       />
 
       {/* 인쇄 미리보기 화면 */}
