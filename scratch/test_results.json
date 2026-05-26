@@ -1,6 +1,6 @@
 {
-  "total": 96,
-  "passed": 96,
+  "total": 102,
+  "passed": 102,
   "failed": 0,
   "errors": [],
   "results": [
@@ -57,7 +57,7 @@
     {
       "name": "Grade values do not contain '학년' suffix",
       "passed": true,
-      "detail": "Grades: {'1', '4', '2', '6', '3', '5'}"
+      "detail": "Grades: {'5', '2', '6', '1', '4', '3'}"
     },
     {
       "name": "All students have sessionCount > 0",
@@ -451,6 +451,36 @@
     },
     {
       "name": "Long content (5000 chars) accepted",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /settings returns 200",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Settings updated successfully",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /backup/test returns 200 on valid writable path",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Backup test path succeeds",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "POST /backup/test returns error on empty path",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Restore settings to empty returns 200",
       "passed": true,
       "detail": ""
     },

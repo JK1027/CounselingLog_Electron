@@ -10,6 +10,7 @@ import ToastContainer from '@/components/ui/ToastContainer'
 import PrintSetupModal from '@/components/Print/PrintSetupModal'
 import PrintPreview from '@/components/Print/PrintPreview'
 import PreUpdateBackupModal from '@/components/ui/PreUpdateBackupModal'
+import SettingsModal from '@/components/Settings/SettingsModal'
 import { useState, useEffect } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { FileSpreadsheet } from 'lucide-react'
@@ -25,7 +26,8 @@ export default function App() {
     initializeUpdater,
     updateStatus,
     downloadPercent,
-    setBackupModalOpen
+    setBackupModalOpen,
+    loadSettings
   } = useAppStore()
 
   const [dragCounter, setDragCounter] = useState(0)
@@ -49,6 +51,11 @@ export default function App() {
       if (typeof unsub === 'function') unsub()
     }
   }, [initializeUpdater])
+
+  // 1.5. 앱 시작 시 사용자 설정 로드 및 백엔드 동기화
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings])
 
   // 2. 윈도우 레벨에서 파일 드래그 기본 동작 방어 및 오버레이 활성화 (Drag Counter 방식)
   useEffect(() => {
@@ -153,6 +160,9 @@ export default function App() {
 
       {/* 업데이트 전 데이터 백업 확인 모달 */}
       <PreUpdateBackupModal />
+
+      {/* 설정 모달 */}
+      <SettingsModal />
 
       {/* 사이드바: 학생 목록 */}
       <Sidebar width={sidebarWidth} />

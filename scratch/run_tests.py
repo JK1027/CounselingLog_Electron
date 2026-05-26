@@ -780,6 +780,50 @@ def test_edge_cases():
         log_test("Edge cases", False, traceback.format_exc())
 
 
+def test_settings_and_backup_path():
+    log_section("14.5. POST /settings & POST /backup/test - Settings and Path Verification")
+    try:
+        # Test 1: POST /settings
+        settings_data = {
+            "backupDir": "C:\\temp\\counseling_backup_test"
+        }
+        r = requests.post(BASE_URL + "/settings", json=settings_data, timeout=10)
+        log_test("POST /settings returns 200", r.status_code == 200)
+        log_test("Settings updated successfully", r.json().get("status") == "success")
+
+        # Test 2: POST /backup/test on writable temp directory
+        import tempfile
+        temp_dir = tempfile.gettempdir()
+        test_path = os.path.join(temp_dir, "counseling_log_test_backup_dir")
+        
+        test_data = {
+            "backup_dir": test_path
+        }
+        r2 = requests.post(BASE_URL + "/backup/test", json=test_data, timeout=10)
+        log_test("POST /backup/test returns 200 on valid writable path", r2.status_code == 200)
+        log_test("Backup test path succeeds", r2.json().get("status") == "success")
+
+        # Clean up directory created by test
+        if os.path.exists(test_path):
+            try:
+                shutil.rmtree(test_path)
+            except Exception:
+                pass
+
+        # Test 3: POST /backup/test with empty path
+        test_data_empty = {
+            "backup_dir": ""
+        }
+        r3 = requests.post(BASE_URL + "/backup/test", json=test_data_empty, timeout=10)
+        log_test("POST /backup/test returns error on empty path", r3.json().get("status") == "error")
+
+        # Test 4: Restore settings to default/original empty string
+        r4 = requests.post(BASE_URL + "/settings", json={"backupDir": ""}, timeout=10)
+        log_test("Restore settings to empty returns 200", r4.status_code == 200)
+    except Exception as e:
+        log_test("Settings and Backup Path tests", False, traceback.format_exc())
+
+
 def test_student_delete():
     log_section("15. POST /students/delete - Delete Student")
     try:
@@ -872,6 +916,7 @@ def main():
         test_peer_students()
         test_session_resequencing()
         test_edge_cases()
+        test_settings_and_backup_path()
         test_student_delete()
         
     except Exception as e:

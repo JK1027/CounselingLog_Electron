@@ -17,7 +17,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   
   // DOM File 객체로부터 실제 절대 경로를 안전하게 추출 (Electron 32+ 대응)
-  getPathForFile: (file) => webUtils.getPathForFile(file)
+  getPathForFile: (file) => webUtils.getPathForFile(file),
+
+  // 설정 제어 및 폴더 탐색기
+  saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  openDirectoryDialog: () => ipcRenderer.invoke('dialog:openDirectory')
 })
 
 contextBridge.exposeInMainWorld('updaterAPI', {

@@ -830,6 +830,23 @@
 - `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
 - 테스트 데이터 오늘 날짜 갱신 후, `run_tests.py` 백엔드 API 기능 영향성 자동화 검증 수행 결과 96건 전체 성공(Pass Rate: 100%) 확인 ✅
 
+---
 
+## [2026-05-26] 백업 파일 저장 위치 사용자 설정 기능 및 설정 모달 추가 완료
 
+### 작업 내용
+- [x] **[Electron] 설정 영속화 및 폴더 네이티브 다이얼로그 IPC 바인딩 (`preload.js`, `main.js`)**:
+  - `saveSettings`, `getSettings`, `openDirectoryDialog` API를 expose하고, `settings:save` (병합 영속화) 및 `settings:get` IPC 핸들러 구현.
+  - 디렉토리 선택 시 `fs.accessSync`의 `W_OK` 플래그로 쓰기 권한을 선제 확인하여 다이얼로그 가드 추가.
+- [x] **[Backend] 동적 백업 설정 갱신 및 쓰기 권한 검증 API 신설 (`main.py`, `path_helper.py`, `excel_repository.py`)**:
+  - `POST /settings` 엔드포인트를 구현하여 프론트엔드의 사용자 백업 경로 설정을 백엔드 메모리 상태(`CURRENT_BACKUP_DIR`)에 즉각 동기화.
+  - `POST /backup/test` 엔드포인트를 구현하여 대상 경로에 임시 파일을 안전하게 기록/삭제하여 권한을 유효성 검증.
+  - `excel_repository.py`가 백엔드 `get_user_backup_path()` 경로를 우선 활용하도록 연동 보완.
+- [x] **[Frontend] 전역 상태 연동 및 설정 모달 화면 구현 (`useAppStore.js`, `Sidebar.jsx`, `App.jsx`, `SettingsModal.jsx`)**:
+  - Zustand 스토어에 `loadSettings`, `saveBackupDir`, `testBackupPath` 액션 탑재 및 앱 시작 시 `loadSettings()` 호출로 데이터 동기화.
+  - 사이드바 헤더 홈 버튼 옆에 톱니바퀴 설정 버튼을 추가하고 클릭 시 설정 모달이 팝업되도록 구조화.
+  - Notion/Obsidian 디자인 양식의 `SettingsModal.jsx` 컴포넌트를 신설하여 디렉토리 선택/초기화/테스트/즉시백업 기능 배치.
 
+### 테스트 결과
+- `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
+- `run_tests.py` 백엔드 API 기능 영향성 자동화 검증 수행 결과 신규 설정/경로 테스트 시나리오를 포함하여 102건 전체 성공(Pass Rate: 100%) 확인 ✅

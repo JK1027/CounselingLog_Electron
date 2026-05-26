@@ -69,11 +69,16 @@ def get_user_documents_path():
         
     return home
 
+CURRENT_BACKUP_DIR = ""
+
 def get_user_backup_path():
     """
     Get the writable path for user's manual backup.
-    This points to 'My Documents/상담일지 백업 파일'.
+    If CURRENT_BACKUP_DIR is configured, it overrides My Documents.
     """
+    if CURRENT_BACKUP_DIR:
+        return os.path.normpath(CURRENT_BACKUP_DIR)
+        
     doc_dir = get_user_documents_path()
     backup_dir = os.path.join(doc_dir, '상담일지 백업 파일')
     return os.path.normpath(backup_dir)

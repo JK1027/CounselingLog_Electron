@@ -39,6 +39,7 @@ CURRENT_EXCEL_PATH = get_writable_path("data/상담일지.xlsx")
 ensure_directory_exists(os.path.dirname(CURRENT_EXCEL_PATH))
 
 repo = ExcelRepository()
+import backend.utils.path_helper as path_helper
 
 @app.on_event("startup")
 def startup_event():
@@ -90,6 +91,12 @@ class StudentUpdate(BaseModel):
 class StudentDelete(BaseModel):
     name: str
     studentId: str
+
+class SettingsRequest(BaseModel):
+    backupDir: str = ""
+
+class BackupTestRequest(BaseModel):
+    backup_dir: str = ""
 
 def extract_ban_from_student_id(student_id: str) -> str:
     student_id = student_id.strip()
@@ -647,6 +654,35 @@ def get_today_stats():
             "referral": referral,
             "pending": 0  # 미작성 건수는 향후 일정/예약 추가 시 계산
         }
+
+@app.post("/settings")
+def update_settings(data: SettingsRequest):
+    path_helper.CURRENT_BACKUP_DIR = data.backupDir.strip()
+    logger.info(f"동적 백업 설정 갱신: {path_helper.CURRENT_BACKUP_DIR}")
+    return {"status": "success"}
+
+@app.post("/backup/test")
+def test_backup_path(data: BackupTestRequest):
+    path = data.backup_dir.strip()
+    if not path:
+        return {"status": "error", "message": "경로가 지정되지 않았습니다."}
+    try:
+        os.makedirs(path, exist_ok=True)
+        test_file = os.path.join(path, "backup_test.tmp")
+        # 쓰기 테스트
+        with open(test_file, 'w', encoding='utf-8') as f:
+            f.write("write test")
+        # 읽기 테스트
+        with open(test_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        # 삭제 테스트
+        os.remove(test_file)
+        if content != "write test":
+            return {"status": "error", "message": "데이터 무결성 검증 실패"}
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"백업 테스트 경로 실패 ({path}): {e}")
+        return {"status": "error", "message": str(e)}
 
 @app.post("/backup")
 def trigger_backup():

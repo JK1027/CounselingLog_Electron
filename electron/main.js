@@ -122,6 +122,29 @@ async function handleFileOpen(window) {
   return null
 }
 
+// ─── 공통 폴더 열기 다이얼로그 ─────────────────────────────────────────────
+async function handleDirectoryOpen(window) {
+  const { canceled, filePaths } = await dialog.showOpenDialog(window, {
+    title: '백업 파일 저장 폴더 선택',
+    properties: ['openDirectory', 'createDirectory']
+  })
+  if (!canceled && filePaths.length > 0) {
+    const dirPath = filePaths[0]
+    // 쓰기 권한 선제 검사
+    try {
+      fs.accessSync(dirPath, fs.constants.W_OK)
+      return dirPath
+    } catch (err) {
+      dialog.showErrorBox(
+        '쓰기 권한 없음',
+        '선택한 폴더에 쓰기 권한이 없습니다. 다른 폴더를 선택해 주세요.'
+      )
+      return null
+    }
+  }
+  return null
+}
+
 // ─── 한국어 메뉴 설정 ──────────────────────────────────────────────────────
 function setCustomMenu(window) {
   const template = [
@@ -355,6 +378,44 @@ ipcMain.handle('app:version', () => app.getVersion())
 ipcMain.handle('app:platform', () => process.platform)
 ipcMain.handle('dialog:openFile', async () => {
   return await handleFileOpen(mainWindow)
+})
+
+ipcMain.handle('settings:save', async (event, newSettings) => {
+  try {
+    const settingsPath = path.join(app.getPath('userData'), 'settings.json')
+    let current = {}
+    if (fs.existsSync(settingsPath)) {
+      try {
+        const content = fs.readFileSync(settingsPath, 'utf8')
+        current = JSON.parse(content)
+      } catch (e) {
+        console.error('Failed to parse settings.json for merging:', e)
+      }
+    }
+    const merged = { version: 1, ...current, ...newSettings }
+    fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2), 'utf8')
+    return { success: true }
+  } catch (err) {
+    console.error('Failed to save settings:', err)
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('settings:get', async () => {
+  try {
+    const settingsPath = path.join(app.getPath('userData'), 'settings.json')
+    if (fs.existsSync(settingsPath)) {
+      const content = fs.readFileSync(settingsPath, 'utf8')
+      return JSON.parse(content)
+    }
+  } catch (err) {
+    console.error('Failed to get settings (returning empty):', err)
+  }
+  return {}
+})
+
+ipcMain.handle('dialog:openDirectory', async () => {
+  return await handleDirectoryOpen(mainWindow)
 })
 
 // ─── 자동 업데이트 설정 및 IPC 바인딩 격리 ─────────────────────────────────────────

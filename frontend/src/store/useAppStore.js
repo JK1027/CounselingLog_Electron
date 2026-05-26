@@ -65,6 +65,14 @@ export const useAppStore = create((set, get) => ({
   isBackupModalOpen: false,
   setBackupModalOpen: (open) => set({ isBackupModalOpen: open }),
 
+  // 설정 관련 상태
+  settingsOpen: false,
+  backupDir: '',
+  lastBackupTime: localStorage.getItem('counseling_last_backup_time') || '',
+  lastBackupStatus: localStorage.getItem('counseling_last_backup_status') || '',
+
+  setSettingsOpen: (open) => set({ settingsOpen: open }),
+
   // 현재 활성화된 엑셀 파일 경로
   currentFilePath: '',
 
@@ -553,12 +561,85 @@ export const useAppStore = create((set, get) => ({
 
   // ─── 수동 백업 ─────────────────────────────────────────────────────────
   triggerBackup: async () => {
+    const now = new Date()
+    const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
     try {
       const res = await apiFetch('/backup', { method: 'POST' })
       const data = await res.json()
+      
+      localStorage.setItem('counseling_last_backup_time', timeStr)
+      localStorage.setItem('counseling_last_backup_status', 'success')
+      set({ lastBackupTime: timeStr, lastBackupStatus: 'success' })
+      
       get().addToast(`백업이 생성되었습니다: ${data.filename}`, 'success')
     } catch (e) {
+      localStorage.setItem('counseling_last_backup_time', timeStr)
+      localStorage.setItem('counseling_last_backup_status', 'failure')
+      set({ lastBackupTime: timeStr, lastBackupStatus: 'failure' })
+      
       get().addToast(e.message, 'error')
+    }
+  },
+
+  // ─── 설정 관련 액션 ──────────────────────────────────────────────────────
+  loadSettings: async () => {
+    if (window.electronAPI && window.electronAPI.getSettings) {
+      try {
+        const settings = await window.electronAPI.getSettings()
+        const dir = settings.backupDir || ''
+        set({ backupDir: dir })
+        
+        // 백엔드에 동적 백업 설정 갱신 요청
+        await apiFetch('/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ backupDir: dir })
+        })
+      } catch (e) {
+        console.error('Failed to load settings in store:', e)
+      }
+    }
+  },
+
+  saveBackupDir: async (dirPath) => {
+    if (window.electronAPI && window.electronAPI.saveSettings) {
+      try {
+        await window.electronAPI.saveSettings({ backupDir: dirPath })
+        set({ backupDir: dirPath })
+        
+        // 백엔드에 동적 백업 설정 갱신 요청
+        await apiFetch('/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ backupDir: dirPath })
+        })
+        return true
+      } catch (e) {
+        get().addToast(e.message, 'error')
+        return false
+      }
+    }
+    return false
+  },
+
+  testBackupPath: async (dirPath) => {
+    try {
+      const res = await apiFetch('/backup/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backup_dir: dirPath })
+      })
+      const data = await res.json()
+      if (data.status === 'success') {
+        get().addToast('백업 경로 테스트에 성공했습니다. 쓰기 권한이 확인되었습니다.', 'success')
+        return true
+      } else {
+        get().addToast(`백업 경로 테스트 실패: ${data.message}`, 'error')
+        return false
+      }
+    } catch (e) {
+      get().addToast(`백업 경로 테스트 에러: ${e.message}`, 'error')
+      return false
     }
   },
 

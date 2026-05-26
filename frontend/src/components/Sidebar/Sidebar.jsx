@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Search, Users, ChevronRight, AlertCircle, BookOpen, FolderOpen, Maximize2, Minimize2, UserPlus, Home, Sparkles, Download, RefreshCw, Database } from 'lucide-react'
+import { Search, Users, ChevronRight, AlertCircle, BookOpen, FolderOpen, Maximize2, Minimize2, UserPlus, Home, Sparkles, Download, RefreshCw, Database, Settings } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { Avatar, TagBadge, IconButton } from '@/components/ui/shared'
 
@@ -16,6 +16,7 @@ export default function Sidebar({ width }) {
     setRegisterOpen,
     searchQuery,
     setEditorOpen,
+    setSettingsOpen,
     
     // 글로벌 업데이트 상태들
     appVersion,
@@ -149,6 +150,12 @@ export default function Sidebar({ width }) {
                     setEditorOpen(false)
                   }}
                   title="홈 화면(대시보드)으로 이동"
+                  className="ml-1.5"
+                />
+                <IconButton
+                  icon={Settings}
+                  onClick={() => setSettingsOpen(true)}
+                  title="설정"
                   className="ml-1.5"
                 />
               </div>
