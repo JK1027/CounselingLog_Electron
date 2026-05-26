@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { X, Save, ChevronDown } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { COUNSELING_TYPES, SHEET_TYPES } from '@/data/mockData'
+import DateInput from '@/components/ui/DateInput'
+import { isValidYYYYMMDD } from '@/utils/dateHelper'
 
 export default function QuickEditor({ width }) {
   const {
@@ -79,7 +81,7 @@ export default function QuickEditor({ width }) {
     if (saveState === 'saving') return
 
     const newErrors = {}
-    if (!form.date || form.date.length !== 8) {
+    if (!isValidYYYYMMDD(form.date)) {
       newErrors.date = true
     }
     if (!form.type) {
@@ -197,28 +199,16 @@ export default function QuickEditor({ width }) {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* 상담일자 */}
         <FormField label="상담일자" required>
-          <input
-            ref={dateRef}
+          <DateInput
+            inputRef={dateRef}
             onKeyDown={e => handleEnterKey(e, sheetTypeRef)}
-            type="text"
             value={form.date}
             disabled={saveState === 'saving'}
-            onChange={e => {
-              setForm(f => ({ ...f, date: e.target.value }))
+            error={errors.date}
+            onChange={val => {
+              setForm(f => ({ ...f, date: val }))
               if (errors.date) setErrors(errs => ({ ...errs, date: false }))
             }}
-            placeholder="YYYYMMDD"
-            maxLength={8}
-            className={`w-full px-3 py-2 rounded-xl text-sm outline-none transition-all ${
-              saveState === 'saving' ? 'opacity-60 cursor-not-allowed' : ''
-            }`}
-            style={{
-              background: 'var(--bg-primary)',
-              border: errors.date ? '1.5px solid var(--red)' : '1.5px solid var(--border)',
-              color: 'var(--text-primary)',
-            }}
-            onFocus={e => e.target.style.borderColor = errors.date ? 'var(--red)' : 'var(--accent)'}
-            onBlur={e => e.target.style.borderColor = errors.date ? 'var(--red)' : 'var(--border)'}
           />
         </FormField>
 

@@ -3,14 +3,8 @@ import { Plus, Trash2, Edit2, Calendar, FileText, Loader2, Sparkles, User, Users
 import { useAppStore } from '@/store/useAppStore'
 import { formatDate, IconButton } from '@/components/ui/shared'
 import PeerCounselDialog from './PeerCounselDialog'
-
-const getTodayDateString = () => {
-  const d = new Date()
-  const yyyy = d.getFullYear()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${yyyy}${mm}${dd}`
-}
+import DateInput from '@/components/ui/DateInput'
+import { isValidYYYYMMDD, getTodayDateString } from '@/utils/dateHelper'
 
 const COUNSELING_TYPES = [
   '일반상담', '자해 및 자살', '학교폭력 피해', '학교폭력 가해', 
@@ -140,9 +134,8 @@ export default function GroupCounseling({ onOpenPrintModal }) {
     e.preventDefault()
 
     // 폼 검증
-    const datePattern = /^\d{8}$/
-    if (!datePattern.test(formValues.date)) {
-      useAppStore.getState().addToast('날짜는 8자리 숫자(YYYYMMDD) 형식이어야 합니다.', 'error')
+    if (!isValidYYYYMMDD(formValues.date)) {
+      useAppStore.getState().addToast('상담일자를 올바른 YYYYMMDD 형식의 8자리 숫자로 입력해 주세요.', 'error')
       return
     }
     if (!formValues.summary.trim()) {
@@ -365,15 +358,11 @@ export default function GroupCounseling({ onOpenPrintModal }) {
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4 no-scrollbar">
             {/* 상담일자 */}
             <div className="space-y-1">
-              <label className="text-[11px] font-bold" style={{ color: 'var(--text-secondary)' }}>* 상담일자 (8자리)</label>
-              <input
-                type="text"
-                maxLength={8}
+              <label className="text-[11px] font-bold block mb-1" style={{ color: 'var(--text-secondary)' }}>* 상담일자 (8자리)</label>
+              <DateInput
                 value={formValues.date}
-                onChange={e => handleInputChange('date', e.target.value)}
+                onChange={val => handleInputChange('date', val)}
                 placeholder="YYYYMMDD (예: 20260524)"
-                className="w-full text-xs px-3 py-2.5 rounded-xl border outline-none font-medium focus:ring-1 focus:ring-accent focus:border-accent transition-all"
-                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
               />
             </div>
 

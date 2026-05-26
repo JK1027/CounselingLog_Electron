@@ -851,3 +851,28 @@
 ### 테스트 결과
 - `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
 - `run_tests.py` 백엔드 API 기능 영향성 자동화 검증 수행 결과 신규 설정/경로 테스트 시나리오를 포함하여 102건 전체 성공(Pass Rate: 100%) 확인 ✅
+
+---
+
+## [2026-05-26] 상담일자 달력 선택기(DateInput) 및 정밀 유효성 유틸 공통 구현
+
+### 작업 내용
+- [x] **[Frontend] 날짜 유틸리티 모듈 신설 (`dateHelper.js`)**:
+  - `isValidYYYYMMDD`을 구현하여 윤년 및 월별 최대 일수(예: 2월 29/30일 오류)를 타임존 오차 없이 완벽히 판별하는 알고리즘 탑재.
+  - `cleanDateString`을 구현하여 특수문자가 섞인 입력 형식을 숫자 8자리 포맷으로 즉각 정규화.
+  - `getTodayDateString`을 구현하여 시스템 로컬 오늘 날짜를 YYYYMMDD 포맷으로 반환.
+- [x] **[Frontend] 하이브리드 날짜 입력기 공통 컴포넌트 구현 (`DateInput.jsx`)**:
+  - 기존 텍스트 입력창 스타일을 100% 계승하고, 우측 영역에 달력(Calendar) 아이콘 버튼을 내장.
+  - `showPicker()` API 미지원 환경에 대비한 `click()` Fallback 작성.
+  - 입력창 포커스 중 `t` 또는 `.` 타이핑 시 오늘 날짜로 자동 변환하는 단축키 연동 (한글 IME 조합 중 오작동 방지 가드 포함).
+  - 마우스로 달력 날짜 클릭 시 팝업을 닫고 텍스트창으로 포커스를 강제 복구하여 탭/엔터 흐름을 연속 유지.
+  - 외부 날짜 문자열 복사-붙여넣기 시 기호 정제 가이드 적용.
+- [x] **[Frontend] 개인상담 및 집단상담 폼 연동 (`QuickEditor.jsx`, `GroupCounseling.jsx`)**:
+  - 기존 일반 text input 요소를 `<DateInput />` 공통 컴포넌트로 일제 교체.
+  - 폼 유효성 검사에 `isValidYYYYMMDD`를 적용하여 2월 30일 등 무효한 날짜가 저장되는 행위를 원천 제어.
+  - `GroupCounseling.jsx` 내부에 중복 정의되어 사용되던 `getTodayDateString` 로컬 함수를 제거하고 공통 유틸 모듈로 통일.
+
+### 테스트 결과
+- `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
+- `run_tests.py` 백엔드 API 기능 영향성 자동화 검증 수행 결과 102건 전체 성공(Pass Rate: 100%) 확인 ✅
+
