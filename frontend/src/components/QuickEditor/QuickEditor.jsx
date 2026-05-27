@@ -227,8 +227,16 @@ export default function QuickEditor({ width }) {
 
         {/* 상담 구분 */}
         {(() => {
+          const SHEET_NAME_MAP = {
+            '개인상담': '개인상담',
+            '집단상담': '집단상담(또래상담, 학급별 집단)',
+            '보호자상담': '보호자상담',
+            '교원자문': '교원자문',
+            '의뢰': '의뢰(정서행동의뢰, 자문의 의뢰 등)'
+          }
           const activeSheetType = form.sheetType || '개인상담'
-          const optionsData = validationOptions?.[activeSheetType]
+          const formalSheetType = SHEET_NAME_MAP[activeSheetType] || activeSheetType
+          const optionsData = validationOptions?.[formalSheetType]
           const activeOptions = optionsData?.options || COUNSELING_TYPES
           const isExcelSynced = optionsData?.source === 'excel'
           
