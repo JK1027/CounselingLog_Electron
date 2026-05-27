@@ -13,6 +13,7 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
   const [printFormat, setPrintFormat] = useState('report') // 'report' | 'table'
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [sortBy, setSortBy] = useState('date_asc') // 'date_asc' | 'date_desc' | 'name_asc' | 'sheet_asc'
 
   useEffect(() => {
     if (isOpen) {
@@ -26,6 +27,7 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
       setPrintFormat('report')
       setStartDate('')
       setEndDate('')
+      setSortBy('date_asc')
     }
   }, [isOpen, selectedStudent, initialConfig])
 
@@ -87,6 +89,7 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
       printFormat,
       startDate,
       endDate,
+      sortBy,
       studentName: selectedStudent?.name,
       studentId: selectedStudent?.studentId
     })
@@ -317,10 +320,32 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
             </div>
           </div>
 
-          {/* 4. 출력 양식 선택 */}
+          {/* 4. 정렬 기준 선택 */}
           <div className="space-y-2">
             <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-              4. 출력 양식 선택
+              4. 정렬 기준 선택
+            </label>
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl outline-none transition-all cursor-pointer text-sm"
+              style={{
+                background: 'var(--bg-primary)',
+                border: '1.5px solid var(--border)',
+                color: 'var(--text-primary)',
+              }}
+            >
+              <option value="date_asc">날짜 오래된 순</option>
+              <option value="date_desc">날짜 최신 순</option>
+              <option value="name_asc">이름 가나다 순</option>
+              <option value="sheet_asc">상담 유형 우선순위 순</option>
+            </select>
+          </div>
+
+          {/* 5. 출력 양식 선택 */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+              5. 출력 양식 선택
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label

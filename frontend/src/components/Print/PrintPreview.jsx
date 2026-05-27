@@ -3,6 +3,7 @@ import { X, Printer, Loader2 } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { formatDate } from '@/components/ui/shared'
 import { filterSessionsByDateRange } from '@/utils/dateHelper'
+import { sortPrintSessions } from '@/utils/printSort'
 
 const API_BASE = 'http://localhost:8765'
 
@@ -17,7 +18,7 @@ export default function PrintPreview({ setupData, onClose }) {
     const loadPrintData = async () => {
       setLoading(true)
       try {
-        const { printTarget, sheetType, sessionFilter, startDate, endDate } = setupData
+        const { printTarget, sheetType, sessionFilter, startDate, endDate, sortBy } = setupData
 
         let rawData = []
         if (printTarget === 'student') {
@@ -43,8 +44,8 @@ export default function PrintPreview({ setupData, onClose }) {
         // 기간 필터링 적용 (데이터 불변성 유지)
         const filteredData = filterSessionsByDateRange(rawData, startDate, endDate)
 
-        // 인쇄용은 날짜 오름차순(오래된 순) 정렬하여 대장이나 보고서에 순차 기입
-        const sorted = [...filteredData].sort((a, b) => a.date.localeCompare(b.date))
+        // 정렬 유틸 적용
+        const sorted = sortPrintSessions(filteredData, sortBy)
         setPrintData(sorted)
         setLoading(false)
       } catch (e) {
@@ -80,6 +81,20 @@ export default function PrintPreview({ setupData, onClose }) {
     )
   }
 
+  const getSortText = (sortKey) => {
+    switch (sortKey) {
+      case 'date_desc':
+        return '날짜 최신 순'
+      case 'name_asc':
+        return '이름 가나다 순'
+      case 'sheet_asc':
+        return '상담 유형 우선순위 순'
+      case 'date_asc':
+      default:
+        return '날짜 오래된 순'
+    }
+  }
+
   const getPeriodText = () => {
     const { startDate, endDate } = setupData || {}
     if (!startDate && !endDate) return '전체 기간'
@@ -94,7 +109,7 @@ export default function PrintPreview({ setupData, onClose }) {
     return `${startStr} ~ ${endStr}`
   }
 
-  const { printFormat, printTarget, sheetType } = setupData
+  const { printFormat, printTarget, sheetType, sortBy } = setupData
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-neutral-900 overflow-y-auto no-scrollbar print-preview-container print:bg-white print:static print:overflow-visible">
@@ -108,6 +123,9 @@ export default function PrintPreview({ setupData, onClose }) {
           </span>
           <span className="text-xs text-neutral-400 font-semibold hidden md:inline ml-2 border-l border-neutral-600 pl-3">
             기간: {getPeriodText()}
+          </span>
+          <span className="text-xs text-neutral-400 font-semibold hidden md:inline ml-2 border-l border-neutral-600 pl-3">
+            정렬: {getSortText(sortBy)}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -205,7 +223,7 @@ export default function PrintPreview({ setupData, onClose }) {
               상담일지 작성 대장 ({printTarget === 'type' ? sheetType : printTarget === 'student' ? `${setupData.studentName} 학생` : '전체 내역'})
             </h1>
             <p className="text-center text-[10px] text-gray-500 mb-6 font-semibold">
-              조회 기간: {getPeriodText()}
+              조회 기간: {getPeriodText()} &nbsp;|&nbsp; 정렬 기준: {getSortText(sortBy)}
             </p>
 
             {/* 대장 테이블 */}
