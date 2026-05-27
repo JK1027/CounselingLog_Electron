@@ -65,7 +65,7 @@ function startPythonBackend() {
 
 // ─── 백엔드 구동 여부 확인 (헬스 체크) ─────────────────────────────────────────────
 function checkBackendHealth(attempts = 1) {
-  const maxAttempts = 10
+  const maxAttempts = 30
   const delay = 500
   const url = 'http://localhost:8765/health'
 
