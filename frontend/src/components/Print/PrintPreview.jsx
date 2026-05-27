@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Printer, Loader2 } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { formatDate } from '@/components/ui/shared'
+import { filterSessionsByDateRange } from '@/utils/dateHelper'
 
 const API_BASE = 'http://localhost:8765'
 
@@ -16,20 +17,17 @@ export default function PrintPreview({ setupData, onClose }) {
     const loadPrintData = async () => {
       setLoading(true)
       try {
-        const { printTarget, sheetType, sessionFilter } = setupData
+        const { printTarget, sheetType, sessionFilter, startDate, endDate } = setupData
 
+        let rawData = []
         if (printTarget === 'student') {
           // 1. 현재 선택된 학생의 데이터 처리
           if (sessionFilter === 'all') {
-            // 전체 회기 (날짜 순서대로 보여주기 위해 오름차순 정렬)
-            const sorted = [...storeSessions].sort((a, b) => a.date.localeCompare(b.date))
-            setPrintData(sorted)
+            rawData = storeSessions
           } else {
             // 특정 회기
-            const single = storeSessions.filter(s => s.id === sessionFilter)
-            setPrintData(single)
+            rawData = storeSessions.filter(s => s.id === sessionFilter)
           }
-          setLoading(false)
         } else {
           // 2. 상담 유형별 또는 전체 데이터 처리 (백엔드 API 호출)
           let url = `${API_BASE}/sessions`
@@ -39,13 +37,16 @@ export default function PrintPreview({ setupData, onClose }) {
 
           const res = await fetch(url)
           if (!res.ok) throw new Error('인쇄용 데이터를 불러오지 못했습니다.')
-          const data = await res.json()
-          
-          // 인쇄용은 날짜 오름차순(오래된 순) 정렬하여 대장이나 보고서에 순차 기입
-          const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date))
-          setPrintData(sorted)
-          setLoading(false)
+          rawData = await res.json()
         }
+
+        // 기간 필터링 적용 (데이터 불변성 유지)
+        const filteredData = filterSessionsByDateRange(rawData, startDate, endDate)
+
+        // 인쇄용은 날짜 오름차순(오래된 순) 정렬하여 대장이나 보고서에 순차 기입
+        const sorted = [...filteredData].sort((a, b) => a.date.localeCompare(b.date))
+        setPrintData(sorted)
+        setLoading(false)
       } catch (e) {
         useAppStore.getState().addToast(e.message, 'error')
         onClose()
@@ -79,6 +80,20 @@ export default function PrintPreview({ setupData, onClose }) {
     )
   }
 
+  const getPeriodText = () => {
+    const { startDate, endDate } = setupData || {}
+    if (!startDate && !endDate) return '전체 기간'
+
+    const format = (d) => {
+      if (!d || d.length !== 8) return ''
+      return `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}`
+    }
+
+    const startStr = format(startDate) || '시작일 제한 없음'
+    const endStr = format(endDate) || '종료일 제한 없음'
+    return `${startStr} ~ ${endStr}`
+  }
+
   const { printFormat, printTarget, sheetType } = setupData
 
   return (
@@ -90,6 +105,9 @@ export default function PrintPreview({ setupData, onClose }) {
           <h2 className="text-sm font-bold">인쇄 미리보기</h2>
           <span className="text-xs px-2.5 py-0.5 rounded-full bg-neutral-700 text-neutral-300 font-medium">
             A4 규격 · {printData.length}건의 일지 발견
+          </span>
+          <span className="text-xs text-neutral-400 font-semibold hidden md:inline ml-2 border-l border-neutral-600 pl-3">
+            기간: {getPeriodText()}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -183,9 +201,12 @@ export default function PrintPreview({ setupData, onClose }) {
             className="print-page w-[210mm] min-h-[297mm] p-[20mm] bg-white border border-neutral-200 shadow-2xl relative page-break print:w-full print:border-none print:shadow-none print:p-[10mm]"
           >
             {/* 타이틀 */}
-            <h1 className="text-center font-bold text-xl mb-6 text-black">
+            <h1 className="text-center font-bold text-xl mb-1 text-black">
               상담일지 작성 대장 ({printTarget === 'type' ? sheetType : printTarget === 'student' ? `${setupData.studentName} 학생` : '전체 내역'})
             </h1>
+            <p className="text-center text-[10px] text-gray-500 mb-6 font-semibold">
+              조회 기간: {getPeriodText()}
+            </p>
 
             {/* 대장 테이블 */}
             <table className="w-full border-collapse border border-neutral-300 text-left text-xs text-black">

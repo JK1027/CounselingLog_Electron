@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { X, Printer, FileText, Check } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
+import DateInput from '@/components/ui/DateInput'
+import { isValidYYYYMMDD, getTodayDateString, getThisWeekRange, getThisMonthRange, getThisSemesterRange } from '@/utils/dateHelper'
 
 export default function PrintSetupModal({ isOpen, onClose, onPreview, initialConfig }) {
   const { selectedStudent, sessions } = useAppStore()
@@ -9,6 +11,8 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
   const [sheetType, setSheetType] = useState('개인상담')
   const [sessionFilter, setSessionFilter] = useState('all') // 'all' | sessionId
   const [printFormat, setPrintFormat] = useState('report') // 'report' | 'table'
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   useEffect(() => {
     if (isOpen) {
@@ -20,17 +24,69 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
       setSheetType(defaultSheet)
       setSessionFilter('all')
       setPrintFormat('report')
+      setStartDate('')
+      setEndDate('')
     }
   }, [isOpen, selectedStudent, initialConfig])
 
   if (!isOpen) return null
 
+  const handlePresetClick = (presetType) => {
+    const today = getTodayDateString()
+    switch (presetType) {
+      case 'today':
+        setStartDate(today)
+        setEndDate(today)
+        break
+      case 'week': {
+        const { start, end } = getThisWeekRange()
+        setStartDate(start)
+        setEndDate(end)
+        break
+      }
+      case 'month': {
+        const { start, end } = getThisMonthRange()
+        setStartDate(start)
+        setEndDate(end)
+        break
+      }
+      case 'semester': {
+        const { start, end } = getThisSemesterRange()
+        setStartDate(start)
+        setEndDate(end)
+        break
+      }
+      case 'clear':
+        setStartDate('')
+        setEndDate('')
+        break
+      default:
+        break
+    }
+  }
+
   const handlePreviewClick = () => {
+    // 날짜 유효성 검사 (입력된 경우에만 검증)
+    if (startDate && !isValidYYYYMMDD(startDate)) {
+      useAppStore.getState().addToast('시작일은 YYYYMMDD 8자리 올바른 날짜여야 합니다.', 'error')
+      return
+    }
+    if (endDate && !isValidYYYYMMDD(endDate)) {
+      useAppStore.getState().addToast('종료일은 YYYYMMDD 8자리 올바른 날짜여야 합니다.', 'error')
+      return
+    }
+    if (startDate && endDate && startDate > endDate) {
+      useAppStore.getState().addToast('시작일은 종료일보다 이전 날짜여야 합니다.', 'error')
+      return
+    }
+
     onPreview({
       printTarget,
       sheetType,
       sessionFilter,
       printFormat,
+      startDate,
+      endDate,
       studentName: selectedStudent?.name,
       studentId: selectedStudent?.studentId
     })
@@ -173,10 +229,98 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
             </div>
           )}
 
-          {/* 3. 출력 양식 선택 */}
+          {/* 3. 조회 기간 설정 (선택) */}
           <div className="space-y-2">
             <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-              3. 출력 양식 선택
+              3. 조회 기간 설정 (선택)
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <DateInput
+                  value={startDate}
+                  onChange={setStartDate}
+                  placeholder="시작일 (YYYYMMDD)"
+                />
+              </div>
+              <span className="font-semibold" style={{ color: 'var(--text-muted)' }}>~</span>
+              <div className="flex-1">
+                <DateInput
+                  value={endDate}
+                  onChange={setEndDate}
+                  placeholder="종료일 (YYYYMMDD)"
+                />
+              </div>
+            </div>
+            
+            {/* 프리셋 버튼 */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => handlePresetClick('today')}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-hover cursor-pointer border"
+                style={{
+                  background: 'var(--bg-primary)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                오늘
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePresetClick('week')}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-hover cursor-pointer border"
+                style={{
+                  background: 'var(--bg-primary)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                이번 주
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePresetClick('month')}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-hover cursor-pointer border"
+                style={{
+                  background: 'var(--bg-primary)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                이번 달
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePresetClick('semester')}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-hover cursor-pointer border"
+                style={{
+                  background: 'var(--bg-primary)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                이번 학기
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePresetClick('clear')}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all hover:bg-hover cursor-pointer border hover:text-red-500"
+                style={{
+                  background: 'var(--bg-primary)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-muted)'
+                }}
+              >
+                전체 기간(초기화)
+              </button>
+            </div>
+          </div>
+
+          {/* 4. 출력 양식 선택 */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+              4. 출력 양식 선택
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label

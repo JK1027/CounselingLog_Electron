@@ -39,6 +39,7 @@ Thumbs.db
 
 # Project-specific Build & Log Ignores
 /backend/build/
+/backend/dist/
 /electron/resources/backend/
 /electron/logs/
 /err.log
