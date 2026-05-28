@@ -161,7 +161,7 @@ export default function PrintPreview({ setupData, onBack }) {
     const pages = []
     let currentPage = []
     let currentLines = 0
-    let maxLines = 18 // 첫 페이지 최대 수용 라인 수
+    let maxLines = 24 // 첫 페이지 최대 수용 라인 수
 
     groupedData.forEach((student) => {
       const lines = student.types.length || 1
@@ -169,7 +169,7 @@ export default function PrintPreview({ setupData, onBack }) {
         pages.push(currentPage)
         currentPage = [student]
         currentLines = lines
-        maxLines = 22 // 이후 페이지 최대 수용 라인 수
+        maxLines = 28 // 이후 페이지 최대 수용 라인 수
       } else {
         currentPage.push(student)
         currentLines += lines
