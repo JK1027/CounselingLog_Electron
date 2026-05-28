@@ -1,39 +1,4 @@
-export default function PrintRegisterTable({ printData }) {
-  // 1. 학생별 그룹화 처리 (중복 제거 및 상담구분별 횟수 계산)
-  const groupedData = []
-  const seenKeys = new Map()
-
-  printData.forEach((session) => {
-    const name = session.name || '집단상담'
-    const studentId = session.studentId || ''
-    const grade = session.grade || ''
-    const ban = session.ban || ''
-    
-    const key = `${name}_${studentId}`
-    if (!seenKeys.has(key)) {
-      const newEntry = {
-        name,
-        studentId,
-        grade,
-        ban,
-        session,
-        types: [] // array of { typeName, count }
-      }
-      seenKeys.set(key, groupedData.length)
-      groupedData.push(newEntry)
-    }
-
-    const entry = groupedData[seenKeys.get(key)]
-    const typeName = session.type || '-'
-    
-    let typeObj = entry.types.find(t => t.typeName === typeName)
-    if (!typeObj) {
-      typeObj = { typeName, count: 0 }
-      entry.types.push(typeObj)
-    }
-    typeObj.count += 1
-  })
-
+export default function PrintRegisterTable({ groupedData, startIndex = 0 }) {
   // 학년/반 포맷터
   const formatGradeClass = (student) => {
     const gradeText = student.grade ? `${student.grade}학년` : ''
@@ -69,7 +34,7 @@ export default function PrintRegisterTable({ printData }) {
       <tbody>
         {groupedData.map((student, idx) => (
           <tr key={idx} className="hover:bg-neutral-50/50 print:hover:bg-transparent">
-            <td className="border border-neutral-300 text-center font-medium py-2">{idx + 1}</td>
+            <td className="border border-neutral-300 text-center font-medium py-2">{startIndex + idx + 1}</td>
             <td className="border border-neutral-300 text-center font-semibold py-2">{student.name}</td>
             <td className="border border-neutral-300 text-center py-2">
               {formatGradeClass(student)}

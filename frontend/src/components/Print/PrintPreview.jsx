@@ -120,6 +120,69 @@ export default function PrintPreview({ setupData, onBack }) {
     return '전체상담'
   }
 
+  // 데이터 그룹화 및 A4 용지 규격 기준 동적 페이지 분할
+  const getGroupedAndPaginatedPages = (data) => {
+    // 1. 학생별 그룹화 처리
+    const groupedData = []
+    const seenKeys = new Map()
+
+    data.forEach((session) => {
+      const name = session.name || '집단상담'
+      const studentId = session.studentId || ''
+      const grade = session.grade || ''
+      const ban = session.ban || ''
+      
+      const key = `${name}_${studentId}`
+      if (!seenKeys.has(key)) {
+        const newEntry = {
+          name,
+          studentId,
+          grade,
+          ban,
+          session,
+          types: [] // array of { typeName, count }
+        }
+        seenKeys.set(key, groupedData.length)
+        groupedData.push(newEntry)
+      }
+
+      const entry = groupedData[seenKeys.get(key)]
+      const typeName = session.type || '-'
+      
+      let typeObj = entry.types.find(t => t.typeName === typeName)
+      if (!typeObj) {
+        typeObj = { typeName, count: 0 }
+        entry.types.push(typeObj)
+      }
+      typeObj.count += 1
+    })
+
+    // 2. 라인 수 기반 용지 규격 페이지 분할
+    const pages = []
+    let currentPage = []
+    let currentLines = 0
+    let maxLines = 18 // 첫 페이지 최대 수용 라인 수
+
+    groupedData.forEach((student) => {
+      const lines = student.types.length || 1
+      if (currentLines + lines > maxLines && currentPage.length > 0) {
+        pages.push(currentPage)
+        currentPage = [student]
+        currentLines = lines
+        maxLines = 22 // 이후 페이지 최대 수용 라인 수
+      } else {
+        currentPage.push(student)
+        currentLines += lines
+      }
+    })
+
+    if (currentPage.length > 0) {
+      pages.push(currentPage)
+    }
+
+    return pages
+  }
+
   return (
     <div 
       className="fixed inset-0 z-[100] flex flex-col bg-neutral-900 overflow-hidden print-preview-container print:bg-white print:static print:overflow-visible"
@@ -192,19 +255,34 @@ export default function PrintPreview({ setupData, onBack }) {
           </div>
         ) : (
           /* 대장(목록) 양식 */
-          <div 
-            className="print-page w-[210mm] min-h-[297mm] mx-auto p-[20mm] bg-white border border-neutral-200 shadow-2xl relative page-break print:w-full print:border-none print:shadow-none print:p-[10mm]"
-          >
-            {/* 타이틀 */}
-            <h1 className="text-center font-bold text-xl mb-1 text-black">
-              {getSchoolYear()}학년도 학생 상담 현황({getTypeText()})
-            </h1>
-            <p className="text-center text-[10px] text-gray-500 mb-6 font-semibold">
-              조회 기간: {getPeriodText(startDate, endDate)} &nbsp;|&nbsp; 정렬 기준: {getSortText(sortBy)}
-            </p>
-
-            {/* 대장 테이블 */}
-            <PrintRegisterTable printData={printData} />
+          <div className="w-[210mm] mx-auto space-y-8 print:w-full print:space-y-0">
+            {getGroupedAndPaginatedPages(printData).map((pageRows, pageIdx, allPages) => {
+              let startIndex = 0
+              for (let i = 0; i < pageIdx; i++) {
+                startIndex += allPages[i].length
+              }
+              
+              return (
+                <div 
+                  key={pageIdx}
+                  className="print-page w-[210mm] min-h-[297mm] mx-auto p-[20mm] bg-white border border-neutral-200 shadow-2xl relative page-break print:w-full print:border-none print:shadow-none print:p-[10mm]"
+                >
+                  {pageIdx === 0 && (
+                    <>
+                      {/* 타이틀 */}
+                      <h1 className="text-center font-bold text-xl mb-1 text-black">
+                        {getSchoolYear()}학년도 학생 상담 현황({getTypeText()})
+                      </h1>
+                      <p className="text-center text-[10px] text-gray-500 mb-6 font-semibold">
+                        조회 기간: {getPeriodText(startDate, endDate)} &nbsp;|&nbsp; 정렬 기준: {getSortText(sortBy)}
+                      </p>
+                    </>
+                  )}
+                  {/* 대장 테이블 */}
+                  <PrintRegisterTable groupedData={pageRows} startIndex={startIndex} />
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
