@@ -1017,3 +1017,21 @@
 - `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
 - `scratch/run_tests.py` 백엔드 전체 API 영향성 검증 102개 기능 작동 상태 정상 확인 ✅
 
+---
+
+## [2026-05-28] 집단상담일지 헤더 대상인원 추가 및 연동
+
+### 완료 작업
+- [x] **[Backend] `*상담인원` 데이터 연동 및 동적 생성 구현 (`sessions.py`)**:
+  - `get_all_sessions` 및 `get_sessions` 라우트에서 엑셀의 `*상담인원` 열 값을 `counselingCount` 필드로 연계 추출하여 프론트엔드로 반환하도록 구현했습니다.
+  - `create_session`에서 `sheetType`이 "집단상담"인 경우, `studentId` 문자열을 분할하여 실제 등록된 학생들의 수를 기반으로 `*상담인원`을 동적으로 카운트하도록 연산 로직을 고도화했습니다.
+- [x] **[Frontend] 집단상담 기록지 서식 대상인원 칸 추가 및 그리드 선 일치 (`PrintSessionHeader.jsx`)**:
+  - `PrintSessionHeader.jsx` 컴포넌트 내에 `formatCounselingCount` 헬퍼/폴백 함수를 구현하여, 엑셀 데이터의 `counselingCount`가 제공될 경우 `00명` 포맷으로 가공하고, 없을 경우 `studentId` 문자열 내 학번의 개수(쉼표 분할 기준)를 통해 인원수를 추출해 출력하는 이중 방어 로직을 적용했습니다.
+  - 집단상담일지(`isGroup === true`) 렌더링 시, 2번째 줄의 `상담구분` 우측 영역에 `대상인원` 라벨 및 인원수 셀을 추가했습니다.
+  - 너비 조정을 통해 상단 테이블 열들의 세로 그리드 선과 완벽하게 일치하도록 디자인을 조율했습니다.
+
+### 테스트 결과
+- `npm run build` 프론트엔드 빌드 검증 성공 ✅
+- `scratch/run_tests.py` 백엔드 테스트 실행 및 핵심 API 정상 작동 확인 ✅
+
+

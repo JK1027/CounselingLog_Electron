@@ -33,6 +33,25 @@ export default function PrintSessionHeader({ session }) {
     return sess.endsWith('회기') ? sess : `${sess}회기`
   }
 
+  // 대상인원 표시 가공 및 폴백
+  const formatCounselingCount = () => {
+    const count = session.counselingCount
+    if (count) {
+      const num = parseInt(count, 10)
+      return isNaN(num) ? `${count}명` : `${num}명`
+    }
+    
+    // 폴백: 학번 리스트 개수 세기
+    const sid = session.studentId ? String(session.studentId).trim() : ''
+    if (sid) {
+      const ids = sid.split(',').map(s => s.trim()).filter(Boolean)
+      if (ids.length > 0) {
+        return `${ids.length}명`
+      }
+    }
+    return '-'
+  }
+
   // 집단상담 참여학생 이름(학번) 변환 매핑
   const getGroupParticipants = () => {
     const { students } = useAppStore.getState()
@@ -107,9 +126,21 @@ export default function PrintSessionHeader({ session }) {
             {session.sheetType || '-'}
           </td>
           <td className="border border-black bg-gray-50 font-bold">상담구분</td>
-          <td colSpan={3} className="border border-black font-semibold text-left px-3 truncate" style={{ wordBreak: 'keep-all' }} title={session.type || '-'}>
-            {session.type || '-'}
-          </td>
+          {isGroup ? (
+            <>
+              <td className="border border-black font-semibold text-left px-3 truncate" style={{ wordBreak: 'keep-all' }} title={session.type || '-'}>
+                {session.type || '-'}
+              </td>
+              <td className="border border-black bg-gray-50 font-bold">대상인원</td>
+              <td className="border border-black font-semibold">
+                {formatCounselingCount()}
+              </td>
+            </>
+          ) : (
+            <td colSpan={3} className="border border-black font-semibold text-left px-3 truncate" style={{ wordBreak: 'keep-all' }} title={session.type || '-'}>
+              {session.type || '-'}
+            </td>
+          )}
         </tr>
       </tbody>
     </table>

@@ -73,6 +73,7 @@ def get_sessions(student_name: str, student_id: str = Query("")):
                         "summary": str(row.get("*상담제목", "")),
                         "detail": str(row.get("상담내용(상세)", "")),
                         "counselingTime": str(row.get("상담시간", "")).strip() if "상담시간" in row and not pd.isna(row.get("상담시간")) else "",
+                        "counselingCount": str(row.get("*상담인원", "")).strip().replace(".0", "") if "*상담인원" in row and not pd.isna(row.get("*상담인원")) else "",
                         "ban": extract_ban_from_student_id(row_sid),
                         "rawIndex": idx
                     })
@@ -155,6 +156,7 @@ def get_all_sessions(sheet_type: str = Query(None)):
                     "summary": str(row.get("*상담제목", "")),
                     "detail": str(row.get("상담내용(상세)", "")),
                     "counselingTime": str(row.get("상담시간", "")).strip() if "상담시간" in row and not pd.isna(row.get("상담시간")) else "",
+                    "counselingCount": str(row.get("*상담인원", "")).strip().replace(".0", "") if "*상담인원" in row and not pd.isna(row.get("*상담인원")) else "",
                     "ban": extract_ban_from_student_id(student_id),
                     "rawIndex": idx
                 })
@@ -224,6 +226,11 @@ def create_session(data: SessionCreate):
         }
         
         category, subcategory, medium = default_counseling_types.get(real_sheet_name, ("상담", "개인상담", "면담"))
+        
+        counseling_count = "1"
+        if data.sheetType == "집단상담":
+            student_ids = [sid.strip() for sid in data.studentId.split(",") if sid.strip()]
+            counseling_count = str(len(student_ids)) if student_ids else "10"
 
         row_data = {
             "학번": data.studentId,
@@ -234,7 +241,7 @@ def create_session(data: SessionCreate):
             "*대분류": category,
             "*중분류": subcategory,
             "*상담구분": data.type,
-            "*상담인원": "1" if data.sheetType != "집단상담" else "10",
+            "*상담인원": counseling_count,
             "*학년도": data.date[:4] if len(data.date) >= 4 else str(datetime.date.today().year),
             "*상담일자": data.date,
             "학년": grade_formatted if grade_formatted else ("혼합" if data.sheetType == "집단상담" else "1학년"),
