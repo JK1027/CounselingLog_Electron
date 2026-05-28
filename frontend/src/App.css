@@ -37,7 +37,7 @@ select:focus-visible {
     visibility: visible;
   }
 
-  /* 인쇄될 최상단 엘리먼트 위치 재조정 */
+  /* 인쇄될 최상단 엘리먼트 위치 재조정 및 폰트 고정 */
   #print-preview-root {
     position: absolute;
     left: 0;
@@ -46,6 +46,7 @@ select:focus-visible {
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
+    font-family: 'Pretendard', 'Malgun Gothic', 'Dotum', sans-serif !important;
   }
 
   /* 화면 상에서 인쇄와 상관없는 제어 단추, 툴바 등 제거 */

@@ -304,6 +304,8 @@ def get_sessions(student_name: str, student_id: str = Query("")):
                         "sheetType": sheet_type_short,
                         "summary": str(row.get("*상담제목", "")),
                         "detail": str(row.get("상담내용(상세)", "")),
+                        "counselingTime": str(row.get("상담시간", "")).strip() if "상담시간" in row and not pd.isna(row.get("상담시간")) else "",
+                        "ban": extract_ban_from_student_id(row_sid),
                         "rawIndex": idx # 수정 시 메모리 싱크를 위해 인덱스 보관
                     })
 
@@ -331,6 +333,8 @@ def get_sessions(student_name: str, student_id: str = Query("")):
                             "sheetType": "집단상담",
                             "summary": str(row.get("*상담제목", "")),
                             "detail": str(row.get("상담내용(상세)", "")),
+                            "counselingTime": str(row.get("상담시간", "")).strip() if "상담시간" in row and not pd.isna(row.get("상담시간")) else "",
+                            "ban": extract_ban_from_student_id(student_id),
                             "rawIndex": idx
                         })
 
@@ -411,6 +415,8 @@ def get_all_sessions(sheet_type: str = Query(None)):
                     "sheetType": sheet_type_short,
                     "summary": str(row.get("*상담제목", "")),
                     "detail": str(row.get("상담내용(상세)", "")),
+                    "counselingTime": str(row.get("상담시간", "")).strip() if "상담시간" in row and not pd.isna(row.get("상담시간")) else "",
+                    "ban": extract_ban_from_student_id(student_id),
                     "rawIndex": idx
                 })
 

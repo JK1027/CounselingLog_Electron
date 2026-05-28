@@ -4,6 +4,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { formatDate } from '@/components/ui/shared'
 import { filterSessionsByDateRange } from '@/utils/dateHelper'
 import { sortPrintSessions } from '@/utils/printSort'
+import PrintSessionHeader from '@/components/Print/PrintSessionHeader'
 
 const API_BASE = 'http://localhost:8765'
 
@@ -157,51 +158,33 @@ export default function PrintPreview({ setupData, onClose }) {
                 style={{ contentVisibility: 'auto' }}
               >
                 {/* 상단 서식명 */}
-                <h1 className="text-center font-bold text-2xl tracking-[1em] pl-[1em] mb-8 mt-4 text-black border-b-2 border-double border-black pb-3">
-                  상담일지
+                <h1 className="text-center font-bold text-2xl tracking-[0.15em] pl-[0.15em] mb-4 mt-4 text-black border-b-2 border-double border-black pb-3">
+                  Wee 개인상담 기록지
                 </h1>
 
+                {/* 출력일시 메타정보 */}
+                <div className="flex justify-end text-[9pt] text-gray-500 mb-2 font-medium">
+                  출력일시: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                </div>
+
                 {/* 격자 테이블 */}
-                <table className="w-full border-collapse border border-black text-center text-[11pt] text-black">
+                <PrintSessionHeader session={session} />
+                
+                <table className="w-full border-collapse border border-black text-center text-[11pt] text-black -mt-[1px]" style={{ tableLayout: 'fixed' }}>
+                  <colgroup>
+                    <col style={{ width: '12%' }} />
+                    <col style={{ width: '88%' }} />
+                  </colgroup>
                   <tbody>
-                    <tr className="h-10">
-                      <td className="w-[15%] border border-black bg-gray-50 font-bold">피상담자</td>
-                      <td className="w-[35%] border border-black font-semibold">
-                        {session.name || '집단상담'}
-                      </td>
-                      <td className="w-[15%] border border-black bg-gray-50 font-bold">학년/학번</td>
-                      <td className="w-[35%] border border-black">
-                        {session.grade ? `${session.grade}학년` : ''} {session.studentId ? `/ ${session.studentId}` : ''}
-                      </td>
-                    </tr>
-                    <tr className="h-10">
-                      <td className="border border-black bg-gray-50 font-bold">상담일자</td>
-                      <td className="border border-black font-medium">{formatDate(session.date)}</td>
-                      <td className="border border-black bg-gray-50 font-bold">상담구분</td>
-                      <td className="border border-black font-semibold">{session.type}</td>
-                    </tr>
-                    <tr className="h-10">
-                      <td className="w-[15%] border border-black bg-gray-50 font-bold">상담회기</td>
-                      <td className="w-[35%] border border-black font-semibold">
-                        {session.session 
-                          ? (String(session.session).trim() === '단회'
-                              ? '단회'
-                              : (String(session.session).trim().endsWith('회기') 
-                                  ? String(session.session).trim() 
-                                  : `${String(session.session).trim()}회기`)) 
-                          : '1회기'}
-                      </td>
-                      <td className="w-[15%] border border-black bg-gray-50 font-bold">상담유형</td>
-                      <td className="w-[35%] border border-black font-semibold">{session.sheetType}</td>
-                    </tr>
                     <tr className="h-11">
-                      <td colSpan={4} className="border border-black text-left px-3 font-bold bg-neutral-50/50">
-                        * 상담제목: {session.summary}
+                      <td className="border border-black bg-gray-50 font-bold">상담제목</td>
+                      <td className="border border-black text-left px-3 font-bold bg-neutral-50/50 truncate" style={{ wordBreak: 'keep-all' }} title={session.summary}>
+                        {session.summary}
                       </td>
                     </tr>
                     <tr>
                       <td 
-                        colSpan={4} 
+                        colSpan={2} 
                         className="border border-black text-left align-top p-4 h-[190mm] whitespace-pre-wrap leading-[1.8] text-[10.5pt] font-normal"
                         style={{ wordBreak: 'break-all' }}
                       >
