@@ -968,6 +968,8 @@
 - [x] **[Backend/Frontend] 개인상담 내 집단상담 노출 제거 및 QuickEditor 시트 목록 필터링**:
   - 특정 학생의 상담 이력 API 조회 시 집단상담 내역이 조회되지 않도록 백엔드 `/sessions/{student_name}` 내 집단상담 매칭 로직을 완전히 제거.
   - 신규/수정 상담 등록 입력창(`QuickEditor.jsx`)의 상담 시트 드롭다운 옵션에서 `집단상담` 항목을 필터링하여 제외.
+- [x] **[Frontend] 집단상담 대장 에디터 폼 레이아웃 너비 드래그 조절 연동**:
+  - App.jsx의 레이아웃 조절 훅(`useLayoutResize`) 상태값을 GroupCounseling.jsx로 주입하여 집단상담 에디터 폼의 가로 폭도 개인상담 에디터와 동일하게 실시간 마우스 드래그 리사이징 및 복원(localStorage)되도록 핸들 연동.
 - [x] **[Docs] AI 개발 행동 지침(RULES.md) 보완**:
   - `git commit` 완료 즉시 `git push`까지 동시 제안/수행하도록 행동 규칙 업데이트.
 

@@ -11,7 +11,7 @@ const COUNSELING_TYPES = [
   '정신건강', '진로', '학업', '대인관계', '기타'
 ]
 
-export default function GroupCounseling({ onOpenPrintModal }) {
+export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizing, setResizing }) {
   const { 
     groupSessions, 
     addGroupSession, 
@@ -335,11 +335,27 @@ export default function GroupCounseling({ onOpenPrintModal }) {
         </div>
       </div>
 
+      {/* 에디터 크기 조절 핸들 */}
+      {showForm && (
+        <div
+          onMouseDown={(e) => { e.preventDefault(); setResizing('editor') }}
+          className="w-1 hover:w-1.5 cursor-col-resize transition-all z-20 shrink-0 select-none"
+          style={{
+            background: resizing === 'editor' ? 'var(--accent)' : 'var(--border)',
+            boxShadow: resizing === 'editor' ? '0 0 8px var(--accent)' : 'none'
+          }}
+        />
+      )}
+
       {/* 우측: 전용 에디터 폼 */}
       {showForm && (
         <div 
-          className="w-[380px] h-full shrink-0 border-l flex flex-col"
-          style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}
+          className="h-full shrink-0 border-l flex flex-col"
+          style={{ 
+            width: `${editorWidth}px`,
+            borderColor: 'var(--border)', 
+            background: 'var(--bg-secondary)' 
+          }}
         >
           {/* 폼 헤더 */}
           <div 

@@ -198,7 +198,12 @@ function MainLayout() {
         {selectedStudent ? (
           selectedStudent.isGroupTab ? (
             <div className="flex-1 min-w-0">
-              <GroupCounseling onOpenPrintModal={handleOpenPrintModal} />
+              <GroupCounseling 
+                onOpenPrintModal={handleOpenPrintModal} 
+                editorWidth={editorWidth}
+                resizing={resizing}
+                setResizing={setResizing}
+              />
             </div>
           ) : (
             <div className="flex-1 min-w-0">
