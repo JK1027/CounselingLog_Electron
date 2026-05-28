@@ -270,12 +270,9 @@ export default function PrintPreview({ setupData, onBack }) {
                   {pageIdx === 0 && (
                     <>
                       {/* 타이틀 */}
-                      <h1 className="text-center font-bold text-xl mb-1 text-black">
+                      <h1 className="text-center font-bold text-xl mb-6 text-black">
                         {getSchoolYear()}학년도 학생 상담 현황({getTypeText()})
                       </h1>
-                      <p className="text-center text-[10px] text-gray-500 mb-6 font-semibold">
-                        조회 기간: {getPeriodText(startDate, endDate)} &nbsp;|&nbsp; 정렬 기준: {getSortText(sortBy)}
-                      </p>
                     </>
                   )}
                   {/* 대장 테이블 */}
