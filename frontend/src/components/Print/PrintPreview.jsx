@@ -101,6 +101,25 @@ export default function PrintPreview({ setupData, onBack }) {
 
   const { printFormat, printTarget, sheetType, sortBy, startDate, endDate } = setupData
 
+  const getSchoolYear = () => {
+    if (startDate && startDate.length >= 4) {
+      return startDate.substring(0, 4)
+    }
+    if (printData && printData.length > 0) {
+      const dates = printData.map(s => s.date).filter(Boolean).sort()
+      if (dates.length > 0) {
+        return dates[0].substring(0, 4)
+      }
+    }
+    return new Date().getFullYear().toString()
+  }
+
+  const getTypeText = () => {
+    if (printTarget === 'type') return sheetType
+    if (printTarget === 'student') return `${setupData.studentName} 학생`
+    return '전체상담'
+  }
+
   return (
     <div 
       className="fixed inset-0 z-[100] flex flex-col bg-neutral-900 overflow-hidden print-preview-container print:bg-white print:static print:overflow-visible"
@@ -178,7 +197,7 @@ export default function PrintPreview({ setupData, onBack }) {
           >
             {/* 타이틀 */}
             <h1 className="text-center font-bold text-xl mb-1 text-black">
-              상담일지 작성 대장 ({printTarget === 'type' ? sheetType : printTarget === 'student' ? `${setupData.studentName} 학생` : '전체 내역'})
+              {getSchoolYear()}학년도 학생 상담 현황({getTypeText()})
             </h1>
             <p className="text-center text-[10px] text-gray-500 mb-6 font-semibold">
               조회 기간: {getPeriodText(startDate, endDate)} &nbsp;|&nbsp; 정렬 기준: {getSortText(sortBy)}
