@@ -966,6 +966,8 @@
 - [x] **[Backend/Frontend] 개인상담 내 집단상담 노출 제거 및 QuickEditor 시트 목록 필터링**:
   - 특정 학생의 상담 이력 API 조회 시 집단상담 내역이 조회되지 않도록 백엔드 `/sessions/{student_name}` 내 집단상담 매칭 로직을 완전히 제거.
   - 신규/수정 상담 등록 입력창(`QuickEditor.jsx`)의 상담 시트 드롭다운 옵션에서 `집단상담` 항목을 필터링하여 제외.
+- [x] **[Docs] AI 개발 행동 지침(RULES.md) 보완**:
+  - `git commit` 완료 즉시 `git push`까지 동시 제안/수행하도록 행동 규칙 업데이트.
 
 ### 테스트 결과
 - `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
