@@ -309,34 +309,7 @@ def get_sessions(student_name: str, student_id: str = Query("")):
                         "rawIndex": idx # 수정 시 메모리 싱크를 위해 인덱스 보관
                     })
 
-        # 2. 집단상담 시트 매칭 (학번 기준)
-        if student_id:
-            group_sheet = GROUP_COUNSELING_SHEET
-            df = repo.data_frames.get(group_sheet)
-            if df is not None and not df.empty:
-                for idx, row in df.iterrows():
-                    if str(row.get("순번", "")).strip() == "예시":
-                        continue
-                    
-                    row_sid = str(row.get("학번", "")).strip().replace(".0", "")
-                    # 학번이 일치하거나, 콤마로 구분된 학번에 포함되어 있는지 확인
-                    if student_id == row_sid or student_id in [sid.strip() for sid in row_sid.split(",")]:
-                        sessions.append({
-                            "id": str(row.get(RECORD_ID_COL, "")),
-                            "name": str(row.get("이름", "")).strip() if "이름" in row else "",
-                            "studentId": student_id,
-                            "grade": str(row.get("학년", "")).strip().replace("학년", ""),
-                            "gender": str(row.get("성별", "")).strip(),
-                            "date": str(row.get("*상담일자", "")),
-                            "session": str(row.get("상담회기", "")),
-                            "type": str(row.get("*상담구분", "")),
-                            "sheetType": "집단상담",
-                            "summary": str(row.get("*상담제목", "")),
-                            "detail": str(row.get("상담내용(상세)", "")),
-                            "counselingTime": str(row.get("상담시간", "")).strip() if "상담시간" in row and not pd.isna(row.get("상담시간")) else "",
-                            "ban": extract_ban_from_student_id(student_id),
-                            "rawIndex": idx
-                        })
+
 
         # 3. 상담유형별(sheetType)로 세션들을 분류하여 날짜 오름차순 기준으로 회기 번호 동적 보정
         by_type = {}
