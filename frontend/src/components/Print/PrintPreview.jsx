@@ -160,12 +160,12 @@ export default function PrintPreview({ setupData, onClose }) {
       {/* 종이 출력 본문 (스크롤 영역) */}
       <div 
         ref={containerRef}
-        className="flex-1 flex justify-center overflow-y-auto no-scrollbar p-8 bg-neutral-900/40 print:p-0 print:bg-white print:block scroll-smooth" 
+        className="flex-1 flex flex-col items-center overflow-y-auto no-scrollbar p-8 bg-neutral-900/40 print:p-0 print:bg-white print:block scroll-smooth" 
         id="print-preview-root"
       >
         {printFormat === 'report' ? (
           /* 상세 보고서 양식 */
-          <div className="w-[210mm] space-y-8 print:w-full print:space-y-0">
+          <div className="w-[210mm] mx-auto space-y-8 print:w-full print:space-y-0">
             {printData.map((session) => (
               <PrintReportCard key={session.id} session={session} />
             ))}
@@ -173,7 +173,7 @@ export default function PrintPreview({ setupData, onClose }) {
         ) : (
           /* 대장(목록) 양식 */
           <div 
-            className="print-page w-[210mm] min-h-[297mm] p-[20mm] bg-white border border-neutral-200 shadow-2xl relative page-break print:w-full print:border-none print:shadow-none print:p-[10mm]"
+            className="print-page w-[210mm] min-h-[297mm] mx-auto p-[20mm] bg-white border border-neutral-200 shadow-2xl relative page-break print:w-full print:border-none print:shadow-none print:p-[10mm]"
           >
             {/* 타이틀 */}
             <h1 className="text-center font-bold text-xl mb-1 text-black">
