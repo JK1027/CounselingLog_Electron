@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Printer, Loader2, ArrowUp, ArrowDown } from 'lucide-react'
+import { X, Printer, Loader2, ArrowUp, ArrowDown, ArrowLeft } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { filterSessionsByDateRange } from '@/utils/dateHelper'
 import { sortPrintSessions } from '@/utils/printSort'
@@ -9,7 +9,7 @@ import { getSortText, getPeriodText } from './printFormatters'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8765'
 
-export default function PrintPreview({ setupData, onClose }) {
+export default function PrintPreview({ setupData, onBack }) {
   const { sessions: storeSessions } = useAppStore()
   const [printData, setPrintData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -68,12 +68,12 @@ export default function PrintPreview({ setupData, onClose }) {
         setLoading(false)
       } catch (e) {
         useAppStore.getState().addToast(e.message, 'error')
-        onClose()
+        onBack()
       }
     }
 
     loadPrintData()
-  }, [setupData, storeSessions, onClose])
+  }, [setupData, storeSessions, onBack])
 
   const handlePrintTrigger = () => {
     window.print()
@@ -83,12 +83,12 @@ export default function PrintPreview({ setupData, onClose }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        onClose()
+        onBack()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  }, [onBack])
 
   if (loading) {
     return (
@@ -142,10 +142,11 @@ export default function PrintPreview({ setupData, onClose }) {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-neutral-700 hover:bg-neutral-600 active:scale-95 transition-all cursor-pointer"
+            onClick={onBack}
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-neutral-700 hover:bg-neutral-600 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
           >
-            닫기 (ESC)
+            <ArrowLeft size={14} />
+            뒤로 돌아가기 (ESC)
           </button>
           <button
             onClick={handlePrintTrigger}

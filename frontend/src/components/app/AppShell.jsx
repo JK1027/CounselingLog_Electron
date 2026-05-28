@@ -217,7 +217,11 @@ export default function AppShell() {
       {printSetupData && (
         <PrintPreview 
           setupData={printSetupData} 
-          onClose={() => setPrintSetupData(null)} 
+          onBack={() => {
+            setPrintModalConfig(printSetupData)
+            setIsPrintModalOpen(true)
+            setPrintSetupData(null)
+          }} 
         />
       )}
 

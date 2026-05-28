@@ -17,17 +17,22 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
 
   useEffect(() => {
     if (isOpen) {
-      // 모달이 열릴 때 기본값 리셋 (initialConfig가 있는 경우 우선 적용)
-      const target = initialConfig?.initialTarget || (selectedStudent && !selectedStudent.isGroupTab ? 'student' : 'all')
-      const defaultSheet = initialConfig?.defaultSheetType || '개인상담'
-      
+      // 모달이 열릴 때 기본값 리셋 또는 이전 설정 복원
+      const target = initialConfig?.printTarget || initialConfig?.initialTarget || (selectedStudent && !selectedStudent.isGroupTab ? 'student' : 'all')
+      const defaultSheet = initialConfig?.sheetType || initialConfig?.defaultSheetType || '개인상담'
+      const sessionFilt = initialConfig?.sessionFilter || 'all'
+      const prtFormat = initialConfig?.printFormat || 'report'
+      const stDate = initialConfig?.startDate || ''
+      const enDate = initialConfig?.endDate || ''
+      const sort = initialConfig?.sortBy || 'date_asc'
+
       setPrintTarget(target)
       setSheetType(defaultSheet)
-      setSessionFilter('all')
-      setPrintFormat('report')
-      setStartDate('')
-      setEndDate('')
-      setSortBy('date_asc')
+      setSessionFilter(sessionFilt)
+      setPrintFormat(prtFormat)
+      setStartDate(stDate)
+      setEndDate(enDate)
+      setSortBy(sort)
     }
   }, [isOpen, selectedStudent, initialConfig])
 
