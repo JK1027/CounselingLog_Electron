@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { X, Printer, Loader2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { X, Printer, Loader2, ArrowUp, ArrowDown } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { filterSessionsByDateRange } from '@/utils/dateHelper'
 import { sortPrintSessions } from '@/utils/printSort'
@@ -13,6 +13,22 @@ export default function PrintPreview({ setupData, onClose }) {
   const { sessions: storeSessions } = useAppStore()
   const [printData, setPrintData] = useState([])
   const [loading, setLoading] = useState(true)
+  const containerRef = useRef(null)
+
+  const scrollToTop = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  const scrollToBottom = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({ 
+        top: containerRef.current.scrollHeight, 
+        behavior: 'smooth' 
+      })
+    }
+  }
 
   useEffect(() => {
     if (!setupData) return
@@ -86,7 +102,30 @@ export default function PrintPreview({ setupData, onClose }) {
   const { printFormat, printTarget, sheetType, sortBy, startDate, endDate } = setupData
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-neutral-900 overflow-y-auto no-scrollbar print-preview-container print:bg-white print:static print:overflow-visible">
+    <div 
+      ref={containerRef}
+      className="fixed inset-0 z-[100] flex flex-col bg-neutral-900 overflow-y-auto no-scrollbar print-preview-container print:bg-white print:static print:overflow-visible scroll-smooth"
+    >
+      {/* 플로팅 스크롤 버튼 (인쇄 제외) */}
+      <div className="fixed right-8 top-1/2 -translate-y-1/2 z-[110] flex flex-col gap-3 print-exclude">
+        <button
+          onClick={scrollToTop}
+          title="가장 상단으로"
+          className="p-3.5 rounded-full bg-neutral-800/80 hover:bg-indigo-500 active:scale-95 text-white border border-neutral-700 hover:border-indigo-400 shadow-xl transition-all cursor-pointer group hover:shadow-indigo-500/20"
+          style={{ backdropFilter: 'blur(8px)' }}
+        >
+          <ArrowUp size={18} className="group-hover:-translate-y-0.5 transition-transform" />
+        </button>
+        <button
+          onClick={scrollToBottom}
+          title="가장 하단으로"
+          className="p-3.5 rounded-full bg-neutral-800/80 hover:bg-indigo-500 active:scale-95 text-white border border-neutral-700 hover:border-indigo-400 shadow-xl transition-all cursor-pointer group hover:shadow-indigo-500/20"
+          style={{ backdropFilter: 'blur(8px)' }}
+        >
+          <ArrowDown size={18} className="group-hover:translate-y-0.5 transition-transform" />
+        </button>
+      </div>
+
       {/* 미리보기 제어 툴바 */}
       <div className="flex items-center justify-between px-6 py-4 bg-neutral-800 border-b border-neutral-700 text-white shrink-0 print-exclude">
         <div className="flex items-center gap-3">

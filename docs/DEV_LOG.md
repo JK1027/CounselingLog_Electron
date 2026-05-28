@@ -976,3 +976,28 @@
 ### 테스트 결과
 - `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
 - `python -m py_compile` 백엔드 구문 오류 없음 검증 완료 ✅
+
+---
+
+## [2026-05-28] 아키텍처 구조 안정화 및 인쇄 미리보기 플로팅 스크롤 버튼 구현 완료
+
+### 작업 내용
+- [x] **[Frontend] Zustand 스토어 도메인 슬라이스 분할 (`useAppStore.js`)**:
+  - `useAppStore.js` 한 파일에 몰려 있던 상태/액션을 5대 도메인 슬라이스(`auth`, `ui`, `student`, `session`, `settings`)로 격리 분할.
+  - 기존 컴포넌트 임포트 주소 호환성을 위해 Root Store에서 슬라이스들을 통합 내보내기 처리.
+- [x] **[Frontend] API Fetch 통신 비즈니스 서비스화 (`apiClient.js` 외)**:
+  - AbortController 타임아웃 처리를 공통 클라이언트(`apiClient.js`)로 위임하고, REST API 인터페이스를 순수 서비스 (`sessionService.js`, `studentService.js`)로 추출.
+- [x] **[Backend] FastAPI routes 및 schemas 모듈화 (`main.py`)**:
+  - `main.py`에 집중되어 있던 API 로직들을 도메인별 라우터(`routes/students.py`, `sessions.py`, `settings.py`)와 Pydantic 모델(`schemas/`)로 분리.
+  - 순환 참조(Import Cycle)를 예방하기 위해 싱글톤 `repo` 인스턴스를 `backend/core/dependencies.py`로 격리.
+- [x] **[Frontend] App.jsx 책임 분산 및 인쇄 미리보기 컴포넌트 세분화**:
+  - `App.jsx` 내의 라이프사이클을 커스텀 훅 (`useInitializeApp`, `useUpdater`)으로 격리하고 `AppShell`과 `AppBootstrap`으로 분리.
+  - `PrintPreview.jsx` 내부 렌더러를 `PrintReportCard`, `PrintRegisterTable`, `printFormatters.js`로 분해 모듈화.
+- [x] **[Frontend] 인쇄 미리보기 화면 상단/하단 플로팅 스크롤 버튼 추가 (`PrintPreview.jsx`)**:
+  - 미리보기 인쇄 영역 우측에 `backdrop-filter: blur(8px)`가 적용된 세련된 글래스모피즘 플로팅 스크롤 단추(ArrowUp, ArrowDown) 탑재.
+  - 스크롤 가능 컨테이너 DOM 참조(useRef)와 연결해 매끄러운 스무스 스크롤 이동 지원 및 인쇄 시 미출력(`print-exclude` 적용) 보장.
+
+### 테스트 결과
+- `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
+- `scratch/run_tests.py` 백엔드 전체 API 영향성 검증 102개 기능 작동 상태 정상 확인 ✅
+
