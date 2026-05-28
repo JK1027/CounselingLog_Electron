@@ -159,7 +159,7 @@ export default function PrintPreview({ setupData, onClose }) {
               >
                 {/* 상단 서식명 */}
                 <h1 className="text-center font-bold text-2xl tracking-[0.15em] pl-[0.15em] mb-4 mt-4 text-black border-b-2 border-double border-black pb-3">
-                  Wee 개인상담 기록지
+                  {session.sheetType === '집단상담' ? 'Wee 집단상담 기록지' : 'Wee 개인상담 기록지'}
                 </h1>
 
                 {/* 출력일시 메타정보 */}

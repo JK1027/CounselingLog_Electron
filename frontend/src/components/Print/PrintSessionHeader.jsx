@@ -1,4 +1,5 @@
 import { formatDate } from '@/components/ui/shared'
+import { useAppStore } from '@/store/useAppStore'
 
 export default function PrintSessionHeader({ session }) {
   // 학년/반 포맷팅
@@ -29,6 +30,32 @@ export default function PrintSessionHeader({ session }) {
     return sess.endsWith('회기') ? sess : `${sess}회기`
   }
 
+  // 집단상담 참여학생 이름(학번) 변환 매핑
+  const getGroupParticipants = () => {
+    const { students } = useAppStore.getState()
+    if (!session.studentId) return '-'
+    
+    const rawIds = String(session.studentId).split(',')
+    const formatted = rawIds.map(id => {
+      const trimmedId = id.trim()
+      if (!trimmedId) return ''
+      
+      // 학번으로 학생 찾기
+      const match = students.find(s => String(s.studentId).trim() === trimmedId)
+      if (match) {
+        return `${match.name}(${trimmedId})`
+      }
+      return trimmedId // 매칭 학생이 없으면 원래 입력값 유지
+    }).filter(Boolean)
+
+    if (formatted.length === 0) {
+      return session.studentId
+    }
+    return formatted.join(', ')
+  }
+
+  const isGroup = session.sheetType === '집단상담'
+
   return (
     <table className="w-full border-collapse border border-black text-center text-[11pt] text-black" style={{ tableLayout: 'fixed' }}>
       <colgroup>
@@ -40,20 +67,31 @@ export default function PrintSessionHeader({ session }) {
         <col style={{ width: '22%' }} />
       </colgroup>
       <tbody>
-        <tr className="h-10">
-          <td className="border border-black bg-gray-50 font-bold">이름</td>
-          <td className="border border-black font-semibold truncate" style={{ wordBreak: 'keep-all' }}>
-            {session.name || '집단상담'}
-          </td>
-          <td className="border border-black bg-gray-50 font-bold">성별</td>
-          <td className="border border-black font-medium">
-            {session.gender || '-'}
-          </td>
-          <td className="border border-black bg-gray-50 font-bold">학년/반</td>
-          <td className="border border-black font-medium">
-            {formatGradeClass()}
-          </td>
-        </tr>
+        {isGroup ? (
+          /* 집단상담 양식 헤더 */
+          <tr className="h-10">
+            <td className="border border-black bg-gray-50 font-bold">상담참여학생</td>
+            <td colSpan={5} className="border border-black font-semibold text-left px-3 text-sm truncate" style={{ wordBreak: 'keep-all' }} title={getGroupParticipants()}>
+              {getGroupParticipants()}
+            </td>
+          </tr>
+        ) : (
+          /* 개인상담 양식 헤더 */
+          <tr className="h-10">
+            <td className="border border-black bg-gray-50 font-bold">이름</td>
+            <td className="border border-black font-semibold truncate" style={{ wordBreak: 'keep-all' }}>
+              {session.name || '집단상담'}
+            </td>
+            <td className="border border-black bg-gray-50 font-bold">성별</td>
+            <td className="border border-black font-medium">
+              {session.gender || '-'}
+            </td>
+            <td className="border border-black bg-gray-50 font-bold">학년/반</td>
+            <td className="border border-black font-medium">
+              {formatGradeClass()}
+            </td>
+          </tr>
+        )}
         <tr className="h-10">
           <td className="border border-black bg-gray-50 font-bold">상담회기</td>
           <td className="border border-black font-semibold">
