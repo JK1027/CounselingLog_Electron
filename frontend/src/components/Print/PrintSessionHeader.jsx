@@ -67,15 +67,7 @@ export default function PrintSessionHeader({ session }) {
         <col style={{ width: '22%' }} />
       </colgroup>
       <tbody>
-        {isGroup ? (
-          /* 집단상담 양식 헤더 */
-          <tr className="h-10">
-            <td className="border border-black bg-gray-50 font-bold">상담참여학생</td>
-            <td colSpan={5} className="border border-black font-semibold text-left px-3 text-sm truncate" style={{ wordBreak: 'keep-all' }} title={getGroupParticipants()}>
-              {getGroupParticipants()}
-            </td>
-          </tr>
-        ) : (
+        {!isGroup && (
           /* 개인상담 양식 헤더 */
           <tr className="h-10">
             <td className="border border-black bg-gray-50 font-bold">이름</td>
