@@ -63,11 +63,11 @@ export default function PrintSessionHeader({ session }) {
     <table className="w-full border-collapse border border-black text-center text-[11pt] text-black" style={{ tableLayout: 'fixed' }}>
       <colgroup>
         <col style={{ width: '12%' }} />
-        <col style={{ width: '21%' }} />
+        <col style={{ width: '18%' }} />
         <col style={{ width: '12%' }} />
-        <col style={{ width: '21%' }} />
-        <col style={{ width: '12%' }} />
-        <col style={{ width: '22%' }} />
+        <col style={{ width: '18%' }} />
+        <col style={{ width: '17%' }} />
+        <col style={{ width: '23%' }} />
       </colgroup>
       <tbody>
         {!isGroup && (
@@ -81,7 +81,7 @@ export default function PrintSessionHeader({ session }) {
             <td className="border border-black font-medium">
               {session.gender || '-'}
             </td>
-            <td className="border border-black bg-gray-50 font-bold">학년/반/번호</td>
+            <td className="border border-black bg-gray-50 font-bold whitespace-nowrap">학년/반/번호</td>
             <td className="border border-black font-medium">
               {formatGradeClassNumber()}
             </td>
