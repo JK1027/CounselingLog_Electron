@@ -103,8 +103,7 @@ export default function PrintPreview({ setupData, onClose }) {
 
   return (
     <div 
-      ref={containerRef}
-      className="fixed inset-0 z-[100] flex flex-col bg-neutral-900 overflow-y-auto no-scrollbar print-preview-container print:bg-white print:static print:overflow-visible scroll-smooth"
+      className="fixed inset-0 z-[100] flex flex-col bg-neutral-900 overflow-hidden print-preview-container print:bg-white print:static print:overflow-visible"
     >
       {/* 플로팅 스크롤 버튼 (인쇄 제외) */}
       <div className="fixed right-8 top-1/2 -translate-y-1/2 z-[110] flex flex-col gap-3 print-exclude">
@@ -158,8 +157,12 @@ export default function PrintPreview({ setupData, onClose }) {
         </div>
       </div>
 
-      {/* 종이 출력 본문 */}
-      <div className="flex-1 flex justify-center p-8 bg-neutral-900/40 print:p-0 print:bg-white print:block" id="print-preview-root">
+      {/* 종이 출력 본문 (스크롤 영역) */}
+      <div 
+        ref={containerRef}
+        className="flex-1 overflow-y-auto no-scrollbar p-8 bg-neutral-900/40 print:p-0 print:bg-white print:block scroll-smooth" 
+        id="print-preview-root"
+      >
         {printFormat === 'report' ? (
           /* 상세 보고서 양식 */
           <div className="w-[210mm] space-y-8 print:w-full print:space-y-0">

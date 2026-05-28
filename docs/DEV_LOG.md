@@ -993,9 +993,10 @@
 - [x] **[Frontend] App.jsx 책임 분산 및 인쇄 미리보기 컴포넌트 세분화**:
   - `App.jsx` 내의 라이프사이클을 커스텀 훅 (`useInitializeApp`, `useUpdater`)으로 격리하고 `AppShell`과 `AppBootstrap`으로 분리.
   - `PrintPreview.jsx` 내부 렌더러를 `PrintReportCard`, `PrintRegisterTable`, `printFormatters.js`로 분해 모듈화.
-- [x] **[Frontend] 인쇄 미리보기 화면 상단/하단 플로팅 스크롤 버튼 추가 (`PrintPreview.jsx`)**:
+- [x] **[Frontend] 인쇄 미리보기 화면 상단/하단 플로팅 스크롤 버튼 추가 및 제어 툴바 상단 고정 (`PrintPreview.jsx`)**:
   - 미리보기 인쇄 영역 우측에 `backdrop-filter: blur(8px)`가 적용된 세련된 글래스모피즘 플로팅 스크롤 단추(ArrowUp, ArrowDown) 탑재.
-  - 스크롤 가능 컨테이너 DOM 참조(useRef)와 연결해 매끄러운 스무스 스크롤 이동 지원 및 인쇄 시 미출력(`print-exclude` 적용) 보장.
+  - 최상위 컨테이너의 스크롤을 제한하고 실제 종이 본문 영역에만 세로 스크롤(`overflow-y-auto`)을 지정해 **상단 제어 툴바가 항상 화면 최상단에 고정(Sticky Header)**되도록 마크업 레이아웃 리팩토링 완료.
+  - 본문 컨테이너 DOM 참조(useRef)와 연결해 매끄러운 스무스 스크롤 이동 지원 및 인쇄 시 미출력(`print-exclude` 적용) 보장.
 
 ### 테스트 결과
 - `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
