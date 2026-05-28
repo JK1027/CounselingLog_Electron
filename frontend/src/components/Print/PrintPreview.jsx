@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { X, Printer, Loader2 } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
-import { formatDate } from '@/components/ui/shared'
 import { filterSessionsByDateRange } from '@/utils/dateHelper'
 import { sortPrintSessions } from '@/utils/printSort'
-import PrintSessionHeader from '@/components/Print/PrintSessionHeader'
+import PrintReportCard from './PrintReportCard'
+import PrintRegisterTable from './PrintRegisterTable'
+import { getSortText, getPeriodText } from './printFormatters'
 
-const API_BASE = 'http://localhost:8765'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8765'
 
 export default function PrintPreview({ setupData, onClose }) {
   const { sessions: storeSessions } = useAppStore()
@@ -56,7 +57,7 @@ export default function PrintPreview({ setupData, onClose }) {
     }
 
     loadPrintData()
-  }, [setupData, storeSessions])
+  }, [setupData, storeSessions, onClose])
 
   const handlePrintTrigger = () => {
     window.print()
@@ -82,35 +83,7 @@ export default function PrintPreview({ setupData, onClose }) {
     )
   }
 
-  const getSortText = (sortKey) => {
-    switch (sortKey) {
-      case 'date_desc':
-        return '날짜 최신 순'
-      case 'name_asc':
-        return '이름 가나다 순'
-      case 'sheet_asc':
-        return '상담 유형 우선순위 순'
-      case 'date_asc':
-      default:
-        return '날짜 오래된 순'
-    }
-  }
-
-  const getPeriodText = () => {
-    const { startDate, endDate } = setupData || {}
-    if (!startDate && !endDate) return '전체 기간'
-
-    const format = (d) => {
-      if (!d || d.length !== 8) return ''
-      return `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}`
-    }
-
-    const startStr = format(startDate) || '시작일 제한 없음'
-    const endStr = format(endDate) || '종료일 제한 없음'
-    return `${startStr} ~ ${endStr}`
-  }
-
-  const { printFormat, printTarget, sheetType, sortBy } = setupData
+  const { printFormat, printTarget, sheetType, sortBy, startDate, endDate } = setupData
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-neutral-900 overflow-y-auto no-scrollbar print-preview-container print:bg-white print:static print:overflow-visible">
@@ -123,7 +96,7 @@ export default function PrintPreview({ setupData, onClose }) {
             A4 규격 · {printData.length}건의 일지 발견
           </span>
           <span className="text-xs text-neutral-400 font-semibold hidden md:inline ml-2 border-l border-neutral-600 pl-3">
-            기간: {getPeriodText()}
+            기간: {getPeriodText(startDate, endDate)}
           </span>
           <span className="text-xs text-neutral-400 font-semibold hidden md:inline ml-2 border-l border-neutral-600 pl-3">
             정렬: {getSortText(sortBy)}
@@ -151,49 +124,8 @@ export default function PrintPreview({ setupData, onClose }) {
         {printFormat === 'report' ? (
           /* 상세 보고서 양식 */
           <div className="w-[210mm] space-y-8 print:w-full print:space-y-0">
-            {printData.map((session, idx) => (
-              <div 
-                key={session.id} 
-                className="print-page w-[210mm] min-h-[297mm] p-[20mm] bg-white border border-neutral-200 shadow-2xl relative mx-auto page-break print:border-none print:shadow-none print:p-[10mm] print:min-h-0"
-                style={{ contentVisibility: 'auto' }}
-              >
-                {/* 상단 서식명 */}
-                <h1 className="text-center font-bold text-2xl tracking-[0.15em] pl-[0.15em] mb-4 mt-4 text-black border-b-2 border-double border-black pb-3">
-                  {session.sheetType === '집단상담' ? 'Wee 집단상담 기록지' : 'Wee 개인상담 기록지'}
-                </h1>
-
-                {/* 출력일시 메타정보 */}
-                <div className="flex justify-end text-[9pt] text-gray-500 mb-2 font-medium">
-                  출력일시: {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
-                </div>
-
-                {/* 격자 테이블 */}
-                <PrintSessionHeader session={session} />
-                
-                <table className="w-full border-collapse border border-black text-center text-[11pt] text-black -mt-[1px]" style={{ tableLayout: 'fixed' }}>
-                  <colgroup>
-                    <col style={{ width: '12%' }} />
-                    <col style={{ width: '88%' }} />
-                  </colgroup>
-                  <tbody>
-                    <tr className="h-11">
-                      <td className="border border-black bg-gray-50 font-bold">상담제목</td>
-                      <td className="border border-black text-left px-3 font-bold bg-neutral-50/50 truncate" style={{ wordBreak: 'keep-all' }} title={session.summary}>
-                        {session.summary}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td 
-                        colSpan={2} 
-                        className="border border-black text-left align-top p-4 h-[190mm] whitespace-pre-wrap leading-[1.8] text-[10.5pt] font-normal"
-                        style={{ wordBreak: 'break-all' }}
-                      >
-                        {session.detail}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+            {printData.map((session) => (
+              <PrintReportCard key={session.id} session={session} />
             ))}
           </div>
         ) : (
@@ -206,40 +138,11 @@ export default function PrintPreview({ setupData, onClose }) {
               상담일지 작성 대장 ({printTarget === 'type' ? sheetType : printTarget === 'student' ? `${setupData.studentName} 학생` : '전체 내역'})
             </h1>
             <p className="text-center text-[10px] text-gray-500 mb-6 font-semibold">
-              조회 기간: {getPeriodText()} &nbsp;|&nbsp; 정렬 기준: {getSortText(sortBy)}
+              조회 기간: {getPeriodText(startDate, endDate)} &nbsp;|&nbsp; 정렬 기준: {getSortText(sortBy)}
             </p>
 
             {/* 대장 테이블 */}
-            <table className="w-full border-collapse border border-neutral-300 text-left text-xs text-black">
-              <thead>
-                <tr className="bg-neutral-100/80 font-bold border-b border-neutral-300 text-center h-10">
-                  <th className="border border-neutral-300 w-[7%]">순번</th>
-                  <th className="border border-neutral-300 w-[12%]">상담일자</th>
-                  <th className="border border-neutral-300 w-[15%]">학생명</th>
-                  <th className="border border-neutral-300 w-[18%]">학년/학번</th>
-                  <th className="border border-neutral-300 w-[13%]">상담유형</th>
-                  <th className="border border-neutral-300 w-[13%]">상담구분</th>
-                  <th className="border border-neutral-300 px-3 w-[22%]">상담제목</th>
-                </tr>
-              </thead>
-              <tbody>
-                {printData.map((session, idx) => (
-                  <tr key={session.id} className="h-9 hover:bg-neutral-50/50 print:hover:bg-transparent">
-                    <td className="border border-neutral-300 text-center font-medium">{idx + 1}</td>
-                    <td className="border border-neutral-300 text-center">{formatDate(session.date)}</td>
-                    <td className="border border-neutral-300 text-center font-semibold">{session.name || '집단상담'}</td>
-                    <td className="border border-neutral-300 text-center">
-                      {session.grade ? `${session.grade}학년` : ''} {session.studentId ? `(${session.studentId})` : ''}
-                    </td>
-                    <td className="border border-neutral-300 text-center">{session.sheetType}</td>
-                    <td className="border border-neutral-300 text-center font-medium">{session.type}</td>
-                    <td className="border border-neutral-300 px-3 truncate max-w-[200px]" title={session.summary}>
-                      {session.summary}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <PrintRegisterTable printData={printData} />
           </div>
         )}
       </div>
