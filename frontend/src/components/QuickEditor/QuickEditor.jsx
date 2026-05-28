@@ -221,7 +221,7 @@ export default function QuickEditor({ width }) {
             value={form.sheetType}
             disabled={saveState === 'saving'}
             onChange={v => setForm(f => ({ ...f, sheetType: v }))}
-            options={SHEET_TYPES}
+            options={SHEET_TYPES.filter(t => t !== '집단상담')}
           />
         </FormField>
 
