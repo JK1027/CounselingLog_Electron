@@ -45,11 +45,14 @@ FastAPI (Python 로컬 REST API 서버)
 ```text
 CounselingLog_Electron/
 │
-├── PROJECT_GUIDE.md        ← 프로젝트 시스템 설명서 (이 파일)
-├── PRD.md                  ← 요구사항 정의서
-├── RULES.md                ← AI 개발 동작 지침
-├── DEV_LOG.md              ← 개발 기록 대장
-├── release_troubleshooting.md  ← 배포 트러블슈팅
+├── docs/                   ← 프로젝트 문서 및 지침 폴더
+│   ├── PROJECT_GUIDE.md    ← 프로젝트 시스템 설명서 (이 파일)
+│   ├── PRD.md              ← 요구사항 정의서
+│   ├── RULES.md            ← AI 개발 동작 지침
+│   ├── DEV_LOG.md          ← 개발 기록 대장
+│   ├── release_process.md  ← 릴리즈 및 배포 절차서
+│   └── release_troubleshooting.md ← 배포 트러블슈팅
+│
 ├── .gitignore
 │
 ├── frontend/               ← React 렌더러 소스 코드
