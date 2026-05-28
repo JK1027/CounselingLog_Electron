@@ -946,3 +946,27 @@
 ### 테스트 결과
 - 엑셀 드롭다운 파싱 및 연동 정밀 검증 단위 테스트 (`test_dropdown_api.py`) 작성 및 통과 ✅
 - `run_tests.py` 백엔드 전체 기능 자동화 검증 수행 결과 102건 전체 성공(Pass Rate: 100%) 확인 ✅
+
+---
+
+## [2026-05-28] 인쇄 서식 Wee 개인상담 기록지 개편 및 개인상담 내 집단상담 노출 차단
+
+### 작업 내용
+- [x] **[Frontend] 인쇄 미리보기 레이아웃 개편 및 제목 수정**:
+  - 서식 제목을 `상담일지`에서 `Wee 개인상담 기록지`로 개편하고 자간을 `tracking-[0.15em]`으로 조율.
+  - 우측 상단에 `출력일시: YYYY. MM. DD.` 형식의 메타 정보를 노출.
+  - `@media print` 스타일 하단에 출력 전용 폰트 고정 선언 추가.
+- [x] **[Frontend] 상세 보고서 인적사항 격자 표 컴포넌트 신설 (`PrintSessionHeader.jsx`)**:
+  - 기존의 인적사항 3행 테이블을 3행 6열의 대칭 구조로 컴포넌트화하여 신설.
+  - `table-layout: fixed` 및 `<colgroup>`를 적용하여 열 비율을 제어.
+  - 첫째 줄(이름, 성별, 학년/반), 둘째 줄(상담회기, 상담일자, 상담시간), 셋째 줄(상담유형, 상담구분) 구조 구현.
+  - `상담시간` Nullable 데이터에 대한 `미기록` Fallback 처리 내장.
+- [x] **[Backend] API 응답 데이터 보완 (`main.py`)**:
+  - `/sessions/{student_name}` 및 `/sessions` API의 각 세션 응답 객체에 `counselingTime` 및 `ban` 필드를 추가하여 제공.
+- [x] **[Backend/Frontend] 개인상담 내 집단상담 노출 제거 및 QuickEditor 시트 목록 필터링**:
+  - 특정 학생의 상담 이력 API 조회 시 집단상담 내역이 조회되지 않도록 백엔드 `/sessions/{student_name}` 내 집단상담 매칭 로직을 완전히 제거.
+  - 신규/수정 상담 등록 입력창(`QuickEditor.jsx`)의 상담 시트 드롭다운 옵션에서 `집단상담` 항목을 필터링하여 제외.
+
+### 테스트 결과
+- `npm run build` 리액트 프로덕션 빌드 성공 및 HMR 무오류 확인 ✅
+- `python -m py_compile` 백엔드 구문 오류 없음 검증 완료 ✅
