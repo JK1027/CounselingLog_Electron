@@ -2,11 +2,6 @@ import PrintSessionHeader from './PrintSessionHeader'
 
 export default function PrintReportCard({ session }) {
   const isGroup = session.sheetType === '집단상담'
-  const todayStr = new Date().toLocaleDateString('ko-KR', { 
-    year: 'numeric', 
-    month: '2-digit', 
-    day: '2-digit' 
-  })
 
   return (
     <div 
@@ -18,10 +13,6 @@ export default function PrintReportCard({ session }) {
         {isGroup ? 'Wee 집단상담 기록지' : 'Wee 개인상담 기록지'}
       </h1>
 
-      {/* 출력일시 메타정보 */}
-      <div className="flex justify-end text-[9pt] text-gray-500 mb-2 font-medium">
-        출력일시: {todayStr}
-      </div>
 
       {/* 격자 테이블 헤더 */}
       <PrintSessionHeader session={session} />
