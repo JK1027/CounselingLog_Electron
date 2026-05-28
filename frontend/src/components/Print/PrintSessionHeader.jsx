@@ -2,24 +2,27 @@ import { formatDate } from '@/components/ui/shared'
 import { useAppStore } from '@/store/useAppStore'
 
 export default function PrintSessionHeader({ session }) {
-  // 학년/반 포맷팅
-  const formatGradeClass = () => {
+  // 학년/반/번호 포맷팅
+  const formatGradeClassNumber = () => {
     const gradeText = session.grade ? `${session.grade}학년` : ''
     let classText = ''
-    if (session.ban) {
-      classText = ` ${session.ban}반`
-    } else if (session.studentId) {
-      // fallback: studentId에서 추출 (1203 -> 2반, 10203 -> 2반, 11203 -> 12반)
-      const sid = String(session.studentId).trim()
-      if (sid && /^\d+$/.test(sid)) {
-        if (sid.length === 4) {
-          classText = ` ${parseInt(sid.substring(1, 2), 10)}반`
-        } else if (sid.length === 5) {
-          classText = ` ${parseInt(sid.substring(1, 3), 10)}반`
-        }
+    let numberText = ''
+    
+    const sid = session.studentId ? String(session.studentId).trim() : ''
+    if (sid && /^\d+$/.test(sid)) {
+      if (sid.length === 4) {
+        classText = ` ${parseInt(sid.substring(1, 2), 10)}반`
+        numberText = ` ${parseInt(sid.substring(2, 4), 10)}번`
+      } else if (sid.length === 5) {
+        classText = ` ${parseInt(sid.substring(1, 3), 10)}반`
+        numberText = ` ${parseInt(sid.substring(3, 5), 10)}번`
+      }
+    } else {
+      if (session.ban) {
+        classText = ` ${session.ban}반`
       }
     }
-    return `${gradeText}${classText}` || '-'
+    return `${gradeText}${classText}${numberText}`.trim() || '-'
   }
 
   // 회기 표시 가공
@@ -78,9 +81,9 @@ export default function PrintSessionHeader({ session }) {
             <td className="border border-black font-medium">
               {session.gender || '-'}
             </td>
-            <td className="border border-black bg-gray-50 font-bold">학년/반</td>
+            <td className="border border-black bg-gray-50 font-bold">학년/반/번호</td>
             <td className="border border-black font-medium">
-              {formatGradeClass()}
+              {formatGradeClassNumber()}
             </td>
           </tr>
         )}
