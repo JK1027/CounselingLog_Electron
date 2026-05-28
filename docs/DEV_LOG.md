@@ -1101,6 +1101,18 @@
 - `npm run build` 프론트엔드 빌드 검증 성공 ✅
 - `scratch/run_tests.py` 백엔드 테스트 실행 및 핵심 API 정상 작동 확인 ✅
 
+---
+
+## [2026-05-28] 버전 0.2.20 정식 릴리즈 배포
+
+### 완료 작업
+- [x] **[Config] package.json 버전 범임 상향 (`package.json`)**:
+  - `electron/package.json` 및 `frontend/package.json` 의 버전 번호를 `0.2.19`에서 **`0.2.20`**으로 상향했습니다.
+- [x] **[Git] 릴리즈 태그 발행 (`git tag`)**:
+  - 변경사항들을 마스터 브랜치에 커밋 및 푸시한 후, 버전 태그 **`v0.2.20`**을 로컬 및 원격 저장소에 발행 및 푸시했습니다.
+  - 이로써 GitHub Actions를 통한 `Release Build and Deploy` 워크플로우를 가동시켜 정식 인쇄 기능 개편 버전이 포함된 빌드 배포판 생성을 개시했습니다.
+
+
 
 
 
