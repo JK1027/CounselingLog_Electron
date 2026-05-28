@@ -160,7 +160,7 @@ export default function PrintPreview({ setupData, onClose }) {
       {/* 종이 출력 본문 (스크롤 영역) */}
       <div 
         ref={containerRef}
-        className="flex-1 overflow-y-auto no-scrollbar p-8 bg-neutral-900/40 print:p-0 print:bg-white print:block scroll-smooth" 
+        className="flex-1 flex justify-center overflow-y-auto no-scrollbar p-8 bg-neutral-900/40 print:p-0 print:bg-white print:block scroll-smooth" 
         id="print-preview-root"
       >
         {printFormat === 'report' ? (
