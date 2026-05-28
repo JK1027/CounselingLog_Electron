@@ -31,8 +31,8 @@ export default function PrintReportCard({ session }) {
             </td>
           </tr>
           <tr>
+            <td className="border border-black bg-gray-50 font-bold align-middle p-2">상담내용</td>
             <td 
-              colSpan={2} 
               className="border border-black text-left align-top p-4 h-[190mm] whitespace-pre-wrap leading-[1.8] text-[10.5pt] font-normal"
               style={{ wordBreak: 'break-all' }}
             >
