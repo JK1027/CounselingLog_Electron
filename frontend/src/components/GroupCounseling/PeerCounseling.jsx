@@ -58,28 +58,10 @@ export default function PeerCounseling({ onOpenPrintModal, editorWidth, resizing
     fetchData()
   }, [loadPeerSessions])
 
-  const handleOpenNewForm = () => {
-    setEditorMode('new')
-    setSelectedId(null)
-    setFormValues({
-      date: getTodayDateString(),
-      grade: '혼합',
-      ban: '',
-      type: '일반상담',
-      session: '',
-      summary: '또래상담 프로그램',
-      studentId: '',
-      detail: '',
-      counselingCount: '',
-      programName: '또래상담'
-    })
-    setShowForm(true)
-  }
-
   const handleOpenPeerCounsel = () => {
     const hasUnsavedContent = formValues.summary.trim() || formValues.detail.trim() || formValues.studentId.trim()
     if (showForm && hasUnsavedContent) {
-      const confirmOverwrite = window.confirm('현재 작성 또는 수정 중인 상담 양식이 존재합니다. 또래상담 도우미로 덮어쓰시겠습니까?')
+      const confirmOverwrite = window.confirm('현재 작성 또는 수정 중인 상담 양식이 존재합니다. 새 또래상담 등록을 진행하시겠습니까? (작성 중인 내용은 덮어씌워집니다.)')
       if (!confirmOverwrite) {
         return
       }
@@ -231,20 +213,6 @@ export default function PeerCounseling({ onOpenPrintModal, editorWidth, resizing
             />
             <button
               onClick={handleOpenPeerCounsel}
-              className={`flex items-center gap-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
-                isCompactMode ? 'px-3 py-1.5' : 'px-4 py-2.5'
-              }`}
-              style={{
-                background: 'var(--bg-hover)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-primary)'
-              }}
-            >
-              <Sparkles size={13} className="text-yellow-500 animate-pulse" />
-              또래상담 도우미
-            </button>
-            <button
-              onClick={handleOpenNewForm}
               className={`flex items-center gap-1.5 rounded-xl text-xs font-bold text-white transition-all active:scale-95 cursor-pointer ${
                 isCompactMode ? 'px-3 py-1.5' : 'px-4 py-2.5'
               }`}
@@ -337,9 +305,9 @@ export default function PeerCounseling({ onOpenPrintModal, editorWidth, resizing
               </div>
               <div className="text-center">
                 <h3 className="text-sm font-extrabold mb-1" style={{ color: 'var(--text-primary)' }}>또래상담 기록이 없습니다</h3>
-                <p className="text-xs max-w-xs mb-3" style={{ color: 'var(--text-muted)' }}>등록된 또래상담 일지가 아직 없습니다. 상단 버튼을 클릭하여 새 일지를 추가하거나 또래상담 도우미를 사용해 주십시오.</p>
+                <p className="text-xs max-w-xs mb-3" style={{ color: 'var(--text-muted)' }}>등록된 또래상담 일지가 아직 없습니다. 상단 버튼을 클릭하여 새 일지를 추가해 주십시오.</p>
                 <button
-                  onClick={handleOpenNewForm}
+                  onClick={handleOpenPeerCounsel}
                   className="text-xs px-3.5 py-2 bg-yellow-500 hover:bg-yellow-400 active:scale-95 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer"
                 >
                   첫 또래상담 기록 추가하기
