@@ -53,8 +53,8 @@ export default function PrintRegisterTable({ groupedData, startIndex = 0, isGrou
               <td className="border border-neutral-300 px-3 py-2 font-bold text-left whitespace-normal break-all" title={session.summary}>
                 {session.summary}
               </td>
-              <td className="border border-neutral-300 px-3 py-2 font-normal text-left whitespace-normal break-all" title={session.detail}>
-                {session.detail}
+              <td className="border border-neutral-300 px-3 py-2 font-normal text-left whitespace-normal break-all" title={session.content || session.detail}>
+                {session.content || session.detail}
               </td>
             </tr>
           ))}
