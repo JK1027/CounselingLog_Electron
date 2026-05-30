@@ -26,7 +26,7 @@ export default function PrintReportCard({ session }) {
         <tbody>
           <tr className="h-11">
             <td className="border border-black bg-gray-50 font-bold">상담제목</td>
-            <td className="border border-black text-left px-3 font-bold bg-neutral-50/50 truncate" style={{ wordBreak: 'keep-all' }} title={session.summary}>
+            <td className="border border-black text-left px-3 font-bold bg-neutral-50/50 whitespace-normal break-all" style={{ wordBreak: 'break-all' }} title={session.summary}>
               {session.summary}
             </td>
           </tr>

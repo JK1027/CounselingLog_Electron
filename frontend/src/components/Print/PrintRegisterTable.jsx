@@ -50,10 +50,10 @@ export default function PrintRegisterTable({ groupedData, startIndex = 0, isGrou
                   session.studentId ? `${session.studentId.split(',').filter(Boolean).length}명` : '-'
                 )}
               </td>
-              <td className="border border-neutral-300 px-3 py-2 font-bold truncate text-left" title={session.summary}>
+              <td className="border border-neutral-300 px-3 py-2 font-bold text-left whitespace-normal break-all" title={session.summary}>
                 {session.summary}
               </td>
-              <td className="border border-neutral-300 px-3 py-2 font-normal truncate text-left" title={session.detail}>
+              <td className="border border-neutral-300 px-3 py-2 font-normal text-left whitespace-normal break-all" title={session.detail}>
                 {session.detail}
               </td>
             </tr>
