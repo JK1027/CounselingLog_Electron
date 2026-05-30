@@ -1,86 +1,118 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Edit2, Calendar, FileText, Loader2, Sparkles, User, Users, Check, Printer } from 'lucide-react'
+import { Plus, Trash2, Edit2, Loader2, Sparkles, Check, Printer } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
-import { formatDate, IconButton } from '@/components/ui/shared'
+import { IconButton } from '@/components/ui/shared'
+import PeerCounselDialog from './PeerCounselDialog'
 import DateInput from '@/components/ui/DateInput'
 import { isValidYYYYMMDD, getTodayDateString } from '@/utils/dateHelper'
 
 const COUNSELING_TYPES = [
-  '일반상담', '자해 및 자살', '학교폭력 피해', '학교폭력 가해', 
+  '일반상담', '자해 및 자살', '학교폭력 피해', '학교폭력 가해',
   '정신건강', '진로', '학업', '대인관계', '기타'
 ]
 
-export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizing, setResizing }) {
-  const { 
-    groupSessions, 
-    addGroupSession, 
-    updateGroupSession, 
-    deleteGroupSession, 
-    saveState, 
-    isCompactMode, 
-    loadGroupSessions,
+export default function PeerCounseling({ onOpenPrintModal, editorWidth, resizing, setResizing }) {
+  const {
+    peerSessions,
+    addGroupSession,
+    updateGroupSession,
+    deleteGroupSession,
+    saveState,
+    isCompactMode,
+    loadPeerSessions,
     selectedSession,
     setSelectedSession,
     validationOptions
   } = useAppStore()
 
-  const groupValidationData = validationOptions?.["집단상담(또래상담, 학급별 집단)"]
+  const groupValidationData = validationOptions?.['집단상담(또래상담, 학급별 집단)']
   const activeGroupOptions = groupValidationData?.options || COUNSELING_TYPES
   const isExcelSynced = groupValidationData?.source === 'excel'
 
-
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showPeerModal, setShowPeerModal] = useState(false)
   const [editorMode, setEditorMode] = useState('new') // 'new' | 'edit'
   const [selectedId, setSelectedId] = useState(null)
 
   const [formValues, setFormValues] = useState({
     date: getTodayDateString(),
-    grade: '1',
+    grade: '혼합',
     ban: '',
     type: '일반상담',
     session: '',
-    summary: '',
+    summary: '또래상담 프로그램',
     studentId: '',
     detail: '',
     counselingCount: '',
-    programName: '집단상담'
+    programName: '또래상담'
   })
 
   // 컴포넌트 마운트 시 최신 데이터 패치
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
-      await loadGroupSessions()
+      await loadPeerSessions()
       setLoading(false)
     }
     fetchData()
-  }, [loadGroupSessions])
+  }, [loadPeerSessions])
 
   const handleOpenNewForm = () => {
     setEditorMode('new')
     setSelectedId(null)
     setFormValues({
       date: getTodayDateString(),
-      grade: '1',
+      grade: '혼합',
       ban: '',
       type: '일반상담',
       session: '',
-      summary: '',
+      summary: '또래상담 프로그램',
       studentId: '',
       detail: '',
       counselingCount: '',
-      programName: '집단상담'
+      programName: '또래상담'
     })
     setShowForm(true)
+  }
+
+  const handleOpenPeerCounsel = () => {
+    const hasUnsavedContent = formValues.summary.trim() || formValues.detail.trim() || formValues.studentId.trim()
+    if (showForm && hasUnsavedContent) {
+      const confirmOverwrite = window.confirm('현재 작성 또는 수정 중인 상담 양식이 존재합니다. 또래상담 도우미로 덮어쓰시겠습니까?')
+      if (!confirmOverwrite) {
+        return
+      }
+    }
+    setShowPeerModal(true)
+  }
+
+  const handlePeerCounselComplete = (data) => {
+    setEditorMode('new')
+    setSelectedId(null)
+    setFormValues({
+      date: getTodayDateString(),
+      grade: '혼합',
+      ban: '',
+      type: '일반상담',
+      session: '',
+      summary: data.summary,
+      studentId: data.studentId,
+      detail: data.detail,
+      counselingCount: '',
+      programName: '또래상담'
+    })
+    setShowForm(true)
+    setShowPeerModal(false)
+    useAppStore.getState().addToast('또래상담 입력 값이 폼에 정상 주입되었습니다. 내용을 최종 검토해 주십시오.', 'success')
   }
 
   const handleOpenEditForm = (session) => {
     setEditorMode('edit')
     setSelectedId(session.id)
-    
+
     // "1학년" -> "1" 형식으로 전처리
-    let gradeVal = session.grade || '1'
+    let gradeVal = session.grade || '혼합'
     if (gradeVal.endsWith('학년')) {
       gradeVal = gradeVal.replace('학년', '')
     }
@@ -88,20 +120,20 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
     setFormValues({
       date: session.date || getTodayDateString(),
       grade: gradeVal,
-      ban: session.studentId ? '' : '', // 반 정보가 따로 엑셀에 적혀 있으면 로드, 아니면 빈칸
+      ban: '',
       type: session.type || '일반상담',
       session: session.session || '',
       summary: session.summary || '',
-      studentId: session.studentId || '', // 엑셀의 '학번' 컬럼 값을 그대로 매핑
+      studentId: session.studentId || '',
       detail: session.detail || '',
       counselingCount: session.counselingCount || '',
-      programName: session.programName || '집단상담'
+      programName: session.programName || '또래상담'
     })
     setShowForm(true)
   }
 
   useEffect(() => {
-    if (selectedSession && selectedSession.sheetType === '집단상담') {
+    if (selectedSession && selectedSession.sheetType === '집단상담' && selectedSession.programName?.includes('또래상담')) {
       handleOpenEditForm(selectedSession)
       setSelectedSession(null)
     }
@@ -133,17 +165,17 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
     }
 
     const payload = {
-      name: '', // 집단상담이므로 빈값
+      name: '', // 집단/또래상담이므로 빈값
       studentId: formValues.studentId.trim(),
       grade: formValues.grade,
-      gender: '혼성', // 집단상담 기본값
+      gender: '혼성',
       date: formValues.date.trim(),
       type: formValues.type,
       summary: formValues.summary.trim(),
       detail: formValues.detail.trim(),
-      session: formValues.session.trim(), // 빈값일 경우 백엔드에서 자동 계산
+      session: formValues.session.trim(),
       counselingCount: formValues.counselingCount ? formValues.counselingCount.trim() : '',
-      programName: formValues.programName
+      programName: '또래상담' // 항상 또래상담으로 고정
     }
 
     if (editorMode === 'new') {
@@ -162,7 +194,7 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-white" style={{ background: 'var(--bg-primary)' }}>
         <Loader2 size={36} className="animate-spin text-accent mb-2" style={{ color: 'var(--accent)' }} />
-        <p className="text-sm font-semibold text-gray-500" style={{ color: 'var(--text-muted)' }}>집단상담 데이터를 불러오는 중...</p>
+        <p className="text-sm font-semibold text-gray-500" style={{ color: 'var(--text-muted)' }}>또래상담 데이터를 불러오는 중...</p>
       </div>
     )
   }
@@ -172,17 +204,17 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
       {/* 좌측: 대장 목록 테이블 */}
       <div className="flex-1 flex flex-col min-w-0 h-full">
         {/* 상단 헤더 */}
-        <div 
+        <div
           className={`flex items-center justify-between shrink-0 border-b ${isCompactMode ? 'px-4 py-3' : 'px-6 py-4'}`}
           style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}
         >
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center text-indigo-500">
-              <Users size={16} />
+            <div className="w-8 h-8 rounded-xl bg-yellow-50 dark:bg-yellow-950/20 flex items-center justify-center text-yellow-500">
+              <Sparkles size={16} />
             </div>
             <div>
-              <h2 className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>집단상담 대장</h2>
-              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>총 {groupSessions.length}건의 집단상담이 등록되어 있습니다.</p>
+              <h2 className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>또래상담 대장</h2>
+              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>총 {peerSessions.length}건의 또래상담이 등록되어 있습니다.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -190,13 +222,27 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
               icon={Printer}
               onClick={() => onOpenPrintModal({
                 initialTarget: 'type',
-                defaultSheetType: '집단상담',
+                defaultSheetType: '또래상담',
                 disableStudentOption: true
               })}
-              title="집단상담 대장 인쇄"
+              title="또래상담 대장 인쇄"
               className={isCompactMode ? 'p-1.5 rounded-xl' : 'p-2.5 rounded-xl'}
               iconSize={13}
             />
+            <button
+              onClick={handleOpenPeerCounsel}
+              className={`flex items-center gap-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+                isCompactMode ? 'px-3 py-1.5' : 'px-4 py-2.5'
+              }`}
+              style={{
+                background: 'var(--bg-hover)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)'
+              }}
+            >
+              <Sparkles size={13} className="text-yellow-500 animate-pulse" />
+              또래상담 도우미
+            </button>
             <button
               onClick={handleOpenNewForm}
               className={`flex items-center gap-1.5 rounded-xl text-xs font-bold text-white transition-all active:scale-95 cursor-pointer ${
@@ -205,71 +251,70 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
               style={{ background: 'var(--accent)', boxShadow: '0 2px 8px rgba(75,142,241,0.35)' }}
             >
               <Plus size={13} />
-              새 집단상담 등록
+              새 또래상담 등록
             </button>
           </div>
         </div>
 
         {/* 테이블 본문 */}
         <div className="flex-1 overflow-auto p-4 md:p-6 no-scrollbar">
-          {groupSessions.length > 0 ? (
+          {peerSessions.length > 0 ? (
             <div className="bg-white dark:bg-neutral-900 border rounded-2xl overflow-hidden shadow-sm" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
               <table className="w-full border-collapse text-left text-xs" style={{ color: 'var(--text-primary)' }}>
                 <thead>
                   <tr className="border-b font-extrabold select-none h-10 bg-neutral-50/50" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-secondary)' }}>
-                    <th className="px-4 text-center w-[6%]">순번</th>
-                    <th className="px-4 text-center w-[12%]">일자</th>
-                    <th className="px-4 text-center w-[10%]">대상 학년</th>
-                    <th className="px-4 text-center w-[10%]">상담구분</th>
-                    <th className="px-4 text-center w-[8%]">인원</th>
-                    <th className="px-4 w-[24%]">주제 (목표)</th>
-                    <th className="px-4 w-[18%]">참가자 학번</th>
-                    <th className="px-4 text-center w-[12%]">액션</th>
+                    <th className="px-3 text-center w-[5%]">순번</th>
+                    <th className="px-3 text-center w-[12%]">학생이름</th>
+                    <th className="px-3 text-center w-[14%]">학년/반</th>
+                    <th className="px-3 w-[20%]">상담주제</th>
+                    <th className="px-3 w-[33%]">상담내용</th>
+                    <th className="px-3 text-center w-[8%]">횟수</th>
+                    <th className="px-3 text-center w-[8%]">액션</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y" style={{ divideColor: 'var(--border)' }}>
-                  {groupSessions.map((session, idx) => (
-                    <tr key={session.id} className="h-11 hover:bg-neutral-50/30 transition-all dark:hover:bg-neutral-800/10">
-                      <td className="px-4 text-center font-bold text-neutral-400">{groupSessions.length - idx}</td>
-                      <td className="px-4 text-center font-medium">
-                        <div className="inline-flex items-center gap-1">
-                          <Calendar size={10} className="text-neutral-400" />
-                          <span>{formatDate(session.date)}</span>
-                        </div>
+                  {peerSessions.map((session, idx) => (
+                    <tr key={session.id} className="h-12 hover:bg-neutral-50/30 transition-all dark:hover:bg-neutral-800/10">
+                      <td className="px-3 text-center font-bold text-neutral-400">{peerSessions.length - idx}</td>
+                      <td className="px-3 text-center font-semibold">
+                        {session.name ? (
+                          <span className="px-2 py-0.5 rounded-full bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400 font-bold text-[10px]">
+                            {session.name}
+                          </span>
+                        ) : (
+                          <span className="text-neutral-300 text-[10px]">-</span>
+                        )}
                       </td>
-                      <td className="px-4 text-center font-semibold">
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 font-bold text-[10px]">
-                          {session.grade ? (session.grade.endsWith('학년') ? session.grade : `${session.grade}학년`) : '혼합'}
+                      <td className="px-3 text-center font-medium text-[11px]">
+                        <span className="px-2 py-0.5 rounded-full bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400 font-bold text-[10px]">
+                          {session.studentId || '-'}
                         </span>
                       </td>
-                      <td className="px-4 text-center">
-                        <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-bold text-[10px]" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
-                          {session.type || '일반상담'}
-                        </span>
-                      </td>
-                      <td className="px-4 text-center font-semibold">
-                        <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-bold text-[10px]" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
-                          {session.counselingCount ? `${session.counselingCount}명` : '-'}
-                        </span>
-                      </td>
-                      <td className="px-4 font-bold text-neutral-800 dark:text-neutral-200 truncate max-w-[200px]" title={session.summary}>
+                      <td className="px-3 font-bold text-neutral-800 dark:text-neutral-200 truncate max-w-[160px]" title={session.summary}>
                         {session.summary}
                       </td>
-                      <td className="px-4 text-neutral-500 font-medium truncate max-w-[150px]" title={session.studentId}>
-                        {session.studentId}
+                      <td className="px-3 text-neutral-500 font-medium text-[11px] max-w-[260px]" title={session.detail}>
+                        <div className="line-clamp-2 leading-relaxed whitespace-pre-line">
+                          {session.detail || '-'}
+                        </div>
                       </td>
-                      <td className="px-4 text-center">
+                      <td className="px-3 text-center">
+                        <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 font-bold text-[10px]" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
+                          {session.session ? `${session.session}회기` : (session.counselingCount ? `${session.counselingCount}명` : '-')}
+                        </span>
+                      </td>
+                      <td className="px-3 text-center">
                         <div className="inline-flex items-center gap-1.5">
                           <button
                             onClick={() => handleOpenEditForm(session)}
-                            className="p-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/20 text-indigo-500 transition-all cursor-pointer"
+                            className="p-1 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-950/20 text-yellow-600 transition-all cursor-pointer"
                             title="수정"
                           >
                             <Edit2 size={12} />
                           </button>
                           <button
                             onClick={async () => {
-                              if (window.confirm("정말로 이 집단상담 기록을 삭제하시겠습니까?\n삭제된 엑셀 데이터는 복구할 수 없습니다.")) {
+                              if (window.confirm("정말로 이 또래상담 기록을 삭제하시겠습니까?\n삭제된 엑셀 데이터는 복구할 수 없습니다.")) {
                                 await deleteGroupSession(session.id)
                               }
                             }}
@@ -287,17 +332,17 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-80 gap-3 border-2 border-dashed rounded-2xl p-8" style={{ borderColor: 'var(--border)' }}>
-              <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center text-indigo-500">
-                <Users size={24} />
+              <div className="w-14 h-14 rounded-2xl bg-yellow-50 dark:bg-yellow-950/20 flex items-center justify-center text-yellow-500">
+                <Sparkles size={24} />
               </div>
               <div className="text-center">
-                <h3 className="text-sm font-extrabold mb-1" style={{ color: 'var(--text-primary)' }}>집단상담 기록이 없습니다</h3>
-                <p className="text-xs max-w-xs mb-3" style={{ color: 'var(--text-muted)' }}>등록된 집단상담 일지가 아직 없습니다. 상단 버튼을 클릭하여 새 일지를 추가해 주십시오.</p>
+                <h3 className="text-sm font-extrabold mb-1" style={{ color: 'var(--text-primary)' }}>또래상담 기록이 없습니다</h3>
+                <p className="text-xs max-w-xs mb-3" style={{ color: 'var(--text-muted)' }}>등록된 또래상담 일지가 아직 없습니다. 상단 버튼을 클릭하여 새 일지를 추가하거나 또래상담 도우미를 사용해 주십시오.</p>
                 <button
                   onClick={handleOpenNewForm}
-                  className="text-xs px-3.5 py-2 bg-indigo-500 hover:bg-indigo-400 active:scale-95 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer"
+                  className="text-xs px-3.5 py-2 bg-yellow-500 hover:bg-yellow-400 active:scale-95 text-white font-bold rounded-xl shadow-md transition-all cursor-pointer"
                 >
-                  첫 집단상담 기록 추가하기
+                  첫 또래상담 기록 추가하기
                 </button>
               </div>
             </div>
@@ -319,22 +364,22 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
 
       {/* 우측: 전용 에디터 폼 */}
       {showForm && (
-        <div 
+        <div
           className="h-full shrink-0 border-l flex flex-col"
-          style={{ 
+          style={{
             width: `${editorWidth}px`,
-            borderColor: 'var(--border)', 
-            background: 'var(--bg-secondary)' 
+            borderColor: 'var(--border)',
+            background: 'var(--bg-secondary)'
           }}
         >
           {/* 폼 헤더 */}
-          <div 
+          <div
             className={`flex items-center justify-between shrink-0 border-b ${isCompactMode ? 'px-4 py-3' : 'px-5 py-4'}`}
             style={{ borderColor: 'var(--border)' }}
           >
             <h3 className="text-sm font-extrabold flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
               <Sparkles size={14} className="text-yellow-500 animate-pulse" />
-              {editorMode === 'new' ? '집단상담 기록 추가' : '집단상담 기록 수정'}
+              {editorMode === 'new' ? '또래상담 기록 추가' : '또래상담 기록 수정'}
             </h3>
             <button
               onClick={() => setShowForm(false)}
@@ -396,8 +441,8 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
                 <label className="flex items-center justify-between text-[11px] font-bold mb-0.5" style={{ color: 'var(--text-secondary)' }}>
                   <span>상담구분</span>
                   <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold tracking-tight leading-none transition-all ${
-                    isExcelSynced 
-                      ? 'bg-green-50 text-green-600 border border-green-100' 
+                    isExcelSynced
+                      ? 'bg-green-50 text-green-600 border border-green-100'
                       : 'bg-slate-100 text-slate-500 border border-slate-200'
                   }`}>
                     {isExcelSynced ? '엑셀 연동됨' : '기본설정'}
@@ -435,7 +480,7 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
                 type="text"
                 value={formValues.summary}
                 onChange={e => handleInputChange('summary', e.target.value)}
-                placeholder="상담 일지의 대주제 또는 주제 입력"
+                placeholder="또래상담 활동 주제 입력"
                 className="w-full text-xs px-3 py-2.5 rounded-xl border outline-none font-semibold transition-all"
                 style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
               />
@@ -463,7 +508,7 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
                       handleInputChange('counselingCount', '');
                     }
                   }}
-                  placeholder="예: 2415, 2416 또는 2학년 3반 학생 전체"
+                  placeholder="예: 4201, 4202 또는 4학년~6학년 또래상담"
                   className="w-full text-xs px-3 py-2.5 rounded-xl border outline-none font-semibold transition-all"
                   style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                 />
@@ -491,10 +536,16 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
                 rows={10}
                 value={formValues.detail}
                 onChange={e => handleInputChange('detail', e.target.value)}
-                placeholder="집단 상담 진행 활동 내역 및 결과 요약을 기록해 주세요."
+                placeholder="또래상담 진행 활동 내역 및 결과 요약을 기록해 주세요."
                 className="w-full text-xs px-3 py-2.5 rounded-xl border outline-none font-medium leading-relaxed resize-none focus:ring-1 focus:ring-accent focus:border-accent transition-all"
                 style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
               />
+            </div>
+
+            {/* 프로그램명 고정 안내 */}
+            <div className="px-3 py-2 rounded-xl text-[10px] font-semibold flex items-center gap-2" style={{ background: 'var(--accent-soft)', color: 'var(--accent-dark)' }}>
+              <Sparkles size={11} className="shrink-0" />
+              <span>이 양식은 항상 <strong>또래상담</strong> 프로그램으로 저장됩니다.</span>
             </div>
 
             {/* 저장 버튼 */}
@@ -523,6 +574,12 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
         </div>
       )}
 
+      {/* 또래상담 입력 도우미 모달 */}
+      <PeerCounselDialog
+        isOpen={showPeerModal}
+        onClose={() => setShowPeerModal(false)}
+        onComplete={handlePeerCounselComplete}
+      />
     </div>
   )
 }

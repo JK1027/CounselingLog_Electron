@@ -10,8 +10,12 @@ import { getSortText, getPeriodText } from './printFormatters'
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8765'
 
 export default function PrintPreview({ setupData, onBack }) {
-  const { sessions: storeSessions } = useAppStore()
+  const { sessions: storeSessions, peerStudents, loadPeerStudents } = useAppStore()
   const [printData, setPrintData] = useState([])
+  const [peerStudentRows, setPeerStudentRows] = useState([])
+  const [totalPeerCount, setTotalPeerCount] = useState(0)
+  const [peerTypes, setPeerTypes] = useState('')
+  const [peerSubDetails, setPeerSubDetails] = useState('')
   const [loading, setLoading] = useState(true)
   const containerRef = useRef(null)
 
@@ -40,16 +44,18 @@ export default function PrintPreview({ setupData, onBack }) {
 
         let rawData = []
         if (printTarget === 'student') {
-          // 1. 현재 선택된 학생의 데이터 처리
+          // 현재 선택된 학생의 데이터 처리
           if (sessionFilter === 'all') {
             rawData = storeSessions
           } else {
             // 특정 회기
             rawData = storeSessions.filter(s => s.id === sessionFilter)
           }
-          // 2. 상담 유형별 또는 전체 데이터 처리 (백엔드 API 호출)
+        } else {
+          // 상담 유형별 또는 전체 데이터 처리 (백엔드 API 호출)
           let url = `${API_BASE}/sessions`
           if (printTarget === 'type' && sheetType) {
+            // 또래상담은 백엔드에서 집단상담 시트에 저장되므로 집단상담으로 조회
             const backendSheetType = sheetType === '또래상담' ? '집단상담' : sheetType
             url += `?sheet_type=${encodeURIComponent(backendSheetType)}`
           }
@@ -73,6 +79,49 @@ export default function PrintPreview({ setupData, onBack }) {
         // 정렬 유틸 적용
         const sorted = sortPrintSessions(filteredData, sortBy)
         setPrintData(sorted)
+
+        // 또래상담: 등록 학생 명단 + 참여 횟수 계산
+        if (sheetType === '또래상담') {
+          await loadPeerStudents()
+          const currentPeerStudents = useAppStore.getState().peerStudents || []
+          const rows = currentPeerStudents.map(ps => {
+            // 각 세션의 studentId 필드에서 해당 학생의 학번이 포함된 세션 수 계산
+            const count = filteredData.filter(session => {
+              if (!session.studentId) return false
+              const ids = String(session.studentId).split(',').map(s => s.trim()).filter(Boolean)
+              return ids.includes(String(ps.studentId).trim())
+            }).length
+
+            // 학년/반 포맷
+            const gradeText = ps.grade ? (String(ps.grade).endsWith('학년') ? ps.grade : `${ps.grade}학년`) : ''
+            const classText = ps.class ? ` ${ps.class}반` : ''
+            const gradeClass = `${gradeText}${classText}`.trim() || '-'
+
+            return {
+              name: ps.name,
+              gradeClass,
+              studentId: ps.studentId,
+              count
+            }
+          })
+          setPeerStudentRows(rows)
+          setTotalPeerCount(filteredData.length)
+
+          // 세션들의 상담구분 목록 중복 제거 후 합치
+          const types = [...new Set(filteredData.map(s => s.type).filter(Boolean))]
+          setPeerTypes(types.join('\n'))
+
+          // 각 세션 detail의 2번째 줄 추출 후 모아서 합치
+          const subDetails = filteredData
+            .map(s => {
+              if (!s.detail) return null
+              const lines = s.detail.split('\n')
+              return lines[1]?.trim() || null
+            })
+            .filter(Boolean)
+          setPeerSubDetails(subDetails.join('\n'))
+        }
+
         setLoading(false)
       } catch (e) {
         useAppStore.getState().addToast(e.message, 'error')
@@ -81,7 +130,7 @@ export default function PrintPreview({ setupData, onBack }) {
     }
 
     loadPrintData()
-  }, [setupData, storeSessions, onBack])
+  }, [setupData, storeSessions, onBack, loadPeerStudents])
 
   const handlePrintTrigger = () => {
     window.print()
@@ -130,11 +179,35 @@ export default function PrintPreview({ setupData, onBack }) {
 
   // 데이터 그룹화 및 A4 용지 규격 기준 동적 페이지 분할
   const getGroupedAndPaginatedPages = (data) => {
-    if (sheetType === '집단상담' || sheetType === '또래상담') {
+    // 또래상담: peerStudentRows 기반으로 페이지 분할
+    if (sheetType === '또래상담') {
+      const pages = []
+      let currentPage = []
+      let maxLines = 22 // 첫 페이지 최대 라인 수
+
+      peerStudentRows.forEach((row) => {
+        if (currentPage.length >= maxLines) {
+          pages.push(currentPage)
+          currentPage = [row]
+          maxLines = 28
+        } else {
+          currentPage.push(row)
+        }
+      })
+
+      if (currentPage.length > 0) {
+        pages.push(currentPage)
+      }
+      // 데이터가 없으면 빈 페이지 하나 반환
+      return pages.length > 0 ? pages : [[]]
+    }
+
+    // 집단상담: 세션 단위 페이지 분할
+    if (sheetType === '집단상담') {
       const pages = []
       let currentPage = []
       let maxLines = 18 // 첫 페이지 최대 라인 수 (헤더 고려)
-      
+
       data.forEach((session) => {
         if (currentPage.length >= maxLines) {
           pages.push(currentPage)
@@ -144,7 +217,7 @@ export default function PrintPreview({ setupData, onBack }) {
           currentPage.push(session)
         }
       })
-      
+
       if (currentPage.length > 0) {
         pages.push(currentPage)
       }
@@ -305,10 +378,15 @@ export default function PrintPreview({ setupData, onBack }) {
                     </>
                   )}
                   {/* 대장 테이블 */}
-                  <PrintRegisterTable 
-                    groupedData={pageRows} 
-                    startIndex={startIndex} 
-                    isGroup={sheetType === '집단상담' || sheetType === '또래상담'} 
+                  <PrintRegisterTable
+                    groupedData={pageRows}
+                    startIndex={startIndex}
+                    isGroup={sheetType === '집단상담'}
+                    isPeer={sheetType === '또래상담'}
+                    peerStudentRows={sheetType === '또래상담' ? pageRows : []}
+                    totalPeerCount={totalPeerCount}
+                    peerTypes={peerTypes}
+                    peerSubDetails={peerSubDetails}
                   />
                 </div>
               )

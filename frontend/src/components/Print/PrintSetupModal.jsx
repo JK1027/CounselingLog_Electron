@@ -18,7 +18,7 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
   useEffect(() => {
     if (isOpen) {
       // 모달이 열릴 때 기본값 리셋 또는 이전 설정 복원
-      const target = initialConfig?.printTarget || initialConfig?.initialTarget || (selectedStudent && !selectedStudent.isGroupTab ? 'student' : 'all')
+      const target = initialConfig?.printTarget || initialConfig?.initialTarget || (selectedStudent && !selectedStudent.isGroupTab && !selectedStudent.isPeerTab ? 'student' : 'all')
       const defaultSheet = initialConfig?.sheetType || initialConfig?.defaultSheetType || '개인상담'
       const sessionFilt = initialConfig?.sessionFilter || 'all'
       const prtFormat = initialConfig?.printFormat || 'report'
@@ -136,10 +136,10 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
-                disabled={!selectedStudent || selectedStudent.isGroupTab || initialConfig?.disableStudentOption}
+                disabled={!selectedStudent || selectedStudent.isGroupTab || selectedStudent.isPeerTab || initialConfig?.disableStudentOption}
                 onClick={() => setPrintTarget('student')}
                 className={`py-3 px-2 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all font-semibold ${
-                  (!selectedStudent || selectedStudent.isGroupTab || initialConfig?.disableStudentOption) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                  (!selectedStudent || selectedStudent.isGroupTab || selectedStudent.isPeerTab || initialConfig?.disableStudentOption) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
                 }`}
                 style={{
                   background: printTarget === 'student' ? 'var(--accent-soft)' : 'var(--bg-primary)',
@@ -149,7 +149,7 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
               >
                 <span className="text-xs font-bold">선택된 학생</span>
                 <span className="text-[10px] truncate max-w-full opacity-80">
-                  {selectedStudent && !selectedStudent.isGroupTab && !initialConfig?.disableStudentOption
+                  {selectedStudent && !selectedStudent.isGroupTab && !selectedStudent.isPeerTab && !initialConfig?.disableStudentOption
                     ? `${selectedStudent.name} (${selectedStudent.studentId || ''})`
                     : '선택 없음'}
                 </span>

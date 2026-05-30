@@ -167,7 +167,7 @@ export default function Sidebar({ width }) {
             setSelectedStudent({ id: 'group_counseling', name: '집단상담 대장', isGroupTab: true })
             setEditorOpen(false)
           }}
-          className={`w-full flex items-center gap-2 rounded-xl text-sm font-bold transition-all duration-150 text-left mb-2 cursor-pointer ${
+          className={`w-full flex items-center gap-2 rounded-xl text-sm font-bold transition-all duration-150 text-left mb-1 cursor-pointer ${
             isCompactMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-2'
           }`}
           style={{
@@ -184,6 +184,29 @@ export default function Sidebar({ width }) {
         >
           <Users size={isCompactMode ? 12 : 14} style={{ color: selectedStudent?.isGroupTab ? 'var(--accent)' : 'var(--text-muted)' }} />
           <span className="flex-1">👥 집단상담 대장</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setSelectedStudent({ id: 'peer_counseling', name: '또래상담 대장', isPeerTab: true })
+            setEditorOpen(false)
+          }}
+          className={`w-full flex items-center gap-2 rounded-xl text-sm font-bold transition-all duration-150 text-left mb-2 cursor-pointer ${
+            isCompactMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-2'
+          }`}
+          style={{
+            background: selectedStudent?.isPeerTab ? 'rgba(234,179,8,0.12)' : 'var(--bg-primary)',
+            color: selectedStudent?.isPeerTab ? '#a16207' : 'var(--text-secondary)',
+            border: selectedStudent?.isPeerTab ? '1px solid #ca8a04' : '1px solid var(--border)',
+          }}
+          onMouseEnter={e => {
+            if (!selectedStudent?.isPeerTab) e.currentTarget.style.borderColor = '#ca8a04'
+          }}
+          onMouseLeave={e => {
+            if (!selectedStudent?.isPeerTab) e.currentTarget.style.borderColor = 'var(--border)'
+          }}
+        >
+          <span className="flex-1">✨ 또래상담 대장</span>
         </button>
 
         {/* 검색 버튼 */}

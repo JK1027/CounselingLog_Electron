@@ -1,4 +1,4 @@
-export default function PrintRegisterTable({ groupedData, startIndex = 0, isGroup = false }) {
+export default function PrintRegisterTable({ groupedData, startIndex = 0, isGroup = false, isPeer = false, peerStudentRows = [], totalPeerCount = 0, peerTypes = '', peerSubDetails = '' }) {
   // 학년/반 포맷터
   const formatGradeClass = (student) => {
     const gradeText = student.grade ? (String(student.grade).endsWith('학년') ? student.grade : `${student.grade}학년`) : ''
@@ -18,6 +18,72 @@ export default function PrintRegisterTable({ groupedData, startIndex = 0, isGrou
     }
     return `${gradeText}${classText}`.trim() || '-'
   }
+  // ───── 또래상담 전용 인쇄 테이블 ─────
+  if (isPeer) {
+    const rowCount = peerStudentRows.length
+    return (
+      <table className="w-full border-collapse border border-neutral-300 text-left text-xs text-black" style={{ tableLayout: 'fixed' }}>
+        <colgroup>
+          <col style={{ width: '5%' }} />
+          <col style={{ width: '13%' }} />
+          <col style={{ width: '12%' }} />
+          <col style={{ width: '15%' }} />
+          <col style={{ width: '40%' }} />
+          <col style={{ width: '15%' }} />
+        </colgroup>
+        <thead>
+          <tr className="bg-neutral-100/80 font-bold border-b border-neutral-300 text-center h-10">
+            <th className="border border-neutral-300 text-center">순번</th>
+            <th className="border border-neutral-300 text-center">학생이름</th>
+            <th className="border border-neutral-300 text-center">학년/반</th>
+            <th className="border border-neutral-300 text-center">상담구분</th>
+            <th className="border border-neutral-300 text-center">세부내용</th>
+            <th className="border border-neutral-300 text-center">총 횟수</th>
+          </tr>
+        </thead>
+        <tbody>
+          {peerStudentRows.map((student, idx) => (
+            <tr key={idx} className="hover:bg-neutral-50/50 print:hover:bg-transparent h-10">
+              <td className="border border-neutral-300 text-center font-medium py-2">{startIndex + idx + 1}</td>
+              <td className="border border-neutral-300 text-center font-semibold py-2">{student.name}</td>
+              <td className="border border-neutral-300 text-center py-2">{student.gradeClass}</td>
+              {/* 첫 행에만 상담구분 rowspan */}
+              {idx === 0 && (
+                <td
+                  className="border border-neutral-300 text-center py-2 whitespace-pre-line"
+                  rowSpan={rowCount}
+                  style={{ verticalAlign: 'middle' }}
+                >
+                  {peerTypes || '또래상담'}
+                </td>
+              )}
+              {/* 첫 행에만 세부내용 rowspan */}
+              {idx === 0 && (
+                <td
+                  className="border border-neutral-300 px-2 py-2 whitespace-pre-line text-left"
+                  rowSpan={rowCount}
+                  style={{ verticalAlign: 'top', lineHeight: '1.6' }}
+                >
+                  {peerSubDetails || '-'}
+                </td>
+              )}
+              {/* 첫 행에만 총 횟수 rowspan */}
+              {idx === 0 && (
+                <td
+                  className="border border-neutral-300 text-center py-2 font-bold text-base"
+                  rowSpan={rowCount}
+                  style={{ verticalAlign: 'middle' }}
+                >
+                  {totalPeerCount > 0 ? `${totalPeerCount}회` : '-'}
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
 
   if (isGroup) {
     return (

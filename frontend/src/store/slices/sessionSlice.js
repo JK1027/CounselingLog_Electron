@@ -4,6 +4,7 @@ import { studentService } from '@/services/studentService'
 export const createSessionSlice = (set, get) => ({
   sessions: [],
   groupSessions: [],
+  peerSessions: [],
   selectedSession: null,
   setSelectedSession: (session) => set({ selectedSession: session }),
 
@@ -103,7 +104,21 @@ export const createSessionSlice = (set, get) => ({
   loadGroupSessions: async () => {
     try {
       const data = await sessionService.getSessionsBySheetType('집단상담')
-      set({ groupSessions: data })
+      // 집단상담 대장: 또래상담 제외
+      const groupOnly = data.filter(s => !s.programName?.includes('또래상담') && !s.summary?.includes('또래상담'))
+      set({ groupSessions: groupOnly })
+    } catch (e) {
+      get().addToast(e.message, 'error')
+    }
+  },
+
+  // ─── 또래상담 이력 로드 ──────────────────────────────────────────
+  loadPeerSessions: async () => {
+    try {
+      const data = await sessionService.getSessionsBySheetType('집단상담')
+      // 또래상담 대장: 또래상담만 포함
+      const peerOnly = data.filter(s => s.programName?.includes('또래상담') || s.summary?.includes('또래상담'))
+      set({ peerSessions: peerOnly })
     } catch (e) {
       get().addToast(e.message, 'error')
     }
@@ -246,6 +261,7 @@ export const createSessionSlice = (set, get) => ({
 
       await get().initialize()
       await get().loadGroupSessions()
+      await get().loadPeerSessions()
       get().addToast('새 집단상담 기록이 저장되었습니다.', 'success')
     } catch (e) {
       set({ saveState: 'error' })
@@ -264,6 +280,7 @@ export const createSessionSlice = (set, get) => ({
 
       await get().initialize()
       await get().loadGroupSessions()
+      await get().loadPeerSessions()
       get().addToast('집단상담 기록이 수정되었습니다.', 'success')
     } catch (e) {
       set({ saveState: 'error' })
@@ -282,6 +299,7 @@ export const createSessionSlice = (set, get) => ({
 
       await get().initialize()
       await get().loadGroupSessions()
+      await get().loadPeerSessions()
       get().addToast('집단상담 기록이 삭제되었습니다.', 'success')
     } catch (e) {
       set({ saveState: 'error' })

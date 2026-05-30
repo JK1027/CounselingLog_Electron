@@ -5,6 +5,7 @@ import QuickEditor from '@/components/QuickEditor/QuickEditor'
 import CommandPalette from '@/components/Search/CommandPalette'
 import Dashboard from '@/components/Dashboard/Dashboard'
 import GroupCounseling from '@/components/GroupCounseling/GroupCounseling'
+import PeerCounseling from '@/components/GroupCounseling/PeerCounseling'
 import PrintSetupModal from '@/components/Print/PrintSetupModal'
 import PrintPreview from '@/components/Print/PrintPreview'
 import PreUpdateBackupModal from '@/components/ui/PreUpdateBackupModal'
@@ -163,10 +164,19 @@ export default function AppShell() {
       <div className="flex flex-1 min-w-0">
         {/* 타임라인 or 집단상담 대장 or 대시보드 */}
         {selectedStudent ? (
-          selectedStudent.isGroupTab ? (
+          selectedStudent.isPeerTab ? (
             <div className="flex-1 min-w-0">
-              <GroupCounseling 
-                onOpenPrintModal={handleOpenPrintModal} 
+              <PeerCounseling
+                onOpenPrintModal={handleOpenPrintModal}
+                editorWidth={editorWidth}
+                resizing={resizing}
+                setResizing={setResizeTarget}
+              />
+            </div>
+          ) : selectedStudent.isGroupTab ? (
+            <div className="flex-1 min-w-0">
+              <GroupCounseling
+                onOpenPrintModal={handleOpenPrintModal}
                 editorWidth={editorWidth}
                 resizing={resizing}
                 setResizing={setResizeTarget}
