@@ -229,8 +229,11 @@ def create_session(data: SessionCreate):
         
         counseling_count = "1"
         if data.sheetType == "집단상담":
-            student_ids = [sid.strip() for sid in data.studentId.split(",") if sid.strip()]
-            counseling_count = str(len(student_ids)) if student_ids else "10"
+            if data.counselingCount:
+                counseling_count = data.counselingCount.strip()
+            else:
+                student_ids = [sid.strip() for sid in data.studentId.split(",") if sid.strip()]
+                counseling_count = str(len(student_ids)) if student_ids else "10"
 
         row_data = {
             "학번": data.studentId,
@@ -310,6 +313,8 @@ def update_session(session_id: str, data: SessionUpdate):
             "*상담내용": data.summary,
             "상담내용(상세)": data.detail
         }
+        if data.sheetType == "집단상담" and hasattr(data, "counselingCount"):
+            updates["*상담인원"] = data.counselingCount
 
         success, err = repo.update_excel_row(target_sheet, target_idx, updates)
         if not success:

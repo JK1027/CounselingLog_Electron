@@ -26,14 +26,13 @@ export default function Sidebar({ width }) {
     updateErrorMessage,
     setUpdateStatus,
     setBackupModalOpen,
-    triggerBackup
+    triggerBackup,
+    dismissedVersion,
+    checkUpdatesManually
   } = useAppStore()
 
   const handleCheckUpdate = () => {
-    if (window.updaterAPI) {
-      setUpdateStatus('checking')
-      window.updaterAPI.checkForUpdates()
-    }
+    checkUpdatesManually()
   }
 
   const handleDownload = () => {
@@ -337,7 +336,7 @@ export default function Sidebar({ width }) {
             </div>
           )}
 
-          {updateStatus === 'available' && (
+          {updateStatus === 'available' && newVersionInfo?.version !== dismissedVersion && (
             <div className="flex flex-col gap-2 p-2.5 rounded-2xl mt-1 border" style={{ background: 'linear-gradient(135deg, var(--accent-soft), rgba(75,142,241,0.08))', borderColor: 'rgba(75,142,241,0.25)' }}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">

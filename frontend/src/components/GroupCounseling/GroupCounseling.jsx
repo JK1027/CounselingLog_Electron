@@ -43,7 +43,8 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
     session: '',
     summary: '',
     studentId: '',
-    detail: ''
+    detail: '',
+    counselingCount: ''
   })
 
   // 컴포넌트 마운트 시 최신 데이터 패치
@@ -67,7 +68,8 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
       session: '',
       summary: '',
       studentId: '',
-      detail: ''
+      detail: '',
+      counselingCount: ''
     })
     setShowForm(true)
   }
@@ -94,7 +96,8 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
       session: '',
       summary: data.summary,
       studentId: data.studentId,
-      detail: data.detail
+      detail: data.detail,
+      counselingCount: ''
     })
     setShowForm(true)
     setShowPeerModal(false)
@@ -119,7 +122,8 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
       session: session.session || '',
       summary: session.summary || '',
       studentId: session.studentId || '', // 엑셀의 '학번' 컬럼 값을 그대로 매핑
-      detail: session.detail || ''
+      detail: session.detail || '',
+      counselingCount: session.counselingCount || ''
     })
     setShowForm(true)
   }
@@ -165,7 +169,8 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
       type: formValues.type,
       summary: formValues.summary.trim(),
       detail: formValues.detail.trim(),
-      session: formValues.session.trim() // 빈값일 경우 백엔드에서 자동 계산
+      session: formValues.session.trim(), // 빈값일 경우 백엔드에서 자동 계산
+      counselingCount: formValues.counselingCount ? formValues.counselingCount.trim() : ''
     }
 
     if (editorMode === 'new') {
@@ -253,12 +258,13 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
               <table className="w-full border-collapse text-left text-xs" style={{ color: 'var(--text-primary)' }}>
                 <thead>
                   <tr className="border-b font-extrabold select-none h-10 bg-neutral-50/50" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-secondary)' }}>
-                    <th className="px-4 text-center w-[7%]">순번</th>
+                    <th className="px-4 text-center w-[6%]">순번</th>
                     <th className="px-4 text-center w-[12%]">일자</th>
-                    <th className="px-4 text-center w-[12%]">대상 학년</th>
-                    <th className="px-4 text-center w-[12%]">상담구분</th>
-                    <th className="px-4 w-[25%]">주제 (목표)</th>
-                    <th className="px-4 w-[20%]">참가자 학번</th>
+                    <th className="px-4 text-center w-[10%]">대상 학년</th>
+                    <th className="px-4 text-center w-[10%]">상담구분</th>
+                    <th className="px-4 text-center w-[8%]">인원</th>
+                    <th className="px-4 w-[24%]">주제 (목표)</th>
+                    <th className="px-4 w-[18%]">참가자 학번</th>
                     <th className="px-4 text-center w-[12%]">액션</th>
                   </tr>
                 </thead>
@@ -280,6 +286,11 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
                       <td className="px-4 text-center">
                         <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-bold text-[10px]" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
                           {session.type || '일반상담'}
+                        </span>
+                      </td>
+                      <td className="px-4 text-center font-semibold">
+                        <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-bold text-[10px]" style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
+                          {session.counselingCount ? `${session.counselingCount}명` : '-'}
                         </span>
                       </td>
                       <td className="px-4 font-bold text-neutral-800 dark:text-neutral-200 truncate max-w-[200px]" title={session.summary}>
@@ -471,24 +482,48 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
               />
             </div>
 
-            {/* 참가학생 명단 (학번) */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold flex items-center justify-between" style={{ color: 'var(--text-secondary)' }}>
-                <span>* 참가학생 학번 (명단)</span>
-                <span className="text-[9px] text-indigo-500 font-semibold">쉼표 구분 입력</span>
-              </label>
-              <input
-                type="text"
-                value={formValues.studentId}
-                onChange={e => handleInputChange('studentId', e.target.value)}
-                placeholder="예: 2415, 2416 또는 2학년 3반 학생 전체"
-                className="w-full text-xs px-3 py-2.5 rounded-xl border outline-none font-semibold transition-all"
-                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-              />
-              <p className="text-[9px] text-neutral-400 leading-normal pl-0.5 pt-0.5">
-                ※ 실제 엑셀의 '학번' 컬럼에 기록됩니다. 교사가 보관할 자유 명칭을 기재하셔도 됩니다.
-              </p>
+            {/* 참가학생 명단 및 상담인원 */}
+            <div className="flex gap-3">
+              <div className="space-y-1" style={{ flex: 3 }}>
+                <label className="text-[11px] font-bold flex items-center justify-between" style={{ color: 'var(--text-secondary)' }}>
+                  <span>* 참가학생 학번 (명단)</span>
+                  <span className="text-[9px] text-indigo-500 font-semibold">쉼표 구분 입력</span>
+                </label>
+                <input
+                  type="text"
+                  value={formValues.studentId}
+                  onChange={e => {
+                    const val = e.target.value;
+                    handleInputChange('studentId', val);
+                    // 학번 입력시 숫자 인원 수 자동 계산 편의 기능
+                    const ids = val.split(',').map(s => s.trim()).filter(Boolean);
+                    const allNumeric = ids.every(id => /^\d+$/.test(id));
+                    if (allNumeric && ids.length > 0) {
+                      handleInputChange('counselingCount', String(ids.length));
+                    } else if (val.trim() === '') {
+                      handleInputChange('counselingCount', '');
+                    }
+                  }}
+                  placeholder="예: 2415, 2416 또는 2학년 3반 학생 전체"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border outline-none font-semibold transition-all"
+                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                />
+              </div>
+              <div className="space-y-1" style={{ flex: 1 }}>
+                <label className="text-[11px] font-bold block" style={{ color: 'var(--text-secondary)' }}>상담인원 (명)</label>
+                <input
+                  type="text"
+                  value={formValues.counselingCount}
+                  onChange={e => handleInputChange('counselingCount', e.target.value)}
+                  placeholder="인원"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl border outline-none font-medium transition-all"
+                  style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                />
+              </div>
             </div>
+            <p className="text-[9px] text-neutral-400 leading-normal pl-0.5 -mt-2">
+              ※ 실제 엑셀의 '학번' 및 '*상담인원' 컬럼에 기록됩니다. 학번 입력 시 인원이 자동 집계되나 필요에 따라 직접 수정할 수 있습니다.
+            </p>
 
             {/* 활동 내용 */}
             <div className="space-y-1">

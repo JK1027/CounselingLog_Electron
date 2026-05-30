@@ -17,12 +17,35 @@ export const createSettingsSlice = (set, get) => ({
   downloadPercent: 0,
   newVersionInfo: null,
   updateErrorMessage: '',
+  showUpdateAvailableModal: false,
+  dismissedVersion: '',
+  isManualCheck: false,
 
   setAppVersion: (ver) => set({ appVersion: ver }),
   setUpdateStatus: (status) => set({ updateStatus: status }),
   setDownloadPercent: (percent) => set({ downloadPercent: percent }),
   setNewVersionInfo: (info) => set({ newVersionInfo: info }),
   setUpdateErrorMessage: (msg) => set({ updateErrorMessage: msg }),
+  setShowUpdateAvailableModal: (show) => set({ showUpdateAvailableModal: show }),
+  dismissUpdateVersion: async (version) => {
+    if (window.electronAPI && window.electronAPI.saveSettings) {
+      try {
+        await window.electronAPI.saveSettings({ dismissedVersion: version })
+        set({ dismissedVersion: version, showUpdateAvailableModal: false })
+      } catch (e) {
+        console.error('Failed to save dismissed version settings:', e)
+      }
+    } else {
+      set({ dismissedVersion: version, showUpdateAvailableModal: false })
+    }
+  },
+  checkUpdatesManually: () => {
+    set({ isManualCheck: true })
+    if (window.updaterAPI) {
+      set({ updateStatus: 'checking' })
+      window.updaterAPI.checkForUpdates()
+    }
+  },
 
   isBackupModalOpen: false,
   setBackupModalOpen: (open) => set({ isBackupModalOpen: open }),
@@ -54,7 +77,8 @@ export const createSettingsSlice = (set, get) => ({
       try {
         const settings = await window.electronAPI.getSettings()
         const dir = settings.backupDir || ''
-        set({ backupDir: dir })
+        const dismissed = settings.dismissedVersion || ''
+        set({ backupDir: dir, dismissedVersion: dismissed })
         
         await studentService.syncSettings(dir)
       } catch (e) {
@@ -123,9 +147,15 @@ export const createSettingsSlice = (set, get) => ({
     if (window.updaterAPI) {
       const unsubAvailable = window.updaterAPI.onUpdateAvailable((info) => {
         set({ newVersionInfo: info, updateStatus: 'available' })
+        const state = get()
+        // 수동 체크 중이거나 새 버전이 이미 거절한 버전과 다를 때만 팝업을 띄움
+        if (state.isManualCheck || info.version !== state.dismissedVersion) {
+          set({ showUpdateAvailableModal: true })
+        }
+        set({ isManualCheck: false })
       })
       const unsubNotAvailable = window.updaterAPI.onUpdateNotAvailable(() => {
-        set({ updateStatus: 'not-available' })
+        set({ updateStatus: 'not-available', isManualCheck: false })
         setTimeout(() => set({ updateStatus: 'idle' }), 3000)
       })
       const unsubProgress = window.updaterAPI.onDownloadProgress((percent) => {
@@ -136,7 +166,7 @@ export const createSettingsSlice = (set, get) => ({
       })
       const unsubError = window.updaterAPI.onUpdateError((err) => {
         console.error('Update error:', err)
-        set({ updateErrorMessage: err || '업데이트 오류', updateStatus: 'error' })
+        set({ updateErrorMessage: err || '업데이트 오류', updateStatus: 'error', isManualCheck: false })
         setTimeout(() => set({ updateStatus: 'idle' }), 5000)
       })
 

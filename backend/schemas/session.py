@@ -10,6 +10,7 @@ class SessionCreate(BaseModel):
     sheetType: str
     summary: str
     detail: str
+    counselingCount: str = ""
 
 class SessionUpdate(BaseModel):
     date: str
@@ -17,3 +18,4 @@ class SessionUpdate(BaseModel):
     summary: str
     detail: str
     sheetType: str
+    counselingCount: str = ""

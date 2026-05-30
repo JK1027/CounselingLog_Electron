@@ -8,6 +8,7 @@ import GroupCounseling from '@/components/GroupCounseling/GroupCounseling'
 import PrintSetupModal from '@/components/Print/PrintSetupModal'
 import PrintPreview from '@/components/Print/PrintPreview'
 import PreUpdateBackupModal from '@/components/ui/PreUpdateBackupModal'
+import UpdateAvailableModal from '@/components/ui/UpdateAvailableModal'
 import SettingsModal from '@/components/Settings/SettingsModal'
 import { FileSpreadsheet } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
@@ -138,6 +139,9 @@ export default function AppShell() {
 
       {/* 업데이트 전 데이터 백업 확인 모달 */}
       <PreUpdateBackupModal />
+
+      {/* 업데이트 알림 모달 */}
+      <UpdateAvailableModal />
 
       {/* 설정 모달 */}
       <SettingsModal />
