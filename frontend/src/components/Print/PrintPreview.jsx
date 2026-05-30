@@ -122,6 +122,27 @@ export default function PrintPreview({ setupData, onBack }) {
 
   // 데이터 그룹화 및 A4 용지 규격 기준 동적 페이지 분할
   const getGroupedAndPaginatedPages = (data) => {
+    if (sheetType === '집단상담') {
+      const pages = []
+      let currentPage = []
+      let maxLines = 18 // 첫 페이지 최대 라인 수 (헤더 고려)
+      
+      data.forEach((session) => {
+        if (currentPage.length >= maxLines) {
+          pages.push(currentPage)
+          currentPage = [session]
+          maxLines = 22 // 이후 페이지 최대 라인 수
+        } else {
+          currentPage.push(session)
+        }
+      })
+      
+      if (currentPage.length > 0) {
+        pages.push(currentPage)
+      }
+      return pages
+    }
+
     // 1. 학생별 그룹화 처리
     const groupedData = []
     const seenKeys = new Map()
@@ -276,7 +297,11 @@ export default function PrintPreview({ setupData, onBack }) {
                     </>
                   )}
                   {/* 대장 테이블 */}
-                  <PrintRegisterTable groupedData={pageRows} startIndex={startIndex} />
+                  <PrintRegisterTable 
+                    groupedData={pageRows} 
+                    startIndex={startIndex} 
+                    isGroup={sheetType === '집단상담'} 
+                  />
                 </div>
               )
             })}

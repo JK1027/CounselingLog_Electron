@@ -1,7 +1,7 @@
-export default function PrintRegisterTable({ groupedData, startIndex = 0 }) {
+export default function PrintRegisterTable({ groupedData, startIndex = 0, isGroup = false }) {
   // 학년/반 포맷터
   const formatGradeClass = (student) => {
-    const gradeText = student.grade ? `${student.grade}학년` : ''
+    const gradeText = student.grade ? (String(student.grade).endsWith('학년') ? student.grade : `${student.grade}학년`) : ''
     let classText = ''
     
     const sid = student.studentId ? String(student.studentId).trim() : ''
@@ -17,6 +17,50 @@ export default function PrintRegisterTable({ groupedData, startIndex = 0 }) {
       }
     }
     return `${gradeText}${classText}`.trim() || '-'
+  }
+
+  if (isGroup) {
+    return (
+      <table className="w-full border-collapse border border-neutral-300 text-left text-xs text-black" style={{ tableLayout: 'fixed' }}>
+        <colgroup>
+          <col style={{ width: '8%' }} />
+          <col style={{ width: '14%' }} />
+          <col style={{ width: '13%' }} />
+          <col style={{ width: '25%' }} />
+          <col style={{ width: '40%' }} />
+        </colgroup>
+        <thead>
+          <tr className="bg-neutral-100/80 font-bold border-b border-neutral-300 text-center h-10">
+            <th className="border border-neutral-300 text-center">순번</th>
+            <th className="border border-neutral-300 text-center">학년/반</th>
+            <th className="border border-neutral-300 text-center">상담인원</th>
+            <th className="border border-neutral-300 text-center">상담제목</th>
+            <th className="border border-neutral-300 text-center">상담내용</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groupedData.map((session, idx) => (
+            <tr key={idx} className="hover:bg-neutral-50/50 print:hover:bg-transparent h-10">
+              <td className="border border-neutral-300 text-center font-medium py-2">{startIndex + idx + 1}</td>
+              <td className="border border-neutral-300 text-center font-semibold py-2">
+                {formatGradeClass(session)}
+              </td>
+              <td className="border border-neutral-300 text-center py-2 font-medium">
+                {session.counselingCount ? `${session.counselingCount}명` : (
+                  session.studentId ? `${session.studentId.split(',').filter(Boolean).length}명` : '-'
+                )}
+              </td>
+              <td className="border border-neutral-300 px-3 py-2 font-bold truncate text-left" title={session.summary}>
+                {session.summary}
+              </td>
+              <td className="border border-neutral-300 px-3 py-2 font-normal truncate text-left" title={session.detail}>
+                {session.detail}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
   }
 
   return (
