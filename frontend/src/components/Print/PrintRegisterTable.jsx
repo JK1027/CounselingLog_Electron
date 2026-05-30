@@ -43,7 +43,7 @@ export default function PrintRegisterTable({ groupedData, startIndex = 0, isGrou
             <tr key={idx} className="hover:bg-neutral-50/50 print:hover:bg-transparent h-10">
               <td className="border border-neutral-300 text-center font-medium py-2">{startIndex + idx + 1}</td>
               <td className="border border-neutral-300 text-center font-semibold py-2">
-                {formatGradeClass(session)}
+                {session.studentId || '-'}
               </td>
               <td className="border border-neutral-300 text-center py-2 font-medium">
                 {session.counselingCount ? `${session.counselingCount}명` : (
