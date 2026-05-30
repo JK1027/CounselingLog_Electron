@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Plus, Trash2, Edit2, Calendar, FileText, Loader2, Sparkles, User, Users, Check, Printer } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { formatDate, IconButton } from '@/components/ui/shared'
@@ -29,6 +29,11 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
   const activeGroupOptions = groupValidationData?.options || COUNSELING_TYPES
   const isExcelSynced = groupValidationData?.source === 'excel'
 
+  // 또래상담 세션 필터링
+  const displaySessions = useMemo(() => {
+    return groupSessions.filter(s => !s.programName?.includes('또래상담'))
+  }, [groupSessions])
+
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showPeerModal, setShowPeerModal] = useState(false)
@@ -44,7 +49,8 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
     summary: '',
     studentId: '',
     detail: '',
-    counselingCount: ''
+    counselingCount: '',
+    programName: '집단상담'
   })
 
   // 컴포넌트 마운트 시 최신 데이터 패치
@@ -69,7 +75,8 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
       summary: '',
       studentId: '',
       detail: '',
-      counselingCount: ''
+      counselingCount: '',
+      programName: '집단상담'
     })
     setShowForm(true)
   }
@@ -97,7 +104,8 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
       summary: data.summary,
       studentId: data.studentId,
       detail: data.detail,
-      counselingCount: ''
+      counselingCount: '',
+      programName: '또래상담'
     })
     setShowForm(true)
     setShowPeerModal(false)
@@ -123,7 +131,8 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
       summary: session.summary || '',
       studentId: session.studentId || '', // 엑셀의 '학번' 컬럼 값을 그대로 매핑
       detail: session.detail || '',
-      counselingCount: session.counselingCount || ''
+      counselingCount: session.counselingCount || '',
+      programName: session.programName || '집단상담'
     })
     setShowForm(true)
   }
@@ -170,7 +179,8 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
       summary: formValues.summary.trim(),
       detail: formValues.detail.trim(),
       session: formValues.session.trim(), // 빈값일 경우 백엔드에서 자동 계산
-      counselingCount: formValues.counselingCount ? formValues.counselingCount.trim() : ''
+      counselingCount: formValues.counselingCount ? formValues.counselingCount.trim() : '',
+      programName: formValues.programName
     }
 
     if (editorMode === 'new') {
@@ -209,7 +219,7 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
             </div>
             <div>
               <h2 className="text-base font-extrabold" style={{ color: 'var(--text-primary)' }}>집단상담 대장</h2>
-              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>총 {groupSessions.length}건의 집단상담이 등록되어 있습니다.</p>
+              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>총 {displaySessions.length}건의 집단상담이 등록되어 있습니다.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -253,7 +263,7 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
 
         {/* 테이블 본문 */}
         <div className="flex-1 overflow-auto p-4 md:p-6 no-scrollbar">
-          {groupSessions.length > 0 ? (
+          {displaySessions.length > 0 ? (
             <div className="bg-white dark:bg-neutral-900 border rounded-2xl overflow-hidden shadow-sm" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
               <table className="w-full border-collapse text-left text-xs" style={{ color: 'var(--text-primary)' }}>
                 <thead>
@@ -269,9 +279,9 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
                   </tr>
                 </thead>
                 <tbody className="divide-y" style={{ divideColor: 'var(--border)' }}>
-                  {groupSessions.map((session, idx) => (
+                  {displaySessions.map((session, idx) => (
                     <tr key={session.id} className="h-11 hover:bg-neutral-50/30 transition-all dark:hover:bg-neutral-800/10">
-                      <td className="px-4 text-center font-bold text-neutral-400">{groupSessions.length - idx}</td>
+                      <td className="px-4 text-center font-bold text-neutral-400">{displaySessions.length - idx}</td>
                       <td className="px-4 text-center font-medium">
                         <div className="inline-flex items-center gap-1">
                           <Calendar size={10} className="text-neutral-400" />

@@ -11,6 +11,7 @@ class SessionCreate(BaseModel):
     summary: str
     detail: str
     counselingCount: str = ""
+    programName: str = ""
 
 class SessionUpdate(BaseModel):
     date: str
@@ -19,3 +20,4 @@ class SessionUpdate(BaseModel):
     detail: str
     sheetType: str
     counselingCount: str = ""
+    programName: str = ""

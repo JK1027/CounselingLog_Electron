@@ -59,8 +59,13 @@ export default function PrintPreview({ setupData, onBack }) {
           rawData = await res.json()
         }
 
+        // 집단상담일 경우 또래상담 제외
+        const baseData = sheetType === '집단상담'
+          ? rawData.filter(s => !s.programName?.includes('또래상담'))
+          : rawData
+
         // 기간 필터링 적용 (데이터 불변성 유지)
-        const filteredData = filterSessionsByDateRange(rawData, startDate, endDate)
+        const filteredData = filterSessionsByDateRange(baseData, startDate, endDate)
 
         // 정렬 유틸 적용
         const sorted = sortPrintSessions(filteredData, sortBy)

@@ -157,6 +157,7 @@ def get_all_sessions(sheet_type: str = Query(None)):
                     "detail": str(row.get("상담내용(상세)", "")),
                     "counselingTime": str(row.get("상담시간", "")).strip() if "상담시간" in row and not pd.isna(row.get("상담시간")) else "",
                     "counselingCount": str(row.get("*상담인원", "")).strip().replace(".0", "") if "*상담인원" in row and not pd.isna(row.get("*상담인원")) else "",
+                    "programName": str(row.get("프로그램명", "")).strip() if "프로그램명" in row and not pd.isna(row.get("프로그램명")) else "",
                     "ban": extract_ban_from_student_id(student_id),
                     "rawIndex": idx
                 })
@@ -266,7 +267,7 @@ def create_session(data: SessionCreate):
             row_data["상담회기"] = str(session_count)
 
         if data.sheetType == "집단상담":
-            row_data["프로그램명"] = "집단상담"
+            row_data["프로그램명"] = data.programName.strip() if data.programName else "집단상담"
             row_data["목표"] = data.summary
 
         success, err = repo.append_new_row_to_excel(real_sheet_name, pd.DataFrame([row_data]))
@@ -315,6 +316,8 @@ def update_session(session_id: str, data: SessionUpdate):
         }
         if data.sheetType == "집단상담" and hasattr(data, "counselingCount"):
             updates["*상담인원"] = data.counselingCount
+        if target_sheet == GROUP_COUNSELING_SHEET and hasattr(data, "programName"):
+            updates["프로그램명"] = data.programName
 
         success, err = repo.update_excel_row(target_sheet, target_idx, updates)
         if not success:
