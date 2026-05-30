@@ -230,6 +230,7 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
               >
                 <option value="개인상담">개인상담</option>
                 <option value="집단상담">집단상담</option>
+                <option value="또래상담">또래상담</option>
                 <option value="보호자상담">보호자상담</option>
                 <option value="교원자문">교원자문</option>
                 <option value="의뢰">의뢰</option>

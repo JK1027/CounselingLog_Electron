@@ -47,11 +47,11 @@ export default function PrintPreview({ setupData, onBack }) {
             // 특정 회기
             rawData = storeSessions.filter(s => s.id === sessionFilter)
           }
-        } else {
           // 2. 상담 유형별 또는 전체 데이터 처리 (백엔드 API 호출)
           let url = `${API_BASE}/sessions`
           if (printTarget === 'type' && sheetType) {
-            url += `?sheet_type=${encodeURIComponent(sheetType)}`
+            const backendSheetType = sheetType === '또래상담' ? '집단상담' : sheetType
+            url += `?sheet_type=${encodeURIComponent(backendSheetType)}`
           }
 
           const res = await fetch(url)
@@ -59,10 +59,13 @@ export default function PrintPreview({ setupData, onBack }) {
           rawData = await res.json()
         }
 
-        // 집단상담일 경우 또래상담 제외
-        const baseData = sheetType === '집단상담'
-          ? rawData.filter(s => !s.programName?.includes('또래상담') && !s.summary?.includes('또래상담'))
-          : rawData
+        // 집단상담일 경우 또래상담 제외, 또래상담일 경우 또래상담만 포함
+        let baseData = rawData
+        if (sheetType === '집단상담') {
+          baseData = rawData.filter(s => !s.programName?.includes('또래상담') && !s.summary?.includes('또래상담'))
+        } else if (sheetType === '또래상담') {
+          baseData = rawData.filter(s => s.programName?.includes('또래상담') || s.summary?.includes('또래상담'))
+        }
 
         // 기간 필터링 적용 (데이터 불변성 유지)
         const filteredData = filterSessionsByDateRange(baseData, startDate, endDate)
@@ -127,7 +130,7 @@ export default function PrintPreview({ setupData, onBack }) {
 
   // 데이터 그룹화 및 A4 용지 규격 기준 동적 페이지 분할
   const getGroupedAndPaginatedPages = (data) => {
-    if (sheetType === '집단상담') {
+    if (sheetType === '집단상담' || sheetType === '또래상담') {
       const pages = []
       let currentPage = []
       let maxLines = 18 // 첫 페이지 최대 라인 수 (헤더 고려)
@@ -305,7 +308,7 @@ export default function PrintPreview({ setupData, onBack }) {
                   <PrintRegisterTable 
                     groupedData={pageRows} 
                     startIndex={startIndex} 
-                    isGroup={sheetType === '집단상담'} 
+                    isGroup={sheetType === '집단상담' || sheetType === '또래상담'} 
                   />
                 </div>
               )
