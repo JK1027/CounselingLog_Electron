@@ -111,14 +111,16 @@ export default function PrintPreview({ setupData, onBack }) {
           const types = [...new Set(filteredData.map(s => s.type).filter(Boolean))]
           setPeerTypes(types.join('\n'))
 
-          // 각 세션 detail의 2번째 줄 추출 후 모아서 합치
-          const subDetails = filteredData
+          // 각 세션 detail의 2번째 줄 추출 — 날짜 오름차순 정렬 후 '- ' 접두어 추가
+          const subDetails = [...filteredData]
+            .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
             .map(s => {
               if (!s.detail) return null
               const lines = s.detail.split('\n')
               return lines[1]?.trim() || null
             })
             .filter(Boolean)
+            .map(line => `- ${line}`)
           setPeerSubDetails(subDetails.join('\n'))
         }
 
