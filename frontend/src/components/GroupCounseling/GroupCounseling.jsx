@@ -31,7 +31,7 @@ export default function GroupCounseling({ onOpenPrintModal, editorWidth, resizin
 
   // 또래상담 세션 필터링
   const displaySessions = useMemo(() => {
-    return groupSessions.filter(s => !s.programName?.includes('또래상담'))
+    return groupSessions.filter(s => !s.programName?.includes('또래상담') && !s.summary?.includes('또래상담'))
   }, [groupSessions])
 
   const [loading, setLoading] = useState(true)

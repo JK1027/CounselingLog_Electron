@@ -61,7 +61,7 @@ export default function PrintPreview({ setupData, onBack }) {
 
         // 집단상담일 경우 또래상담 제외
         const baseData = sheetType === '집단상담'
-          ? rawData.filter(s => !s.programName?.includes('또래상담'))
+          ? rawData.filter(s => !s.programName?.includes('또래상담') && !s.summary?.includes('또래상담'))
           : rawData
 
         // 기간 필터링 적용 (데이터 불변성 유지)
