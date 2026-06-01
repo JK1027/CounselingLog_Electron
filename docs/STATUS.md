@@ -1,7 +1,7 @@
 # 📊 프로젝트 상태서 (STATUS.md)
 
 ## 1. 현재 프로젝트 상태
-* **최신 배포 버전**: `v0.2.21` (2026-05-30)
+* **최신 배포 버전**: `v0.2.22` (2026-06-01)
 * **주요 시스템 상태**: 
   - **프론트엔드**: Vite + React 18 SPA 구조, Zustand 상태 관리 기반.
   - **백엔드**: Python FastAPI REST API 서버. openpyxl, pandas 활용하여 로컬 `상담일지.xlsx` 캐싱 처리 및 트랜잭션 락 적용.
@@ -1161,19 +1161,19 @@
 
 ---
 
-## [2026-06-01] 윈도우 자동 시작(Auto Start) 설정 추가
+## [2026-06-01] 버전 0.2.22 정식 릴리즈 배포
 
 ### 완료 작업
-- [x] **[Electron] OS 시작 프로그램 레지스트리 상태 연동 (`main.js`, `preload.js`)**:
+- [x] **[시스템] 윈도우 자동 시작(Auto Start) 설정 추가**:
   - `app.getLoginItemSettings()` 및 `app.setLoginItemSettings()`를 통해 OS의 실제 시작프로그램 상태를 동기적으로 제어하도록 신설.
   - 패키징 환경(`app.isPackaged`)에서만 동작하도록 가드를 적용하여 개발 환경 간섭을 차단.
-- [x] **[Frontend] Zustand 스토어 및 시스템 설정 탭 연동 (`settingsSlice.js`, `SystemSettingsTab.jsx`)**:
   - 스토어 내 `autoStart` 전역 상태값을 추가하고 설정창 로드 시 실시간으로 OS 상태를 동기화하여 초기화.
-  - 토글 시 OS API를 호출하여 설정 여부를 결정하고, 오류 발생 시 Toast를 통해 에러 피드백 노출.
   - 시스템 및 정보 탭 상단에 '자동 시작' 카드를 렌더링하고, 모던한 토글 스위치와 설명 문구를 제공하여 사용성을 개선.
-
-### 테스트 결과
-- `npm run build` 프론트엔드 빌드 검증 성공 ✅
+- [x] **[Config] package.json 버전 상향 (`package.json`)**:
+  - `electron/package.json` 및 `frontend/package.json` 의 버전 번호를 `0.2.19`에서 **`0.2.22`**으로 상향했습니다.
+- [x] **[Git] 릴리즈 태그 발행 (`git tag`)**:
+  - 변경사항들을 마스터 브랜치에 커밋 및 푸시한 후, 버전 태그 **`v0.2.22`**을 로컬 및 원격 저장소에 발행 및 푸시했습니다.
+  - 이로써 GitHub Actions를 통한 `Release Build and Deploy` 워크플로우를 가동시켜 신규 윈도우 자동 시작 기능이 포함된 빌드 배포판 생성을 개시했습니다.
 
 
 
