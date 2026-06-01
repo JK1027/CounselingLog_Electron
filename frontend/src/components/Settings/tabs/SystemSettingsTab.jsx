@@ -1,4 +1,4 @@
-import { RefreshCw, CheckCircle2, AlertTriangle, Sparkles, Download } from 'lucide-react'
+import { RefreshCw, CheckCircle2, AlertTriangle, Sparkles, Download, Power } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 
 export default function SystemSettingsTab() {
@@ -10,11 +10,55 @@ export default function SystemSettingsTab() {
     updateErrorMessage,
     checkUpdatesManually,
     setBackupModalOpen,
-    setUpdateStatus
+    setUpdateStatus,
+    autoStart,
+    saveAutoStart
   } = useAppStore()
 
   return (
     <div className="space-y-5">
+      {/* 윈도우 설정 카드 */}
+      <div 
+        className="p-5 rounded-2xl border space-y-4 shadow-sm"
+        style={{
+          background: 'var(--bg-secondary)',
+          borderColor: 'var(--border)'
+        }}
+      >
+        <div className="flex justify-between items-center text-xs">
+          <div className="flex items-start gap-3">
+            <div 
+              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" 
+              style={{ background: 'var(--border-light)' }}
+            >
+              <Power size={14} style={{ color: 'var(--text-secondary)' }} />
+            </div>
+            <div>
+              <span className="block font-bold text-neutral-800 dark:text-neutral-200 animate-fade-in" style={{ color: 'var(--text-primary)' }}>
+                자동 시작 (Auto Start)
+              </span>
+              <span className="block text-[11px] text-neutral-400 mt-1.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                Windows 로그인 후 상담일지 프로그램이 자동 실행됩니다.
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={() => saveAutoStart(!autoStart)}
+            className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+            style={{
+              backgroundColor: autoStart ? 'var(--accent)' : 'var(--border)'
+            }}
+          >
+            <span
+              className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+              style={{
+                transform: autoStart ? 'translateX(20px)' : 'translateX(0px)'
+              }}
+            />
+          </button>
+        </div>
+      </div>
+
       {/* 버전 정보 카드 */}
       <div 
         className="p-5 rounded-2xl border space-y-4 shadow-sm"

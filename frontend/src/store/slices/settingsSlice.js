@@ -20,6 +20,7 @@ export const createSettingsSlice = (set, get) => ({
   showUpdateAvailableModal: false,
   dismissedVersion: '',
   isManualCheck: false,
+  autoStart: false,
 
   setAppVersion: (ver) => set({ appVersion: ver }),
   setUpdateStatus: (status) => set({ updateStatus: status }),
@@ -78,13 +79,39 @@ export const createSettingsSlice = (set, get) => ({
         const settings = await window.electronAPI.getSettings()
         const dir = settings.backupDir || ''
         const dismissed = settings.dismissedVersion || ''
-        set({ backupDir: dir, dismissedVersion: dismissed })
+        
+        let autoStartVal = false
+        if (window.electronAPI.getAutoStart) {
+          autoStartVal = await window.electronAPI.getAutoStart()
+        }
+        
+        set({ backupDir: dir, dismissedVersion: dismissed, autoStart: autoStartVal })
         
         await studentService.syncSettings(dir)
       } catch (e) {
         console.error('Failed to load settings in store:', e)
       }
     }
+  },
+
+  // 자동 시작 설정 변경
+  saveAutoStart: async (val) => {
+    if (window.electronAPI && window.electronAPI.setAutoStart) {
+      try {
+        const res = await window.electronAPI.setAutoStart(val)
+        if (res.success) {
+          set({ autoStart: val })
+          return true
+        } else {
+          get().addToast(`자동 시작 설정 실패: ${res.error || '알 수 없는 오류'}`, 'error')
+          return false
+        }
+      } catch (e) {
+        get().addToast(`자동 시작 설정 에러: ${e.message}`, 'error')
+        return false
+      }
+    }
+    return false
   },
 
   // 백업 디렉토리 설정 저장

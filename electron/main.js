@@ -428,6 +428,37 @@ ipcMain.handle('settings:get', async () => {
   return {}
 })
 
+ipcMain.handle('settings:getAutoStart', () => {
+  try {
+    if (app.isPackaged) {
+      const settings = app.getLoginItemSettings()
+      return settings.openAtLogin
+    }
+    // 개발 환경에서는 실제 윈도우 환경설정이 아닌 false 또는 mock 반환
+    return false
+  } catch (err) {
+    console.error('[Electron] Failed to get login item settings:', err)
+    return false
+  }
+})
+
+ipcMain.handle('settings:setAutoStart', (event, enabled) => {
+  try {
+    if (app.isPackaged) {
+      app.setLoginItemSettings({
+        openAtLogin: enabled,
+        path: process.execPath
+      })
+    } else {
+      console.log(`[Electron] Dev mode: setLoginItemSettings simulated to ${enabled}`)
+    }
+    return { success: true }
+  } catch (err) {
+    console.error('[Electron] Failed to set login item settings:', err)
+    return { success: false, error: err.message }
+  }
+})
+
 ipcMain.handle('dialog:openDirectory', async () => {
   return await handleDirectoryOpen(mainWindow)
 })

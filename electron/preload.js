@@ -29,7 +29,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 설정 제어 및 폴더 탐색기
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
   getSettings: () => ipcRenderer.invoke('settings:get'),
-  openDirectoryDialog: () => ipcRenderer.invoke('dialog:openDirectory')
+  openDirectoryDialog: () => ipcRenderer.invoke('dialog:openDirectory'),
+  getAutoStart: () => ipcRenderer.invoke('settings:getAutoStart'),
+  setAutoStart: (enabled) => ipcRenderer.invoke('settings:setAutoStart', enabled)
 })
 
 contextBridge.exposeInMainWorld('updaterAPI', {

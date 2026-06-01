@@ -1,8 +1,25 @@
 {
   "total": 102,
-  "passed": 102,
-  "failed": 0,
-  "errors": [],
+  "passed": 98,
+  "failed": 4,
+  "errors": [
+    {
+      "name": "Today total > 0",
+      "detail": "total=0"
+    },
+    {
+      "name": "Today total matches expected (~8)",
+      "detail": "total=0 (expected ~8)"
+    },
+    {
+      "name": "Guardian matches expected (~2)",
+      "detail": "guardian=0 (expected ~2)"
+    },
+    {
+      "name": "Referral matches expected (~1)",
+      "detail": "referral=0 (expected ~1)"
+    }
+  ],
   "results": [
     {
       "name": "GET /health returns 200",
@@ -32,7 +49,7 @@
     {
       "name": "Has students (> 0)",
       "passed": true,
-      "detail": "Count: 39"
+      "detail": "Count: 38"
     },
     {
       "name": "Student has required fields",
@@ -57,7 +74,7 @@
     {
       "name": "Grade values do not contain '학년' suffix",
       "passed": true,
-      "detail": "Grades: {'5', '1', '2', '4', '3', '6'}"
+      "detail": "Grades: {'4', '1', '3', '6', '5', '2'}"
     },
     {
       "name": "All students have sessionCount > 0",
@@ -67,7 +84,7 @@
     {
       "name": "Ban (class) extracted from studentId",
       "passed": true,
-      "detail": "39 students have ban"
+      "detail": "38 students have ban"
     },
     {
       "name": "Ban extraction: 1201 -> ban=2",
@@ -127,7 +144,7 @@
     {
       "name": "Returns sessions",
       "passed": true,
-      "detail": "Count: 158"
+      "detail": "Count: 152"
     },
     {
       "name": "Filter by sheetType='개인상담' returns 200",
@@ -137,7 +154,7 @@
     {
       "name": "  All results match sheetType='개인상담'",
       "passed": true,
-      "detail": "Count: 82"
+      "detail": "Count: 81"
     },
     {
       "name": "Filter by sheetType='집단상담' returns 200",
@@ -147,7 +164,7 @@
     {
       "name": "  All results match sheetType='집단상담'",
       "passed": true,
-      "detail": "Count: 38"
+      "detail": "Count: 37"
     },
     {
       "name": "Filter by sheetType='보호자상담' returns 200",
@@ -157,7 +174,7 @@
     {
       "name": "  All results match sheetType='보호자상담'",
       "passed": true,
-      "detail": "Count: 24"
+      "detail": "Count: 22"
     },
     {
       "name": "Filter by sheetType='교원자문' returns 200",
@@ -167,7 +184,7 @@
     {
       "name": "  All results match sheetType='교원자문'",
       "passed": true,
-      "detail": "Count: 8"
+      "detail": "Count: 7"
     },
     {
       "name": "Filter by sheetType='의뢰' returns 200",
@@ -177,12 +194,12 @@
     {
       "name": "  All results match sheetType='의뢰'",
       "passed": true,
-      "detail": "Count: 6"
+      "detail": "Count: 5"
     },
     {
       "name": "Session numbers assigned in all-sessions view",
       "passed": true,
-      "detail": "158/158 have session numbers"
+      "detail": "152/152 have session numbers"
     },
     {
       "name": "GET /stats/today returns 200",
@@ -196,33 +213,33 @@
     },
     {
       "name": "Today total > 0",
-      "passed": true,
-      "detail": "total=8"
+      "passed": false,
+      "detail": "total=0"
     },
     {
       "name": "Guardian count >= 0",
       "passed": true,
-      "detail": "guardian=2"
+      "detail": "guardian=0"
     },
     {
       "name": "Referral count >= 0",
       "passed": true,
-      "detail": "referral=1"
+      "detail": "referral=0"
     },
     {
       "name": "Today total matches expected (~8)",
-      "passed": true,
-      "detail": "total=8 (expected ~8)"
+      "passed": false,
+      "detail": "total=0 (expected ~8)"
     },
     {
       "name": "Guardian matches expected (~2)",
-      "passed": true,
-      "detail": "guardian=2 (expected ~2)"
+      "passed": false,
+      "detail": "guardian=0 (expected ~2)"
     },
     {
       "name": "Referral matches expected (~1)",
-      "passed": true,
-      "detail": "referral=1 (expected ~1)"
+      "passed": false,
+      "detail": "referral=0 (expected ~1)"
     },
     {
       "name": "POST /sessions (individual) returns 200",
@@ -397,7 +414,7 @@
     {
       "name": "Has peer students",
       "passed": true,
-      "detail": "Count: 1"
+      "detail": "Count: 10"
     },
     {
       "name": "Peer student has required fields",
