@@ -10,6 +10,7 @@ const isDev = !app.isPackaged
 let mainWindow = null
 let pythonProcess = null
 let isQuitting = false
+let isQuittingInProgress = false
 
 // ─── Python FastAPI 백엔드 시작 및 헬스 체크 ─────────────────────────────────────────────
 function startPythonBackend() {
@@ -265,51 +266,60 @@ function createWindow() {
   })
 
   mainWindow.on('close', (e) => {
+    // 이미 완전 종료 상태(isQuitting === true)이면 닫기 허용
     if (isQuitting) return
 
+    // 중복 종료 진행 중(isQuittingInProgress)인 경우 무시
+    if (isQuittingInProgress) {
+      e.preventDefault()
+      return
+    }
+
+    isQuittingInProgress = true
     e.preventDefault()
 
-    const choice = dialog.showMessageBoxSync(mainWindow, {
-      type: 'question',
-      buttons: ['예 (백업 후 종료)', '아니오 (백업 없이 종료)', '취소'],
-      defaultId: 0,
-      cancelId: 2,
-      title: '종료 확인',
-      message: '종료하기 전에 상담일지를 백업하시겠습니까?',
-      detail: '최근 변경 사항을 안전하게 보관하기 위해 백업 생성을 권장합니다.'
+    // 렌더러에 '종료 및 백업 진행 중' 오버레이 활성화 이벤트 전송
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('app:quitting')
+    }
+
+    // 최종 종료 처리 함수
+    const finalizeClose = () => {
+      isQuitting = true
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.close()
+      }
+    }
+
+    // 3초 타임아웃 타이머
+    const timeoutTimer = setTimeout(() => {
+      console.error('[Electron] Auto-backup request timeout upon close. Quitting immediately.')
+      finalizeClose()
+    }, 3000)
+
+    // 로컬 백엔드 백업 API 호출
+    const req = http.request({
+      hostname: 'localhost',
+      port: 8765,
+      path: '/backup',
+      method: 'POST'
+    }, (res) => {
+      let body = ''
+      res.on('data', chunk => body += chunk)
+      res.on('end', () => {
+        clearTimeout(timeoutTimer)
+        console.log('[Electron] Close auto-backup finished successfully:', body.trim())
+        finalizeClose()
+      })
     })
 
-    if (choice === 0) {
-      // 1. '예': 백업 진행 후 종료
-      const req = http.request({
-        hostname: 'localhost',
-        port: 8765,
-        path: '/backup',
-        method: 'POST'
-      }, (res) => {
-        let body = ''
-        res.on('data', chunk => body += chunk)
-        res.on('end', () => {
-          console.log('[Electron] Auto-backup completed upon exit:', body)
-          isQuitting = true
-          mainWindow.close()
-        })
-      })
+    req.on('error', (err) => {
+      clearTimeout(timeoutTimer)
+      console.error('[Electron] Close auto-backup API request error:', err.message)
+      finalizeClose()
+    })
 
-      req.on('error', (err) => {
-        console.error('[Electron] Auto-backup failed upon exit:', err.message)
-        dialog.showErrorBox('백업 실패', '종료 백업 생성 중 오류가 발생했습니다: ' + err.message)
-        isQuitting = true
-        mainWindow.close()
-      })
-
-      req.end()
-    } else if (choice === 1) {
-      // 2. '아니오': 백업 없이 종료
-      isQuitting = true
-      mainWindow.close()
-    }
-    // 3. '취소': 아무 작업도 안 하고 종료 취소
+    req.end()
   })
 
   mainWindow.on('closed', () => {

@@ -15,6 +15,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeListener('menu:file-opened', subscription)
     }
   },
+  onAppQuitting: (callback) => {
+    const subscription = () => callback()
+    ipcRenderer.on('app:quitting', subscription)
+    return () => {
+      ipcRenderer.removeListener('app:quitting', subscription)
+    }
+  },
   
   // DOM File 객체로부터 실제 절대 경로를 안전하게 추출 (Electron 32+ 대응)
   getPathForFile: (file) => webUtils.getPathForFile(file),

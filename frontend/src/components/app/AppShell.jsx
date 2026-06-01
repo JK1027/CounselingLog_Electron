@@ -11,7 +11,7 @@ import PrintPreview from '@/components/Print/PrintPreview'
 import PreUpdateBackupModal from '@/components/ui/PreUpdateBackupModal'
 import UpdateAvailableModal from '@/components/ui/UpdateAvailableModal'
 import SettingsModal from '@/components/Settings/SettingsModal'
-import { FileSpreadsheet } from 'lucide-react'
+import { FileSpreadsheet, RefreshCw } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { useLayoutResize } from '@/hooks/useLayoutResize'
 
@@ -31,6 +31,7 @@ export default function AppShell() {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false)
   const [printModalConfig, setPrintModalConfig] = useState(null)
   const [printSetupData, setPrintSetupData] = useState(null)
+  const [isQuittingApp, setIsQuittingApp] = useState(false)
 
   const handleOpenPrintModal = (config = null) => {
     setPrintModalConfig(config)
@@ -77,6 +78,16 @@ export default function AppShell() {
       window.removeEventListener('dragenter', handleWindowDragEnter)
       window.removeEventListener('dragleave', handleWindowDragLeave)
       window.removeEventListener('drop', handleWindowDrop)
+    }
+  }, [])
+
+  // 앱 종료 중 이벤트 수신 리스너
+  useEffect(() => {
+    if (window.electronAPI && window.electronAPI.onAppQuitting) {
+      const unsub = window.electronAPI.onAppQuitting(() => {
+        setIsQuittingApp(true)
+      })
+      return unsub
     }
   }, [])
 
@@ -268,6 +279,29 @@ export default function AppShell() {
             <h3 className="text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>상담일지 파일 가져오기</h3>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
               여기에 엑셀 파일(.xlsx)을 놓으면<br />상담일지 데이터를 즉시 불러옵니다.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 앱 종료 중 백업 안내 오버레이 (마우스 클릭 및 상호작용 차단을 위해 pointer-events-auto 지정) */}
+      {isQuittingApp && (
+        <div 
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center pointer-events-auto select-none"
+          style={{ 
+            background: 'rgba(240, 244, 249, 0.95)', 
+            backdropFilter: 'blur(8px)' 
+          }}
+        >
+          <div className="flex flex-col items-center justify-center p-10 max-w-sm text-center">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-50 text-blue-500 animate-spin mb-4 border border-blue-100/50">
+              <RefreshCw size={20} />
+            </div>
+            <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mb-2" style={{ color: 'var(--text-primary)' }}>
+              상담 데이터를 백업하고 있습니다.
+            </h3>
+            <p className="text-xs text-neutral-400" style={{ color: 'var(--text-muted)' }}>
+              잠시만 기다려 주세요...
             </p>
           </div>
         </div>
