@@ -19,7 +19,9 @@ export default function SettingsModal() {
     updateErrorMessage,
     checkUpdatesManually,
     setBackupModalOpen,
-    setUpdateStatus
+    setUpdateStatus,
+    isCompactMode,
+    toggleCompactMode
   } = useAppStore()
 
   const [testing, setTesting] = useState(false)
@@ -208,6 +210,46 @@ export default function SettingsModal() {
                   <span className="text-neutral-400 font-medium" style={{ color: 'var(--text-muted)' }}>대기 중</span>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* 설정 섹션: 화면 및 레이아웃 설정 */}
+          <div className="space-y-4 pt-5 border-t" style={{ borderColor: 'var(--border)' }}>
+            <div className="border-b pb-2" style={{ borderColor: 'var(--border)' }}>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400" style={{ color: 'var(--text-muted)' }}>화면 및 레이아웃 설정</h4>
+            </div>
+
+            {/* 설정 행: 압축 모드 토글 */}
+            <div className="flex justify-between items-center text-xs">
+              <div>
+                <span className="block font-bold text-neutral-800 dark:text-neutral-200" style={{ color: 'var(--text-primary)' }}>
+                  압축 모드 (Compact Mode)
+                  <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{
+                    background: isCompactMode ? 'var(--accent-soft)' : 'var(--bg-primary)',
+                    color: isCompactMode ? 'var(--accent)' : 'var(--text-muted)',
+                    border: '1px solid var(--border)'
+                  }}>
+                    {isCompactMode ? '압축 모드 적용 중' : '기본 모드'}
+                  </span>
+                </span>
+                <span className="block text-[11px] text-neutral-400 mt-1" style={{ color: 'var(--text-muted)' }}>
+                  타임라인과 사이드바의 크기를 25% 축소하여 한 화면에 더 많은 정보를 표시합니다.
+                </span>
+              </div>
+              <button
+                onClick={toggleCompactMode}
+                className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                style={{
+                  backgroundColor: isCompactMode ? 'var(--accent)' : 'var(--border)'
+                }}
+              >
+                <span
+                  className="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  style={{
+                    transform: isCompactMode ? 'translateX(20px)' : 'translateX(0px)'
+                  }}
+                />
+              </button>
             </div>
           </div>
 

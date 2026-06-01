@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Search, Users, ChevronRight, AlertCircle, BookOpen, FolderOpen, Maximize2, Minimize2, UserPlus, Home, Sparkles, Download, RefreshCw, Database, Settings } from 'lucide-react'
+import { Search, Users, ChevronRight, AlertCircle, BookOpen, FolderOpen, UserPlus, Home, Sparkles, Download, RefreshCw, Database, Settings } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { Avatar, TagBadge, IconButton } from '@/components/ui/shared'
 
@@ -124,17 +124,6 @@ export default function Sidebar({ width }) {
                   className="p-0.5 rounded hover:bg-hover transition-colors inline-flex items-center justify-center cursor-pointer"
                 >
                   <FolderOpen size={11} style={{ color: 'var(--accent)' }} />
-                </button>
-                <button
-                  onClick={toggleCompactMode}
-                  title={isCompactMode ? "기본 모드로 전환" : "압축 모드로 전환"}
-                  className="p-0.5 rounded hover:bg-hover transition-colors inline-flex items-center justify-center cursor-pointer ml-0.5"
-                >
-                  {isCompactMode ? (
-                    <Minimize2 size={11} style={{ color: 'var(--accent)' }} />
-                  ) : (
-                    <Maximize2 size={11} style={{ color: 'var(--text-muted)' }} />
-                  )}
                 </button>
                 <IconButton
                   icon={Database}
