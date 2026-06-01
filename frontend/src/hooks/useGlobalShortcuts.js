@@ -20,6 +20,18 @@ export function useGlobalShortcuts() {
 
     // 전역 단축키 이벤트 리스너
     const handleKeyDown = (e) => {
+      // 0. Ctrl + O: 상담일지 엑셀 파일 열기 다이얼로그 호출
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
+        e.preventDefault()
+        if (window.electronAPI && window.electronAPI.openFileDialog) {
+          window.electronAPI.openFileDialog().then((filePath) => {
+            if (filePath) {
+              openFileByPath(filePath)
+            }
+          })
+        }
+      }
+
       // 1. Ctrl + N: 새 상담 작성 패널 호출 (학생 선택 필수)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
         e.preventDefault()

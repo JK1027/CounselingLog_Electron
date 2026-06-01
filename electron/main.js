@@ -246,6 +246,10 @@ function createWindow() {
     show: false, // ready-to-show 이벤트 후 표시
   })
 
+  // 메뉴바 숨김 설정 (Alt 키로 토글 가능하게 유지하여 단축키 기능 보존)
+  mainWindow.setMenuBarVisibility(false)
+  mainWindow.setAutoHideMenuBar(true)
+
   // 개발: Vite 개발 서버 / 프로덕션: 빌드된 파일
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173')
