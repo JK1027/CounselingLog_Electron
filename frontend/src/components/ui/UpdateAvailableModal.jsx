@@ -146,7 +146,7 @@ export default function UpdateAvailableModal() {
 
   // 릴리즈 노트 파싱 실행 및 필터링
   const notesSource = newVersionInfo.releaseNotes || 
-    `### 새로운 기능\n- 최근 작업 취소(Undo) 시스템 구현 (Gmail 스타일)\n- 상담 저장, 수정, 삭제 후 15초 이내 되돌리기 버튼 노출\n- 학생 전환 및 토스트 팝업 강제 종료 시에도 유효시간 동안 취소 기능 작동 보장\n- 되돌리기 완료 시 현재 학생의 상담 목록만 부분 갱신하도록 성능 최적화\n- 취소 동작 성공 시 유형별 명확한 완료 토스트 알림 노출`;
+    `### 새로운 기능\n- 인쇄 옵션 기억 기능 추가 (localStorage)\n- 날짜 범위 제외 설정 복원 및 컨텍스트 자동 검증\n- 기본값 복원 기능 추가`;
 
   const parsedSections = parseReleaseNotes(notesSource).filter(s => s.items.length > 0)
   const isFallback = parsedSections.length === 0
