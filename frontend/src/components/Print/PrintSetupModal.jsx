@@ -17,21 +17,42 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
 
   useEffect(() => {
     if (isOpen) {
-      // 모달이 열릴 때 기본값 리셋 또는 이전 설정 복원
-      const target = initialConfig?.printTarget || initialConfig?.initialTarget || (selectedStudent && !selectedStudent.isGroupTab && !selectedStudent.isPeerTab ? 'student' : 'all')
-      const defaultSheet = initialConfig?.sheetType || initialConfig?.defaultSheetType || '개인상담'
-      const sessionFilt = initialConfig?.sessionFilter || 'all'
-      const prtFormat = initialConfig?.printFormat || 'report'
-      const stDate = initialConfig?.startDate || ''
-      const enDate = initialConfig?.endDate || ''
-      const sort = initialConfig?.sortBy || 'date_asc'
+      // 기본값 설정
+      let target = initialConfig?.printTarget || initialConfig?.initialTarget || (selectedStudent && !selectedStudent.isGroupTab && !selectedStudent.isPeerTab ? 'student' : 'all')
+      let defaultSheet = initialConfig?.sheetType || initialConfig?.defaultSheetType || '개인상담'
+      let sessionFilt = initialConfig?.sessionFilter || 'all'
+      let prtFormat = initialConfig?.printFormat || 'report'
+      let sort = initialConfig?.sortBy || 'date_asc'
+
+      // localStorage 복원
+      try {
+        const stored = localStorage.getItem('counseling_print_preferences_v1')
+        if (stored) {
+          const pref = JSON.parse(stored)
+          
+          // Context 검증: student 타겟인데 현재 열어둔 학생이 없거나 특수 탭이면 fallback
+          if (pref.printTarget === 'student' && (!selectedStudent || selectedStudent.isGroupTab || selectedStudent.isPeerTab)) {
+            target = 'all'
+          } else if (pref.printTarget) {
+            target = pref.printTarget
+          }
+
+          if (pref.sheetType) defaultSheet = pref.sheetType
+          if (pref.sessionFilter) sessionFilt = pref.sessionFilter
+          if (pref.printFormat) prtFormat = pref.printFormat
+          if (pref.sortBy) sort = pref.sortBy
+        }
+      } catch (e) {
+        console.error('Failed to parse print preferences, clearing:', e)
+        localStorage.removeItem('counseling_print_preferences_v1')
+      }
 
       setPrintTarget(target)
       setSheetType(defaultSheet)
       setSessionFilter(sessionFilt)
       setPrintFormat(prtFormat)
-      setStartDate(stDate)
-      setEndDate(enDate)
+      setStartDate(initialConfig?.startDate || '')
+      setEndDate(initialConfig?.endDate || '')
       setSortBy(sort)
     }
   }, [isOpen, selectedStudent, initialConfig])
@@ -85,6 +106,20 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
     if (startDate && endDate && startDate > endDate) {
       useAppStore.getState().addToast('시작일은 종료일보다 이전 날짜여야 합니다.', 'error')
       return
+    }
+
+    // 설정 저장 (counseling_print_preferences_v1)
+    try {
+      const pref = {
+        printTarget,
+        sheetType,
+        sessionFilter,
+        printFormat,
+        sortBy
+      }
+      localStorage.setItem('counseling_print_preferences_v1', JSON.stringify(pref))
+    } catch (e) {
+      console.error('Failed to save print preferences:', e)
     }
 
     onPreview({
@@ -405,24 +440,46 @@ export default function PrintSetupModal({ isOpen, onClose, onPreview, initialCon
 
         {/* 푸터 */}
         <div
-          className="px-5 py-4 flex gap-2 justify-end"
+          className="px-5 py-4 flex justify-between items-center"
           style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-primary)' }}
         >
+          {/* 기본값 복원 버튼 */}
           <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-semibold border hover:bg-hover cursor-pointer"
-            style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+            type="button"
+            onClick={() => {
+              localStorage.removeItem('counseling_print_preferences_v1')
+              setPrintTarget(selectedStudent && !selectedStudent.isGroupTab && !selectedStudent.isPeerTab ? 'student' : 'all')
+              setSheetType('개인상담')
+              setSessionFilter('all')
+              setPrintFormat('report')
+              setStartDate('')
+              setEndDate('')
+              setSortBy('date_asc')
+              useAppStore.getState().addToast('인쇄 설정이 기본값으로 초기화되었습니다.', 'success')
+            }}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-hover transition-colors text-red-500 cursor-pointer"
+            style={{ color: 'var(--red)' }}
           >
-            취소
+            기본값 복원
           </button>
-          <button
-            onClick={handlePreviewClick}
-            className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
-            style={{ background: 'var(--accent)', boxShadow: '0 2px 8px var(--accent-glow)' }}
-          >
-            <FileText size={13} />
-            인쇄 미리보기
-          </button>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl text-xs font-semibold border hover:bg-hover cursor-pointer"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+            >
+              취소
+            </button>
+            <button
+              onClick={handlePreviewClick}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+              style={{ background: 'var(--accent)', boxShadow: '0 2px 8px var(--accent-glow)' }}
+            >
+              <FileText size={13} />
+              인쇄 미리보기
+            </button>
+          </div>
         </div>
       </div>
     </div>
