@@ -8,6 +8,83 @@ export const createSessionSlice = (set, get) => ({
   selectedSession: null,
   setSelectedSession: (session) => set({ selectedSession: session }),
 
+  // Undo 관련 상태 및 액션
+  lastAction: null,
+  undoTimerId: null,
+
+  setLastAction: (action) => {
+    const { undoTimerId } = get()
+    if (undoTimerId) {
+      clearTimeout(undoTimerId)
+    }
+    
+    let timerId = null
+    if (action) {
+      timerId = setTimeout(() => {
+        set({ lastAction: null, undoTimerId: null })
+      }, 15000)
+    }
+    
+    set({ lastAction: action, undoTimerId: timerId })
+  },
+
+  performUndo: async () => {
+    const { lastAction, undoTimerId, addToast, loadSessions } = get()
+    if (!lastAction) return
+
+    if (undoTimerId) {
+      clearTimeout(undoTimerId)
+    }
+    set({ lastAction: null, undoTimerId: null })
+
+    const { type, studentId, studentName, sessionData } = lastAction
+
+    try {
+      if (type === 'create') {
+        await sessionService.deleteSession(sessionData.id)
+        addToast('✓ 상담 저장이 취소되었습니다.', 'success')
+      } else if (type === 'update') {
+        const updateData = {
+          date: sessionData.date,
+          type: sessionData.type,
+          summary: sessionData.summary,
+          detail: sessionData.detail,
+          sheetType: sessionData.sheetType,
+          counselingCount: sessionData.counselingCount || '',
+          programName: sessionData.programName || ''
+        }
+        await sessionService.updateSession(sessionData.id, updateData)
+        addToast('✓ 상담 수정이 취소되었습니다.', 'success')
+      } else if (type === 'delete') {
+        const restoreData = {
+          name: studentName,
+          studentId: studentId,
+          grade: sessionData.grade || '',
+          gender: sessionData.gender || '',
+          date: sessionData.date,
+          type: sessionData.type,
+          sheetType: sessionData.sheetType,
+          summary: sessionData.summary,
+          detail: sessionData.detail,
+          counselingCount: sessionData.counselingCount || '',
+          programName: sessionData.programName || ''
+        }
+        await sessionService.addSession({ name: studentName, studentId, grade: restoreData.grade, gender: restoreData.gender }, restoreData)
+        addToast('✓ 삭제된 상담이 복구되었습니다.', 'success')
+      }
+
+      const currentStudent = get().selectedStudent
+      if (currentStudent) {
+        await loadSessions(currentStudent)
+      }
+      
+      const statsData = await studentService.getTodayStats()
+      set({ todayStats: statsData })
+    } catch (e) {
+      addToast(`되돌리기 실패: ${e.message}`, 'error')
+    }
+  },
+
   todayStats: { total: 0, pending: 0, guardian: 0, referral: 0 },
 
   // 데이터 유효성 검사 (드롭다운 옵션) 맵 초기값
@@ -131,13 +208,25 @@ export const createSessionSlice = (set, get) => ({
 
     set({ saveState: 'saving' })
     try {
-      await sessionService.addSession(selectedStudent, formData)
+      const res = await sessionService.addSession(selectedStudent, formData)
       
       set({ saveState: 'saved' })
       setTimeout(() => set({ saveState: 'idle' }), 3000)
 
       // Reload students and todayStats
       await get().initialize()
+
+      if (res && res.session_id) {
+        get().setLastAction({
+          type: 'create',
+          studentId: selectedStudent.studentId,
+          studentName: selectedStudent.name,
+          sessionData: {
+            id: res.session_id,
+            ...formData
+          }
+        })
+      }
       
       const { isContinuousEntry } = get()
       if (isContinuousEntry) {
@@ -150,10 +239,20 @@ export const createSessionSlice = (set, get) => ({
           set({ selectedStudent: nextStudent })
           await get().loadSessions(nextStudent)
           set({ editorOpen: true, editorMode: 'new' })
-          get().addToast(`${selectedStudent.name} 학생의 새 상담 기록이 저장되었습니다. 연속 입력 모드로 다음 학생(${nextStudent.name})으로 이동합니다.`, 'success')
+          get().addToast(`${selectedStudent.name} 학생의 새 상담 기록이 저장되었습니다.`, 'success', {
+            text: '되돌리기',
+            onClick: () => {
+              get().performUndo()
+            }
+          })
           return
         } else {
-          get().addToast(`${selectedStudent.name} 학생의 새 상담 기록이 저장되었습니다. 마지막 학생입니다.`, 'success')
+          get().addToast(`${selectedStudent.name} 학생의 새 상담 기록이 저장되었습니다. 마지막 학생입니다.`, 'success', {
+            text: '되돌리기',
+            onClick: () => {
+              get().performUndo()
+            }
+          })
         }
       }
       
@@ -176,9 +275,9 @@ export const createSessionSlice = (set, get) => ({
       
       set({ editorOpen: false })
       get().addToast(`${selectedStudent.name} 학생의 새 상담 기록이 저장되었습니다.`, 'success', {
-        text: '같은 학생 계속 입력',
+        text: '되돌리기',
         onClick: () => {
-          set({ editorOpen: true, editorMode: 'new' })
+          get().performUndo()
         }
       })
     } catch (e) {
@@ -189,7 +288,8 @@ export const createSessionSlice = (set, get) => ({
 
   // ─── 세션 수정 ─────────────────────────────────────────────────────────
   updateSession: async (sessionId, formData) => {
-    const { selectedStudent } = get()
+    const { selectedStudent, sessions } = get()
+    const originalSession = sessions.find(s => s.id === sessionId)
     set({ saveState: 'saving' })
     try {
       await sessionService.updateSession(sessionId, formData)
@@ -199,6 +299,15 @@ export const createSessionSlice = (set, get) => ({
 
       // Reload stats and student lists
       await get().initialize()
+
+      if (originalSession) {
+        get().setLastAction({
+          type: 'update',
+          studentId: selectedStudent?.studentId || '',
+          studentName: selectedStudent?.name || '',
+          sessionData: originalSession
+        })
+      }
       
       // Re-load selected student to sync latest data
       if (selectedStudent) {
@@ -213,7 +322,12 @@ export const createSessionSlice = (set, get) => ({
       }
       
       set({ selectedSession: null, editorOpen: false })
-      get().addToast('상담 기록이 수정되었습니다.', 'success')
+      get().addToast('상담 기록이 수정되었습니다.', 'success', {
+        text: '되돌리기',
+        onClick: () => {
+          get().performUndo()
+        }
+      })
     } catch (e) {
       set({ saveState: 'error' })
       get().addToast(e.message, 'error')
@@ -222,7 +336,8 @@ export const createSessionSlice = (set, get) => ({
 
   // ─── 세션 삭제 ─────────────────────────────────────────────────────────
   deleteSession: async (sessionId) => {
-    const { selectedStudent } = get()
+    const { selectedStudent, sessions } = get()
+    const originalSession = sessions.find(s => s.id === sessionId)
     set({ saveState: 'saving' })
     try {
       await sessionService.deleteSession(sessionId)
@@ -232,6 +347,15 @@ export const createSessionSlice = (set, get) => ({
 
       // Reload stats and student lists
       await get().initialize()
+
+      if (originalSession) {
+        get().setLastAction({
+          type: 'delete',
+          studentId: selectedStudent?.studentId || '',
+          studentName: selectedStudent?.name || '',
+          sessionData: originalSession
+        })
+      }
       
       // Re-load selected student to sync latest data
       if (selectedStudent) {
@@ -248,7 +372,12 @@ export const createSessionSlice = (set, get) => ({
         }
       }
       
-      get().addToast('상담 기록이 삭제되었습니다.', 'success')
+      get().addToast('상담 기록이 삭제되었습니다.', 'success', {
+        text: '되돌리기',
+        onClick: () => {
+          get().performUndo()
+        }
+      })
     } catch (e) {
       set({ saveState: 'error' })
       get().addToast(e.message, 'error')
