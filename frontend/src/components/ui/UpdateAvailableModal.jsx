@@ -146,7 +146,7 @@ export default function UpdateAvailableModal() {
 
   // 릴리즈 노트 파싱 실행 및 필터링
   const notesSource = newVersionInfo.releaseNotes || 
-    `### 중요 업데이트\n- 사용자 피드백을 반영한 5대 핵심 UX 개선 완료\n\n### 새로운 기능\n- 최근 열람 학생 목록 추가\n- Ctrl+K 단축키 힌트 변경\n- 검색어 하이라이트 및 학급 정보 노출\n- 연속 입력 모드 Custom Switch UI 전환 및 설명 보강\n- 저장 완료 토스트 내 [같은 학생 계속 입력] 액션 지원`;
+    `### 새로운 기능\n- 최근 작업 취소(Undo) 시스템 구현 (Gmail 스타일)\n- 상담 저장, 수정, 삭제 후 15초 이내 되돌리기 버튼 노출\n- 학생 전환 및 토스트 팝업 강제 종료 시에도 유효시간 동안 취소 기능 작동 보장\n- 되돌리기 완료 시 현재 학생의 상담 목록만 부분 갱신하도록 성능 최적화\n- 취소 동작 성공 시 유형별 명확한 완료 토스트 알림 노출`;
 
   const parsedSections = parseReleaseNotes(notesSource).filter(s => s.items.length > 0)
   const isFallback = parsedSections.length === 0
