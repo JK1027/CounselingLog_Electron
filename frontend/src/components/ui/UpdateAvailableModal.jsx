@@ -145,7 +145,10 @@ export default function UpdateAvailableModal() {
   }
 
   // 릴리즈 노트 파싱 실행 및 필터링
-  const parsedSections = parseReleaseNotes(newVersionInfo.releaseNotes).filter(s => s.items.length > 0)
+  const notesSource = newVersionInfo.releaseNotes || 
+    `### 중요 업데이트\n- 사용자 피드백을 반영한 5대 핵심 UX 개선 완료\n\n### 새로운 기능\n- 최근 열람 학생 목록 추가\n- Ctrl+K 단축키 힌트 변경\n- 검색어 하이라이트 및 학급 정보 노출\n- 연속 입력 모드 Custom Switch UI 전환 및 설명 보강\n- 저장 완료 토스트 내 [같은 학생 계속 입력] 액션 지원`;
+
+  const parsedSections = parseReleaseNotes(notesSource).filter(s => s.items.length > 0)
   const isFallback = parsedSections.length === 0
 
   // 업데이트 다운로드 시작 (건너뛰지 않음)
