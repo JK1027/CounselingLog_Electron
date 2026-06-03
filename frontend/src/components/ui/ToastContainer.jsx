@@ -22,9 +22,9 @@ function ToastItem({ toast, onClose }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose()
-    }, 3000)
+    }, toast.action ? 5000 : 3000)
     return () => clearTimeout(timer)
-  }, [onClose])
+  }, [onClose, toast.action])
 
   return (
     <div
@@ -43,7 +43,19 @@ function ToastItem({ toast, onClose }) {
         )}
       </div>
       <div className="flex-1 text-sm font-medium leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-        {toast.message}
+        <div>{toast.message}</div>
+        {toast.action && (
+          <button
+            onClick={() => {
+              toast.action.onClick()
+              onClose()
+            }}
+            className="mt-1.5 text-xs font-bold hover:underline flex items-center gap-1 cursor-pointer"
+            style={{ color: 'var(--accent)' }}
+          >
+            {toast.action.text}
+          </button>
+        )}
       </div>
       <button
         onClick={onClose}

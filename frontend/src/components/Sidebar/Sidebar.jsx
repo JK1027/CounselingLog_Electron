@@ -17,6 +17,7 @@ export default function Sidebar({ width }) {
     searchQuery,
     setEditorOpen,
     setSettingsOpen,
+    recentStudentIds,
     
     // 글로벌 업데이트 상태들
     appVersion,
@@ -60,6 +61,12 @@ export default function Sidebar({ width }) {
   const students = useMemo(() => {
     return getFilteredStudents()
   }, [allStudents, searchQuery, selectedGradeFilter, selectedBanFilter, getFilteredStudents])
+
+  const recentStudentsMapped = useMemo(() => {
+    return (recentStudentIds || [])
+      .map(id => allStudents.find(s => s.id === id))
+      .filter(Boolean)
+  }, [allStudents, recentStudentIds])
 
   // 전체 학생 목록으로부터 존재하는 모든 학년과 반 목록을 추출
   const availableGrades = useMemo(() => {
@@ -216,7 +223,7 @@ export default function Sidebar({ width }) {
           <span className="flex-1">학생 검색...</span>
           <kbd className="text-xs px-1.5 py-0.5 rounded-md font-medium"
             style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-            ⌘K
+            Ctrl+K
           </kbd>
         </button>
 
@@ -237,6 +244,54 @@ export default function Sidebar({ width }) {
           <UserPlus size={isCompactMode ? 12 : 14} />
           신규 학생 상담 등록
         </button>
+
+        {/* 최근 열람 학생 */}
+        {recentStudentsMapped.length > 0 && (
+          <div className="mt-3 mb-1 px-1">
+            <span className="text-[10px] font-bold block mb-1.5 uppercase tracking-wider text-neutral-400 select-none">
+              최근 열람 학생
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {recentStudentsMapped.map(s => {
+                const isSelected = selectedStudent?.id === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      setSelectedStudent(s);
+                      setEditorOpen(false);
+                    }}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all duration-150 cursor-pointer flex items-center gap-1 font-semibold ${
+                      isCompactMode ? 'text-[10px] px-2 py-0.5' : ''
+                    }`}
+                    style={{
+                      background: isSelected ? 'var(--accent-soft)' : 'var(--bg-primary)',
+                      color: isSelected ? 'var(--accent-dark)' : 'var(--text-secondary)',
+                      borderColor: isSelected ? 'var(--accent)' : 'var(--border)',
+                    }}
+                    onMouseEnter={e => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = 'var(--accent)';
+                        e.currentTarget.style.background = 'var(--bg-hover)';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = 'var(--border)';
+                        e.currentTarget.style.background = 'var(--bg-primary)';
+                      }
+                    }}
+                  >
+                    <span>{s.name}</span>
+                    <span className="text-[9px] opacity-70 font-normal">
+                      {s.grade}-{s.ban || '?'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* 학급 필터 */}
         <div className="flex gap-2 mt-2 px-0.5">

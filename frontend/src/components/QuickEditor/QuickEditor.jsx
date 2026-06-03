@@ -330,27 +330,47 @@ export default function QuickEditor({ width }) {
 
         {/* 연속 입력 모드 */}
         {editorMode === 'new' && (
-          <div className="flex items-center justify-between p-3 rounded-xl border border-dashed transition-all"
+          <div className="flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-200"
             style={{ 
-              background: isContinuousEntry ? 'var(--accent-glow)' : 'var(--bg-primary)',
-              borderColor: isContinuousEntry ? 'var(--accent)' : 'var(--border)'
+              background: isContinuousEntry 
+                ? 'linear-gradient(135deg, rgba(75,142,241,0.1), rgba(75,142,241,0.02))' 
+                : 'var(--bg-primary)',
+              borderColor: isContinuousEntry ? 'var(--accent)' : 'var(--border)',
+              boxShadow: isContinuousEntry ? '0 4px 12px rgba(75,142,241,0.08)' : 'none'
             }}>
-            <div>
-              <span className="text-xs font-semibold block" style={{ color: 'var(--text-primary)' }}>
+            <div className="pr-2">
+              <span className="text-xs font-bold block" style={{ color: 'var(--text-primary)' }}>
                 연속 입력 모드
               </span>
-              <span className="text-[10px] block mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                저장 시 목록의 다음 학생으로 바로 전환됩니다.
+              <span className="text-[10px] block mt-1 leading-normal" style={{ color: 'var(--text-muted)' }}>
+                동일 학생의 상담을 여러 건 연속 입력할 때 사용
               </span>
             </div>
-            <input
-              type="checkbox"
-              checked={isContinuousEntry}
-              disabled={saveState === 'saving'}
-              onChange={e => setContinuousEntry(e.target.checked)}
-              className="w-4 h-4 rounded cursor-pointer accent-accent"
-              style={{ color: 'var(--accent)' }}
-            />
+            <div className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={isContinuousEntry}
+                disabled={saveState === 'saving'}
+                onChange={e => setContinuousEntry(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div 
+                onClick={() => {
+                  if (saveState !== 'saving') {
+                    setContinuousEntry(!isContinuousEntry)
+                  }
+                }}
+                className={`w-9 h-5 rounded-full transition-all relative cursor-pointer ${
+                  isContinuousEntry ? 'bg-accent' : 'bg-neutral-200 dark:bg-neutral-700'
+                }`}
+              >
+                <div 
+                  className={`absolute top-[2px] left-[2px] bg-white rounded-full h-4 w-4 transition-all shadow-sm ${
+                    isContinuousEntry ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>

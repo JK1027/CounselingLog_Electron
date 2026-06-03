@@ -175,7 +175,12 @@ export const createSessionSlice = (set, get) => ({
       }
       
       set({ editorOpen: false })
-      get().addToast(`${selectedStudent.name} 학생의 새 상담 기록이 저장되었습니다.`, 'success')
+      get().addToast(`${selectedStudent.name} 학생의 새 상담 기록이 저장되었습니다.`, 'success', {
+        text: '같은 학생 계속 입력',
+        onClick: () => {
+          set({ editorOpen: true, editorMode: 'new' })
+        }
+      })
     } catch (e) {
       set({ saveState: 'error' })
       get().addToast(e.message, 'error')

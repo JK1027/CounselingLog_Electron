@@ -15,14 +15,37 @@ export const createStudentSlice = (set, get) => ({
   searchQuery: '',
   setSearchQuery: (q) => set({ searchQuery: q }),
 
+  // 최근 열람 학생 ID 목록
+  recentStudentIds: (() => {
+    try {
+      return JSON.parse(localStorage.getItem('counseling_recent_student_ids') || '[]')
+    } catch (e) {
+      return []
+    }
+  })(),
+
+  addRecentStudentId: (id) => {
+    if (!id || String(id).startsWith('NEW_')) return
+    const current = get().recentStudentIds || []
+    const filtered = current.filter(item => item !== id)
+    const updated = [id, ...filtered].slice(0, 5)
+    set({ recentStudentIds: updated })
+    localStorage.setItem('counseling_recent_student_ids', JSON.stringify(updated))
+  },
+
   // 선택된 학생
   selectedStudent: null,
   setSelectedStudent: async (student) => {
     set({ selectedStudent: student })
     if (student?.isGroupTab) {
       await get().loadGroupSessions()
+    } else if (student?.isPeerTab) {
+      await get().loadPeerSessions()
     } else {
-      await get().loadSessions(student)
+      if (student) {
+        await get().loadSessions(student)
+        get().addRecentStudentId(student.id)
+      }
     }
   },
 

@@ -9,9 +9,9 @@ export const createUiSlice = (set, get) => ({
 
   // Toast 목록
   toasts: [],
-  addToast: (message, type = 'success') => {
+  addToast: (message, type = 'success', action = null) => {
     const id = Date.now()
-    set(state => ({ toasts: [...state.toasts, { id, message, type }] }))
+    set(state => ({ toasts: [...state.toasts, { id, message, type, action }] }))
   },
   removeToast: (id) => set(state => ({ toasts: state.toasts.filter(t => t.id !== id) })),
 

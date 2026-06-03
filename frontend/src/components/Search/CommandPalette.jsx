@@ -3,6 +3,28 @@ import { Search, X } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { Avatar } from '@/components/ui/shared'
 
+function HighlightText({ text, query }) {
+  if (!query || !query.trim()) return <span>{text}</span>
+  
+  const escapedQuery = query.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+  const regex = new RegExp(`(${escapedQuery})`, 'gi')
+  const parts = String(text).split(regex)
+  
+  return (
+    <span>
+      {parts.map((part, i) => 
+        regex.test(part) ? (
+          <mark key={i} className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 rounded px-0.5 font-bold">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </span>
+  )
+}
+
 export default function CommandPalette() {
   const { 
     commandOpen, 
@@ -353,9 +375,14 @@ export default function CommandPalette() {
                       >
                         <Avatar name={student.name} size="sm" selected={selectedIndex === idx} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium" style={{ color: selectedIndex === idx ? 'var(--accent-dark)' : 'var(--text-primary)' }}>{student.name}</p>
+                          <p className="text-sm font-medium flex items-center gap-1.5" style={{ color: selectedIndex === idx ? 'var(--accent-dark)' : 'var(--text-primary)' }}>
+                            <HighlightText text={student.name} query={searchQuery} />
+                            <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>
+                              ({student.grade}학년 {student.ban ? `${student.ban}반` : ''})
+                            </span>
+                          </p>
                           <p className="text-xs" style={{ color: selectedIndex === idx ? 'var(--accent)' : 'var(--text-muted)' }}>
-                            {student.grade}학년 · {student.studentId} · {student.sessionCount}회기
+                            학번: <HighlightText text={String(student.studentId)} query={searchQuery} /> · {student.sessionCount}회기
                           </p>
                         </div>
                       </button>
