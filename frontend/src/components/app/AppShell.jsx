@@ -11,6 +11,7 @@ import PrintPreview from '@/components/Print/PrintPreview'
 import PreUpdateBackupModal from '@/components/ui/PreUpdateBackupModal'
 import UpdateAvailableModal from '@/components/ui/UpdateAvailableModal'
 import SettingsModal from '@/components/Settings/SettingsModal'
+import ChangelogModal from '@/components/ui/ChangelogModal'
 import { FileSpreadsheet, RefreshCw } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 import { useLayoutResize } from '@/hooks/useLayoutResize'
@@ -24,7 +25,9 @@ export default function AppShell() {
     updateStatus,
     setBackupModalOpen,
     resizing,
-    setResizing
+    setResizing,
+    appVersion,
+    setChangelogOpen
   } = useAppStore()
 
   const [dragCounter, setDragCounter] = useState(0)
@@ -33,6 +36,22 @@ export default function AppShell() {
   const [printSetupData, setPrintSetupData] = useState(null)
   const [isQuittingApp, setIsQuittingApp] = useState(false)
 
+  // 최초 앱 구동 시 업데이트 후 첫 1회 변경사항 팝업 자동 노출 처리
+  useEffect(() => {
+    if (appVersion && appVersion !== 'v0.1.0') {
+      const lastSeen = localStorage.getItem('counseling_last_seen_changelog_version')
+      const dismissForever = localStorage.getItem('counseling_changelog_dismiss_forever') === 'true'
+      const dismissToday = localStorage.getItem('counseling_changelog_dismiss_today') === new Date().toDateString()
+
+      if (!dismissForever && !dismissToday) {
+        if (lastSeen !== appVersion) {
+          setChangelogOpen(true)
+          localStorage.setItem('counseling_last_seen_changelog_version', appVersion)
+        }
+      }
+    }
+  }, [appVersion, setChangelogOpen])
+  
   const handleOpenPrintModal = (config = null) => {
     setPrintModalConfig(config)
     setIsPrintModalOpen(true)
@@ -157,6 +176,9 @@ export default function AppShell() {
 
       {/* 설정 모달 */}
       <SettingsModal />
+
+      {/* 변경 사항 모달 */}
+      <ChangelogModal />
 
       {/* 사이드바: 학생 목록 */}
       <Sidebar width={sidebarWidth} />

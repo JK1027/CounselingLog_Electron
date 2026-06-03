@@ -1,4 +1,4 @@
-import { RefreshCw, CheckCircle2, AlertTriangle, Sparkles, Download, Power } from 'lucide-react'
+import { RefreshCw, CheckCircle2, AlertTriangle, Sparkles, Download, Power, Info } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
 
 export default function SystemSettingsTab() {
@@ -12,7 +12,8 @@ export default function SystemSettingsTab() {
     setBackupModalOpen,
     setUpdateStatus,
     autoStart,
-    saveAutoStart
+    saveAutoStart,
+    setChangelogOpen
   } = useAppStore()
 
   return (
@@ -59,7 +60,7 @@ export default function SystemSettingsTab() {
         </div>
       </div>
 
-      {/* 버전 정보 카드 */}
+      {/* 버전 정보 카드 (앱 정보) */}
       <div 
         className="p-5 rounded-2xl border space-y-4 shadow-sm"
         style={{
@@ -67,23 +68,25 @@ export default function SystemSettingsTab() {
           borderColor: 'var(--border)'
         }}
       >
-        <div className="flex justify-between items-center text-xs">
-          <div>
-            <span className="block font-bold text-neutral-800 dark:text-neutral-200" style={{ color: 'var(--text-primary)' }}>현재 프로그램 버전</span>
-            <span className="block text-[11px] text-neutral-400 mt-1 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-              보유한 라이선스 및 현재 구동 중인 빌드 버전입니다.
+        <div className="flex items-center gap-1.5 pb-2 text-xs" style={{ borderBottom: '1px solid var(--border-light)' }}>
+          <Info size={14} style={{ color: 'var(--text-secondary)' }} />
+          <span className="font-bold" style={{ color: 'var(--text-primary)' }}>앱 정보</span>
+        </div>
+
+        <div className="flex justify-between items-center text-xs pt-1">
+          <span className="font-semibold text-neutral-500 dark:text-neutral-400" style={{ color: 'var(--text-secondary)' }}>버전</span>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-neutral-700 dark:text-neutral-300" style={{ color: 'var(--text-primary)' }}>
+              {appVersion ? appVersion.replace(/^v/, '') : '1.1.11'}
             </span>
+            <button
+              onClick={() => setChangelogOpen(true)}
+              className="text-[11.5px] font-bold text-accent hover:underline cursor-pointer transition-all"
+              style={{ color: 'var(--accent)' }}
+            >
+              변경 사항
+            </button>
           </div>
-          <span 
-            className="text-xs font-extrabold px-2.5 py-1 rounded-lg" 
-            style={{ 
-              color: 'var(--text-primary)', 
-              border: '1px solid var(--border)',
-              background: 'var(--bg-primary)'
-            }}
-          >
-            {appVersion}
-          </span>
         </div>
 
         {/* 업데이트 상태 표시 카드 */}

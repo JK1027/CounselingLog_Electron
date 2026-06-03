@@ -21,6 +21,7 @@ export const createSettingsSlice = (set, get) => ({
   dismissedVersion: '',
   isManualCheck: false,
   autoStart: false,
+  changelogOpen: false,
 
   setAppVersion: (ver) => set({ appVersion: ver }),
   setUpdateStatus: (status) => set({ updateStatus: status }),
@@ -28,6 +29,7 @@ export const createSettingsSlice = (set, get) => ({
   setNewVersionInfo: (info) => set({ newVersionInfo: info }),
   setUpdateErrorMessage: (msg) => set({ updateErrorMessage: msg }),
   setShowUpdateAvailableModal: (show) => set({ showUpdateAvailableModal: show }),
+  setChangelogOpen: (open) => set({ changelogOpen: open }),
   dismissUpdateVersion: async (version) => {
     if (window.electronAPI && window.electronAPI.saveSettings) {
       try {
