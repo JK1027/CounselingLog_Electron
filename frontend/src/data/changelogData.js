@@ -1,8 +1,8 @@
 export const changelogData = [
   {
-    version: '1.1.11',
+    version: '0.2.26',
     title: 'PIN 잠금과 OCR스캔 기능 추가',
-    date: '2026-06-01',
+    date: '2026-06-03',
     categories: [
       {
         name: '중요 업데이트',
